@@ -45,7 +45,7 @@ public class UsuarioController {
 
     // Endpoint para verificar usuario y contraseña (login)
     @GetMapping("/login")
-    public ResponseEntity<Optional<Usuario>> obtenerUsuarioPorNombreUsuarioPass(
+    public ResponseEntity<Optional<Usuario>> Autenticar(
             @RequestParam String user, 
             @RequestParam String pass) {
         Optional<Usuario> usuario = usuarioService.obtenerUsuarioPorNombreUsuarioPass(user, pass);

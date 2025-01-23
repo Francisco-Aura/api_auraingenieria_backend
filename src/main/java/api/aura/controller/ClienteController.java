@@ -1,15 +1,17 @@
 package api.aura.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import api.aura.dto.ClienteCarteraDTO;
 import api.aura.entity.Cliente;
 import api.aura.service.ClienteService;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -24,21 +26,24 @@ public class ClienteController {
 
     // Crear un cliente
     @PostMapping
-    public ResponseEntity<Cliente> crearCliente(@RequestBody Cliente cliente) {
+    public ResponseEntity<Cliente> crearCliente(@Valid @RequestBody Cliente cliente) {
         logger.info("Solicitud para crear cliente: {}", cliente);
         return ResponseEntity.ok(clienteService.crearCliente(cliente));
     }
 
-    // Obtener todos los clientes
+     // Obtener todos los clientes con paginación
     @GetMapping
-    public ResponseEntity<List<Cliente>> obtenerTodosLosClientes() {
-        return ResponseEntity.ok(clienteService.obtenerTodosLosClientes());
+    public ResponseEntity<Page<Cliente>> obtenerTodosLosClientes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Cliente> clientes = clienteService.obtenerTodosLosClientes(PageRequest.of(page, size));
+        return ResponseEntity.ok(clientes);
     }
 
     //Obtener Cartera Clientes
     @GetMapping("/cartera")
     public List<ClienteCarteraDTO> obternerCarteraClientes() {
-        return clienteService.obternerCarteraClientes();
+        return clienteService.obtenerCarteraClientes();
     }
 
     // Obtener cliente por ID

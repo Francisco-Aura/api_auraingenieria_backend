@@ -1,5 +1,6 @@
 package api.aura.controller;
 
+import api.aura.dto.PuntosSuministrosCarteraDTO;
 import api.aura.entity.PuntoSuministro;
 import api.aura.service.PuntoSuministroService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,13 @@ public class PuntoSuministroController {
     @GetMapping
     public ResponseEntity<List<PuntoSuministro>> obtenerTodos() {
         List<PuntoSuministro> puntos = puntoSuministroService.obtenerTodos();
+        return ResponseEntity.ok(puntos);
+    }
+
+    // Obtener Cartera de los puntos de suministro en formato DTO
+    @GetMapping("/all")
+    public ResponseEntity<List<PuntosSuministrosCarteraDTO>> obtenerCarteraPuntosSuministro() {
+        List<PuntosSuministrosCarteraDTO> puntos = puntoSuministroService.obtenerCarteraPuntoSuministro();
         return ResponseEntity.ok(puntos);
     }
 

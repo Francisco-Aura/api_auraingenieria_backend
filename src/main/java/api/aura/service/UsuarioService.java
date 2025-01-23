@@ -30,7 +30,7 @@ public class UsuarioService {
         return usuarioRepository.findById(id);
     }
 
-    // Buscar usuario por nombre de usuario (campo 'user')
+    // Buscar usuario por nombre y pass (AUTENTICACION)
     public Optional<Usuario> obtenerUsuarioPorNombreUsuarioPass(String user, String pass) {
         return Optional.ofNullable(usuarioRepository.findByUser(user,pass));
     }

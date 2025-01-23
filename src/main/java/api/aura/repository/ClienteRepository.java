@@ -12,16 +12,19 @@ import api.aura.entity.Cliente;
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
 
-    @Query(value = "SELECT c.id AS idCliente, " +
-                   "c.nombre, " +
-                   "c.cif, " +
-                   "CONCAT(c.direccion, ', ', c.poblacion, ', ', c.provincia) AS direccionFiscal, " +
-                   "COUNT(ps.id) AS numeroPuntosSuministro, " +
-                   "u.nombre AS usuarioAsignado " +
-                   "FROM Clientes c " +
-                   "LEFT JOIN PuntoSuministro ps ON c.id = ps.idCliente " +
-                   "LEFT JOIN Usuarios u ON c.IdUsuario = u.id " +
-                   "GROUP BY c.id, c.nombre, c.cif, c.direccion, c.poblacion, c.provincia, u.nombre",
-           nativeQuery = true)
+    @Query("""
+        SELECT new api.aura.dto.ClienteCarteraDTO(
+            c.id,
+            c.nombre,
+            c.cif,
+            CONCAT(c.direccion, ', ', c.poblacion, ', ', c.provincia),
+            COUNT(ps.id),
+            u.nombre
+        )
+        FROM Cliente c
+        LEFT JOIN c.puntosSuministro ps
+        LEFT JOIN c.usuario u
+        GROUP BY c.id, c.nombre, c.cif, c.direccion, c.poblacion, c.provincia, u.nombre
+    """)
     List<ClienteCarteraDTO> obtenerCarteraClientes();
 }

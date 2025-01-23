@@ -1,5 +1,6 @@
 package api.aura.service;
 
+import api.aura.dto.PuntosSuministrosCarteraDTO;
 import api.aura.entity.PuntoSuministro;
 import api.aura.repository.PuntoSuministroRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,11 @@ public class PuntoSuministroService {
     // Obtener todos los puntos de suministro
     public List<PuntoSuministro> obtenerTodos() {
         return puntoSuministroRepository.findAll();
+    }
+
+    // Obtener cartera de puntos de suministro
+    public List<PuntosSuministrosCarteraDTO> obtenerCarteraPuntoSuministro() {
+        return puntoSuministroRepository.findAllPuntosSuministro();
     }
 
     // Obtener un punto de suministro por ID

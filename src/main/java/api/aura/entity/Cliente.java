@@ -106,7 +106,9 @@ public class Cliente {
     @Column(length = 100)
     private String actividad;
 
-    private Integer idUsuario;
+    @ManyToOne
+    @JoinColumn(name = "idUsuario")
+    private Usuario usuario;
 
     // Relación con puntos de suministro
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)

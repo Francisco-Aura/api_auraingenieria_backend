@@ -11,7 +11,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 public class Servicio {
 
     @Id
@@ -41,7 +40,12 @@ public class Servicio {
     @Temporal(TemporalType.DATE)
     private Date fechaPagoComercial;
 
+    @Column
+    private Integer idGestora;
+
+    @Column
+    private Integer idProducto;
+
     @Temporal(TemporalType.DATE)
     private Date fechaBaja;
-
 }

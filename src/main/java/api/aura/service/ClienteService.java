@@ -1,6 +1,9 @@
 package api.aura.service;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import api.aura.dto.ClienteCarteraDTO;
@@ -26,8 +29,12 @@ public class ClienteService {
         return clienteRepository.findAll();
     }
 
-    //Listar Cartera Clientes
-    public List<ClienteCarteraDTO> obternerCarteraClientes() {
+    /**
+     * Obtiene una lista de clientes en forma de DTO con información resumida.
+     *
+     * @return Lista de clientes con datos de la cartera.
+     */
+    public List<ClienteCarteraDTO> obtenerCarteraClientes() {
         return clienteRepository.obtenerCarteraClientes();
     }
 
@@ -62,5 +69,10 @@ public class ClienteService {
             cliente.setFechaBaja(new java.util.Date());
             clienteRepository.save(cliente);
         });
+    }
+
+    public Page<Cliente> obtenerTodosLosClientes(PageRequest of) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'obtenerTodosLosClientes'");
     }
 }

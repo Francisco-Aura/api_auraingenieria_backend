@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.Date;
-
 @Entity
 @Table(name = "Contratos")
 @Data
@@ -40,13 +39,57 @@ public class Contrato {
     @Column(length = 100)
     private String contrato;
 
-    private Boolean autoconsumo;
+    @Column
+    private int idTarifaLuz;
 
-    private Boolean denunciaContrato;
+    @Column
+    private int idTarifaGas;
 
-    @Temporal(TemporalType.DATE)
-    private Date fechaDenunciaContrato;
+    @Column
+    private Double potencia1;
+
+    @Column
+    private Double potencia2;
+
+    @Column
+    private Double potencia3;
+
+    @Column
+    private Double potencia4;
+
+    @Column
+    private Double potencia5;
+
+    @Column
+    private Double potencia6;
+
+    @Column
+    private Double consumoAnual;
+
+    @Column
+    private Integer exencionImpuestoElectricidad;
+
+    @Column
+    private Integer idComercializadoraActual;
+
+    @Column
+    private Integer idComercializadoraAnterior;
 
     @Column(length = 200)
     private String observaciones;
+
+    @Column(length = 30)
+    private String IBAN;
+
+    @Temporal(TemporalType.DATE)
+    private Date fechaBaja;
+
+    @Column
+    private Integer autoconsumo;
+
+    @Column
+    private Integer denunciaContrato;
+
+    @Temporal(TemporalType.DATE)
+    private Date fechaDenunciaContrato;
 }
