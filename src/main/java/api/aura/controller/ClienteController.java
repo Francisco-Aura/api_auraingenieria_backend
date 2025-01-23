@@ -4,6 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import api.aura.dto.ClienteCarteraDTO;
 import api.aura.entity.Cliente;
 import api.aura.service.ClienteService;
@@ -14,12 +17,15 @@ import java.util.List;
 @RequestMapping("/api/clientes")
 public class ClienteController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ClienteController.class);
+
     @Autowired
     private ClienteService clienteService;
 
     // Crear un cliente
     @PostMapping
     public ResponseEntity<Cliente> crearCliente(@RequestBody Cliente cliente) {
+        logger.info("Solicitud para crear cliente: {}", cliente);
         return ResponseEntity.ok(clienteService.crearCliente(cliente));
     }
 
