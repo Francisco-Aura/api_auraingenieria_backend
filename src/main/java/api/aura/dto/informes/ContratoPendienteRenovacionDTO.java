@@ -1,39 +1,40 @@
 package api.aura.dto.informes;
 
 import lombok.Data;
-import java.time.LocalDate;
+
+import java.sql.Date;
 
 @Data
 public class ContratoPendienteRenovacionDTO {
     private Integer codigoContrato;
-    private LocalDate fecha;
-    private LocalDate fechaEnvio;
-    private LocalDate fechaInicio;
-    private LocalDate fechaFin;
-    private String idCliente;
+    private Date fecha;
+    private Date fechaEnvio;
+    private Date fechaInicio;
+    private Date fechaFin;
+    private Integer idCliente;
     private String cliente;
-    private String idPuntoSuministro;
+    private Integer idPuntoSuministro;
     private String cupsLuz;
     private String cupsGas;
     private String userTelemedida;
     private String passTelemedida;
     private String contrato;
-    private String idTarifaLuz;
+    private Integer idTarifaLuz;
     private String tarifaLuz;
-    private String idTarifaGas;
+    private Integer idTarifaGas;
     private String tarifaGas;
-    private String pot1;
-    private String pot2;
-    private String pot3;
-    private String pot4;
-    private String pot5;
-    private String pot6;
-    private String consumoAnual;
-    private String exencionIE;
-    private String autoconsumo;
-    private String idComercializadoraActual;
+    private Double  pot1;
+    private Double  pot2;
+    private Double  pot3;
+    private Double  pot4;
+    private Double  pot5;
+    private Double pot6;
+    private Double  consumoAnual;
+    private Integer exencionIE;
+    private Integer autoconsumo;
+    private Integer idComercializadoraActual;
     private String comercializadoraActual;
-    private String idComercializadoraAnterior;
+    private Integer idComercializadoraAnterior;
     private String comercializadoraAnterior;
-    private String observaciones;
+    private String observaciones; 
 }
