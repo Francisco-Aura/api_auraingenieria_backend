@@ -6,6 +6,8 @@ import lombok.*;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "Clientes")
 @Data
@@ -106,12 +108,19 @@ public class Cliente {
     @Column(length = 100)
     private String actividad;
 
+    @Column(length = 100)
+    private String userTelemedida;
+
+    @Column(length = 100)
+    private String passTelemedida;
+
     @ManyToOne
     @JoinColumn(name = "idUsuario")
     private Usuario usuario;
 
     // Relación con puntos de suministro
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<PuntoSuministro> puntosSuministro;
 
 }

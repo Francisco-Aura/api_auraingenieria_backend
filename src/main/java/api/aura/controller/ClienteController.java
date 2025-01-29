@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import api.aura.dto.ClienteCarteraDTO;
+import api.aura.dto.ClienteDTO;
 import api.aura.entity.Cliente;
 import api.aura.service.ClienteService;
 import jakarta.validation.Valid;
@@ -26,9 +27,16 @@ public class ClienteController {
 
     // Crear un cliente
     @PostMapping
-    public ResponseEntity<Cliente> crearCliente(@Valid @RequestBody Cliente cliente) {
-        logger.info("Solicitud para crear cliente: {}", cliente);
-        return ResponseEntity.ok(clienteService.crearCliente(cliente));
+    public ResponseEntity<Cliente> crearCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
+        logger.info("Solicitud para crear cliente: {}", clienteDTO);
+        try {
+            // Convierte el DTO a la entidad y guarda
+            Cliente clienteCreado = clienteService.crearCliente(clienteDTO);
+            return ResponseEntity.ok(clienteCreado);
+        } catch (RuntimeException e) {
+            logger.error("Error al crear cliente: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
      // Obtener todos los clientes con paginación
@@ -48,17 +56,19 @@ public class ClienteController {
 
     // Obtener cliente por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Cliente> obtenerClientePorId(@PathVariable Integer id) {
+    public ResponseEntity<ClienteDTO> obtenerClientePorId(@PathVariable Integer id) {
         return clienteService.obtenerClientePorId(id)
-                .map(ResponseEntity::ok)
+                .map(cliente -> ResponseEntity.ok(clienteService.toDTO(cliente)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     // Actualizar un cliente
     @PutMapping("/{id}")
-    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Integer id, @RequestBody Cliente cliente) {
+    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Integer id, @Valid @RequestBody ClienteDTO clienteDTO) {
         try {
-            return ResponseEntity.ok(clienteService.actualizarCliente(id, cliente));
+            // Convierte el DTO a la entidad y actualiza
+            Cliente clienteActualizado = clienteService.actualizarCliente(id, clienteDTO);
+            return ResponseEntity.ok(clienteActualizado);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

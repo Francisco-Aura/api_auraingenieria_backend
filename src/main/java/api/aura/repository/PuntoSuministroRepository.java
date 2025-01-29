@@ -17,18 +17,19 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
      * Consulta para obtener una lista de puntos de suministro en formato DTO.
      */
     @Query("""
-            SELECT new api.aura.dto.PuntosSuministrosCarteraDTO(
-                ps.id,
-                ps.cliente.id,
-                ps.cliente.nombre,
-                ps.direccion,
-                ps.codigoPostal,
-                ps.poblacion,
-                ps.provincia,
-                ps.CUPSluz,
-                ps.CUPSgas
-            )
-            FROM PuntoSuministro ps
-            """)
+                SELECT new api.aura.dto.PuntosSuministrosCarteraDTO(
+                    ps.id,
+                    c.id,
+                    c.nombre,
+                    ps.direccion,
+                    ps.codigoPostal,
+                    ps.poblacion,
+                    ps.provincia,
+                    ps.CUPSluz,
+                    ps.CUPSgas
+                )
+                FROM PuntoSuministro ps
+                LEFT JOIN Cliente c ON ps.cliente.id = c.id
+        """)
     List<PuntosSuministrosCarteraDTO> findAllPuntosSuministro();
 }

@@ -78,9 +78,6 @@ public class Contrato {
     @Column(length = 200)
     private String observaciones;
 
-    @Column(length = 30)
-    private String IBAN;
-
     @Temporal(TemporalType.DATE)
     private Date fechaBaja;
 
