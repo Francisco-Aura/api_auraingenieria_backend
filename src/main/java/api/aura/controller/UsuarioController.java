@@ -1,11 +1,13 @@
 package api.aura.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import api.aura.entity.Usuario;
 import api.aura.service.UsuarioService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -45,14 +47,25 @@ public class UsuarioController {
 
     // Endpoint para verificar usuario y contraseña (login)
     @GetMapping("/login")
-    public ResponseEntity<Optional<Usuario>> Autenticar(
+    public ResponseEntity<Map<String, Object>> Autenticar(
             @RequestParam String user, 
             @RequestParam String pass) {
         Optional<Usuario> usuario = usuarioService.obtenerUsuarioPorNombreUsuarioPass(user, pass);
+
         if (usuario.isPresent()) {
-            return ResponseEntity.ok(usuario);
+            // Construimos un mapa con la información necesaria del usuario
+            Map<String, Object> respuesta = Map.of(
+                "id", usuario.get().getId(),
+                "nombre", usuario.get().getNombre(),
+                "email", usuario.get().getEmail(),
+                "nivelAcceso", usuario.get().getNivelAcceso()
+            );
+
+            return ResponseEntity.ok(respuesta);
         } else {
-            return ResponseEntity.status(401).build(); // Código 401 para credenciales inválidas
+            // Devolvemos un código 401 (No autorizado) con un mensaje de error
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .body(Map.of("error", "Usuario o contraseña incorrectos"));
         }
     }
 
