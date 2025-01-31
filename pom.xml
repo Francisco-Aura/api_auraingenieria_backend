@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	
+	<!-- Versión del modelo de Maven POM -->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Información del proyecto padre -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.4.1</version> <!-- Versión de Spring Boot que estás usando -->
+		<relativePath/> <!-- Indica que el padre se busca en el repositorio -->
+	</parent>
+
+	<!-- Información básica del proyecto -->
+	<groupId>api</groupId> <!-- Identificador del grupo del proyecto -->
+	<artifactId>aura</artifactId> <!-- Nombre del artefacto que genera Maven -->
+	<version>0.0.1-SNAPSHOT</version> <!-- Versión inicial del proyecto -->
+	<name>aura</name> <!-- Nombre del proyecto -->
+	<description>Backend Aura Ingenieria</description> <!-- Descripción del proyecto -->
+	<url/> <!-- URL vacía; puedes añadir la página del proyecto si existe -->
+
+	<!-- Información legal (puedes completarla si lo necesitas) -->
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+
+	<!-- Propiedades globales del proyecto -->
+	<properties>
+		<java.version>17</java.version> <!-- Especifica que el proyecto usa Java 17 -->
+	</properties>
+
+	<!-- Dependencias necesarias para tu proyecto -->
+	<dependencies>
+		<!-- Actuator: Endpoints para monitorización y métricas -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Seguridad con Spring Security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<!-- Acceso a bases de datos relacionales con Spring Data JPA -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- Desarrollo de aplicaciones web con Spring MVC -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- Recarga automática de cambios durante el desarrollo -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope> <!-- Solo se activa en tiempo de ejecución -->
+			<optional>true</optional> <!-- No se hereda en dependencias secundarias -->
+		</dependency>
+
+		<!-- Conector para bases de datos MariaDB -->
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+			<scope>runtime</scope> <!-- Solo en tiempo de ejecución -->
+		</dependency>
+
+		<!-- Lombok: Reduce el código boilerplate con anotaciones -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.28</version> <!-- Versión de Lombok -->
+			<scope>provided</scope> <!-- Solo para desarrollo, no en producción -->
+		</dependency>
+
+		<!-- Dependencias para pruebas unitarias y de integración -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope> <!-- Exclusivo para pruebas -->
+		</dependency>
+
+		<!-- OpenAPI (Swagger) para documentar y probar la API -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.4.0</version>
+		</dependency>
+	</dependencies>
+
+	<!-- Configuración de compilación y plugins -->
+	<build>
+		<plugins>
+			<!-- Configuración del compilador de Maven -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+
+			<!-- Plugin para empaquetar y gestionar Spring Boot -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
