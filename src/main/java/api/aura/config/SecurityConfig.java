@@ -3,28 +3,20 @@ package api.aura.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeRequests()
-                .requestMatchers(
-                    "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/webjars/**",
-                    "/auth/**", // Permitir acceso público al endpoint de autenticación
-                    "/api/**" // Permitir acceso público a la API por ahora
-                ).permitAll()
-                .anyRequest().authenticated() // Otros endpoints requieren autenticación
-            .and()
-            .csrf().disable(); // CSRF desactivado solo para entornos de desarrollo. Activar en producción.
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll()  // Permitir TODO sin login
+            )
+            .csrf().disable()             // Desactivar CSRF (opcional si no usas formularios)
+            .formLogin().disable()        // Desactivar formulario login
+            .httpBasic().disable();       // Desactivar login básico
 
         return http.build();
     }
