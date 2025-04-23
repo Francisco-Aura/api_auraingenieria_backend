@@ -105,9 +105,15 @@
 		<!-- OpenAPI (Swagger) para documentar y probar la API -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
 			<version>2.4.0</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate.validator</groupId>
+			<artifactId>hibernate-validator</artifactId>
+		</dependency>
+		
 	</dependencies>
 
 	<!-- Configuración de compilación y plugins -->
