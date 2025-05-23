@@ -1,7 +1,7 @@
 image: maven:3.9.6-eclipse-temurin-17 # La imagen Docker que usarán tus trabajos
 
 stages:
-  - deploy # Define las etapas de tu pipeline
+  - deploy # Define las etapas de tu pipeline 
 
 deploy_backend:
   stage: deploy
