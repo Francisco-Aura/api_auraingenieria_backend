@@ -1,0 +1,32 @@
+image: maven:3.9.6-eclipse-temurin-17 # La imagen Docker que usarán tus trabajos
+
+stages:
+  - deploy # Define las etapas de tu pipeline
+
+deploy_backend:
+  stage: deploy
+  only:
+    - master # Este trabajo solo se ejecutará cuando hagas push a la rama master
+  script:
+    # 1. Configurar SSH para que use la clave privada de la variable
+    - apt-get update -y && apt-get install -y openssh-client # Instala el cliente SSH si no está
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_gitlab # Escribe la clave privada en un archivo temporal
+    - chmod 600 ~/.ssh/id_rsa_gitlab # Asegura los permisos correctos
+    - ssh-keyscan 5.34.149.250 >> ~/.ssh/known_hosts # Añade la huella digital del servidor a known_hosts
+    - chmod 600 ~/.ssh/known_hosts # Asegura los permisos correctos
+
+    # 2. Compilar el proyecto Spring Boot
+    - mvn clean package -DskipTests # Compila tu aplicación Spring Boot y crea el JAR
+
+    # 3. Copiar el JAR a la Raspberry Pi usando SCP
+    # Usamos StrictHostKeyChecking=no y UserKnownHostsFile=/dev/null temporalmente para evitar problemas de known_hosts en el pipeline,
+    # aunque con ssh-keyscan ya deberíamos tenerlo cubierto. Lo más seguro es que ssh-keyscan funcione.
+    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.149.250:/tmp/aura.jar
+
+    # 4. Ejecutar el script de despliegue en la Raspberry Pi usando SSH
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.149.250 'bash /home/babenza/deploy_backend.sh'
+
+  cache:
+    paths:
+      - .m2/repository # Para cachear dependencias de Maven y acelerar builds futuros
