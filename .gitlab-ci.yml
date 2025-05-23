@@ -5,8 +5,8 @@ stages:
 
 deploy_backend:
   stage: deploy
-  only:
-    - master # Este trabajo solo se ejecutará cuando hagas push a la rama master
+  only:    
+    - main # Este trabajo solo se ejecutará cuando hagas push a la rama master ¡Cambiado de 'master' a 'main'!
   script:
     # 1. Configurar SSH para que use la clave privada de la variable
     - apt-get update -y && apt-get install -y openssh-client # Instala el cliente SSH si no está
