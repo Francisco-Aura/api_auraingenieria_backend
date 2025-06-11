@@ -21,6 +21,13 @@ public class ContratoController {
         return ResponseEntity.ok(guardado);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Contrato> actualizarContrato(@PathVariable Integer id, @RequestBody Contrato contrato) {
+        contrato.setId(id);
+        Contrato actualizado = contratoService.guardarContrato(contrato);
+        return ResponseEntity.ok(actualizado);
+    }
+
     @GetMapping
     public ResponseEntity<List<Contrato>> obtenerTodos() {
         List<Contrato> contratos = contratoService.obtenerTodos();
