@@ -38,13 +38,22 @@ public class Servicio {
     private Date fechaFinServicio;
 
     @Temporal(TemporalType.DATE)
-    private Date fechaPagoComercial;
+    private Date fechaPago;
 
     @Column
     private Integer idGestora;
 
     @Column
     private Integer idProducto;
+
+    @Column
+    private Integer idComercializadora;
+
+    @Column(length = 500)
+    private String observaciones;
+
+    @Column(length = 100)
+    private String cups;
 
     @Temporal(TemporalType.DATE)
     private Date fechaBaja;
