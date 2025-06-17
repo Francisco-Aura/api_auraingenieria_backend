@@ -114,6 +114,19 @@ public class PuntoSuministro {
     @Column(name = "fecha_concesion")
     private Date fechaConcesion;
 
+    @Column(name = "autoconsumo", length = 255)
+    private String autoconsumo;
+
+    @Temporal(TemporalType.DATE)
+    @Column(name = "fecha_activacion_vertido")
+    private Date fechaActivacionVertido;
+
+    @Column(name = "usuario_monitorizacion", length = 255)
+    private String usuarioMonitorizacion;
+
+    @Column(name = "pass_monitorizacion", length = 255)
+    private String passMonitorizacion;
+
     /*
     // Relación con servicios
     @OneToMany(mappedBy = "puntoSuministro", cascade = CascadeType.ALL, orphanRemoval = true)

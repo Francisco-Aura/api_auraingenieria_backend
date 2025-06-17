@@ -22,6 +22,13 @@ public class ServicioController {
         return ResponseEntity.ok(guardado);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Servicio> actualizarServicio(@PathVariable Integer id, @RequestBody Servicio servicio) {
+        servicio.setId(id); // Ensure the ID is set correctly
+        Servicio actualizado = servicioService.guardarServicio(servicio);
+        return ResponseEntity.ok(actualizado);
+    }
+
     @GetMapping
     public ResponseEntity<List<ServicioDTO>> obtenerTodos() {
         List<ServicioDTO> servicios = servicioService.obtenerTodos();

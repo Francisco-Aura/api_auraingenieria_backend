@@ -95,6 +95,11 @@ public class PuntoSuministroService {
                 throw new IllegalArgumentException("Debe proporcionar al menos un CUPS (luz o gas)");
             }
 
+            // Validar que la fecha de activación de vertido sea obligatoria si autoconsumo está presente
+            if (puntoSuministro.getAutoconsumo() != null && !puntoSuministro.getAutoconsumo().trim().isEmpty() && puntoSuministro.getFechaActivacionVertido() == null) {
+                throw new IllegalArgumentException("La Fecha de Activación de Vertido es obligatoria si el Autoconsumo está seleccionado.");
+            }
+
             return puntoSuministroRepository.save(puntoSuministro);
         } catch (Exception e) {
             throw new RuntimeException("Error al guardar el punto de suministro: " + e.getMessage(), e);

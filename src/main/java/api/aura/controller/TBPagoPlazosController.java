@@ -16,11 +16,6 @@ public class TBPagoPlazosController {
     @Autowired
     private TBPagoPlazosService pagoPlazosService;
 
-    @PostMapping
-    public ResponseEntity<TBPagoPlazos> crearPagoPlazo(@RequestBody TBPagoPlazos pagoPlazo) {
-        return ResponseEntity.ok(pagoPlazosService.crearPagoPlazo(pagoPlazo));
-    }
-
     @GetMapping
     public List<TBPagoPlazos> obtenerTodosLosPagosPlazos() {
         return pagoPlazosService.obtenerTodosLosPagosPlazos();
@@ -29,6 +24,11 @@ public class TBPagoPlazosController {
     @GetMapping("/{id}")
     public ResponseEntity<Optional<TBPagoPlazos>> obtenerPagoPlazoPorId(@PathVariable Integer id) {
         return ResponseEntity.ok(pagoPlazosService.obtenerPagoPlazoPorId(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<TBPagoPlazos> crearPagoPlazo(@RequestBody TBPagoPlazos pagoPlazo) {
+        return ResponseEntity.ok(pagoPlazosService.crearPagoPlazo(pagoPlazo));
     }
 
     @PutMapping("/{id}")
