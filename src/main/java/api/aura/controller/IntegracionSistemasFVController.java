@@ -12,7 +12,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/integracion-sistemas-fv")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:3000"})
 public class IntegracionSistemasFVController {
 
     @Autowired
@@ -40,7 +39,8 @@ public class IntegracionSistemasFVController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<IntegracionSistemasFV> actualizar(@PathVariable Long id, @RequestBody IntegracionSistemasFV integracion) {
+    public ResponseEntity<IntegracionSistemasFV> actualizar(@PathVariable Long id,
+            @RequestBody IntegracionSistemasFV integracion) {
         Optional<IntegracionSistemasFV> datos = integracionSistemasFVRepository.findById(id);
         if (datos.isPresent()) {
             IntegracionSistemasFV existente = datos.get();

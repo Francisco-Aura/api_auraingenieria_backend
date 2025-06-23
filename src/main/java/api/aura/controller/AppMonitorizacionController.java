@@ -12,7 +12,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/app-monitorizacion")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:3000"})
 public class AppMonitorizacionController {
 
     @Autowired
@@ -33,13 +32,15 @@ public class AppMonitorizacionController {
     public ResponseEntity<AppMonitorizacion> crear(@RequestBody AppMonitorizacion appMonitorizacion) {
         try {
             AppMonitorizacion nueva = appMonitorizacionRepository.save(appMonitorizacion);
-            return new ResponseEntity<>(nueva, HttpStatus.CREATED);        } catch (Exception e) {
+            return new ResponseEntity<>(nueva, HttpStatus.CREATED);
+        } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AppMonitorizacion> actualizar(@PathVariable Long id, @RequestBody AppMonitorizacion appMonitorizacion) {
+    public ResponseEntity<AppMonitorizacion> actualizar(@PathVariable Long id,
+            @RequestBody AppMonitorizacion appMonitorizacion) {
         Optional<AppMonitorizacion> datos = appMonitorizacionRepository.findById(id);
         if (datos.isPresent()) {
             AppMonitorizacion existente = datos.get();
