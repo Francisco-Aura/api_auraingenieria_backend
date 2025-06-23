@@ -37,6 +37,12 @@ public class PuntoSuministro {
     @Column(length = 100)
     private String provincia;
 
+    @Column(length = 255)
+    private String identificacion;
+
+    @Column(length = 1000)
+    private String ubicacion;
+
     @Column(length = 100)
     @JsonProperty("CUPSluz")
     private String CUPSluz;
@@ -128,10 +134,13 @@ public class PuntoSuministro {
     private String passMonitorizacion;
 
     /*
-    // Relación con servicios
-    @OneToMany(mappedBy = "puntoSuministro", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore // Evita la serialización de esta propiedad
-    private List<Servicio> servicios;
+     * // Relación con servicios
+     * 
+     * @OneToMany(mappedBy = "puntoSuministro", cascade = CascadeType.ALL,
+     * orphanRemoval = true)
+     * 
+     * @JsonIgnore // Evita la serialización de esta propiedad
+     * private List<Servicio> servicios;
      */
 
 }

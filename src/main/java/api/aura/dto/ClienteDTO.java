@@ -54,10 +54,9 @@ public class ClienteDTO {
     private String nombreComercial;
     private Integer codigoSector;
     private Integer codigoSubtipologia;
-    private String actividad;    private String userTelemedida;
-    private String passTelemedida;
-
-    // Campos de instalaciones
+    private String actividad;
+    private String userTelemedida;
+    private String passTelemedida; // Campos de instalaciones
     private String bateriaCondensadores;
     private String potenciaBateria;
     private String modeloBateria;
@@ -70,6 +69,11 @@ public class ClienteDTO {
     private String backup;
     private String peaksaving;
     private Long integracionSistemasFVId;
+
+    // Servicios del cliente
+    private Boolean gestionEnergetica;
+    private Boolean telemedida;
+    private Boolean monitorizacionEnergetica;
 
     private Integer idUsuario;
 }

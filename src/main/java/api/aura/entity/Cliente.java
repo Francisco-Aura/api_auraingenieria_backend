@@ -145,14 +145,25 @@ public class Cliente {
     private String potenciaBateriaAlmacenamiento;
 
     @Column(length = 10)
-    private String backup; // SI/NO
-
-    @Column(length = 10)
+    private String backup; // SI/NO @Column(length = 10)
     private String peaksaving; // SI/NO
 
     @ManyToOne
     @JoinColumn(name = "TBIntegracionSistemasFV_id")
     private IntegracionSistemasFV integracionSistemasFV;
+
+    // Servicios del cliente
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private Boolean gestionEnergetica = false;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private Boolean telemedida = false;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private Boolean monitorizacionEnergetica = false;
 
     @ManyToOne
     @JoinColumn(name = "idUsuario")
