@@ -110,9 +110,60 @@ public class Cliente {
 
     @Column(length = 100)
     private String userTelemedida;
-
     @Column(length = 100)
     private String passTelemedida;
+
+    // Campos de instalaciones - Batería de Condensadores
+    @Column(length = 10)
+    private String bateriaCondensadores; // SI/NO
+
+    @Column(length = 100)
+    private String potenciaBateria;
+
+    @Column(length = 100)
+    private String modeloBateria;
+
+    // Campos de instalaciones - Instalación Fotovoltaica
+    @Column(length = 10)
+    private String instalacionFV; // SI/NO
+
+    @Column(length = 100)
+    private String kwInversor;
+
+    @Column(length = 100)
+    private String kwPanelesSolares;
+
+    @ManyToOne
+    @JoinColumn(name = "TBmonitorizacion_id")
+    private AppMonitorizacion appMonitorizacion;
+
+    // Campos de instalaciones - Almacenamiento Energético
+    @Column(length = 10)
+    private String bateriaAlmacenamiento; // SI/NO
+
+    @Column(length = 100)
+    private String potenciaBateriaAlmacenamiento;
+
+    @Column(length = 10)
+    private String backup; // SI/NO @Column(length = 10)
+    private String peaksaving; // SI/NO
+
+    @ManyToOne
+    @JoinColumn(name = "TBIntegracionSistemasFV_id")
+    private IntegracionSistemasFV integracionSistemasFV;
+
+    // Servicios del cliente
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private Boolean gestionEnergetica = false;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private Boolean telemedida = false;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private Boolean monitorizacionEnergetica = false;
 
     @ManyToOne
     @JoinColumn(name = "idUsuario")

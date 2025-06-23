@@ -5,10 +5,12 @@ import api.aura.entity.PuntoSuministro;
 import api.aura.service.PuntoSuministroService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/puntos-suministro")
@@ -19,8 +21,20 @@ public class PuntoSuministroController {
 
     @PostMapping
     public ResponseEntity<?> crearOActualizarPuntoSuministro(@Valid @RequestBody PuntoSuministro puntoSuministro) {
-        PuntoSuministro guardado = puntoSuministroService.guardarPuntoSuministro(puntoSuministro);
-        return ResponseEntity.ok(guardado);
+        try {
+            PuntoSuministro guardado = puntoSuministroService.guardarPuntoSuministro(puntoSuministro);
+            return ResponseEntity.ok(guardado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "Error de validación",
+                "mensaje", e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "error", "Error interno del servidor",
+                "mensaje", e.getMessage()
+            ));
+        }
     }
 
     @GetMapping

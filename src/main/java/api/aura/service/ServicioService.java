@@ -2,6 +2,9 @@ package api.aura.service;
 
 import api.aura.entity.Servicio;
 import api.aura.repository.ServicioRepository;
+import api.aura.dto.ServicioDTO;
+import api.aura.entity.PuntoSuministro;
+import api.aura.repository.PuntoSuministroRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,25 +16,54 @@ public class ServicioService {
 
     @Autowired
     private ServicioRepository servicioRepository;
+    @Autowired
+    private PuntoSuministroRepository puntoSuministroRepository;
 
     public Servicio guardarServicio(Servicio servicio) {
         return servicioRepository.save(servicio);
     }
 
-    public List<Servicio> obtenerTodos() {
-        return servicioRepository.findAll();
+    public ServicioDTO toDTO(Servicio servicio) {
+        ServicioDTO dto = new ServicioDTO();
+        dto.setId(servicio.getId());
+        dto.setFecha(servicio.getFecha());
+        dto.setFechaInicioServicio(servicio.getFechaInicioServicio());
+        dto.setFechaFinServicio(servicio.getFechaFinServicio());
+        dto.setFechaPago(servicio.getFechaPago());
+        dto.setDescripcion(servicio.getDescripcion());
+        dto.setIdGestora(servicio.getIdGestora());
+        dto.setIdProducto(servicio.getIdProducto());
+        dto.setIdComercializadora(servicio.getIdComercializadora());
+        dto.setObservaciones(servicio.getObservaciones());
+        dto.setIdCliente(servicio.getCliente() != null ? servicio.getCliente().getId() : null);
+        dto.setIdPuntoSuministro(servicio.getPuntoSuministro() != null ? servicio.getPuntoSuministro().getId() : null);
+        // CUPS: lo traemos del punto de suministro si no está en el servicio
+        String cups = servicio.getCups();
+        if ((cups == null || cups.isEmpty()) && servicio.getPuntoSuministro() != null) {
+            PuntoSuministro ps = servicio.getPuntoSuministro();
+            cups = ps.getCUPSluz() != null && !ps.getCUPSluz().isEmpty() ? ps.getCUPSluz() : ps.getCUPSgas();
+        }
+        dto.setCups(cups);
+        // Pagos: por ahora null o vacío
+        dto.setPagos(null);
+        return dto;
     }
 
-    public Optional<Servicio> obtenerPorId(Integer id) {
-        return servicioRepository.findById(id);
+    public List<ServicioDTO> obtenerTodos() {
+        List<Servicio> servicios = servicioRepository.findAll();
+        return servicios.stream().map(this::toDTO).toList();
     }
 
-    public List<Servicio> obtenerPorClienteId(Integer clienteId) {
-        return servicioRepository.findByClienteId(clienteId);
+    public Optional<ServicioDTO> obtenerPorId(Integer id) {
+        return servicioRepository.findById(id).map(this::toDTO);
     }
 
-    public List<Servicio> obtenerPorPuntoSuministroId(Integer puntoSuministroId) {
-        return servicioRepository.findByPuntoSuministroId(puntoSuministroId);
+    public List<ServicioDTO> obtenerPorClienteId(Integer clienteId) {
+        return servicioRepository.findByClienteId(clienteId).stream().map(this::toDTO).toList();
+    }
+
+    public List<ServicioDTO> obtenerPorPuntoSuministroId(Integer puntoSuministroId) {
+        return servicioRepository.findByPuntoSuministroId(puntoSuministroId).stream().map(this::toDTO).toList();
     }
 
     public void eliminarPorId(Integer id) {

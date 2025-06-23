@@ -3,6 +3,7 @@ package api.aura.repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.query.Param;
 
 import api.aura.entity.Incidencia;
 
@@ -79,4 +80,64 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             NOT EXISTS (SELECT id_punto_suministro FROM contratos WHERE contratos.id_punto_suministro = punto_suministro.id)
         """, nativeQuery = true)
     List<Object[]> findPuntosSuministroSinContrato();
+
+    @Query(value = """
+        SELECT 
+            s.id AS idServicio,
+            c.nombre AS cliente,
+            s.descripcion AS servicio,
+            s.fecha_fin_servicio AS fechaVencimiento,
+            sp.importe_final AS importeTotal,
+            sp.primer_pago_pagado,
+            sp.segundo_pago_pagado,
+            sp.tercer_pago_pagado,
+            sp.cuarto_pago_pagado,
+            sp.quinto_pago_pagado,
+            sp.sexto_pago_pagado,
+            sp.septimo_pago_pagado,
+            sp.octavo_pago_pagado,
+            sp.noveno_pago_pagado,
+            sp.decimo_pago_pagado,
+            sp.decimoprimer_pago_pagado,
+            sp.decimosegundo_pago_pagado,
+            CASE 
+                WHEN s.fecha_fin_servicio < CURDATE() THEN 'Vencido'
+                WHEN s.fecha_fin_servicio <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'Próximo a vencer'
+                ELSE 'Pendiente'
+            END AS estadoVencimiento,
+            CASE
+                WHEN (sp.primer_pago_pagado = 0 OR sp.segundo_pago_pagado = 0 OR sp.tercer_pago_pagado = 0 OR
+                      sp.cuarto_pago_pagado = 0 OR sp.quinto_pago_pagado = 0 OR sp.sexto_pago_pagado = 0 OR
+                      sp.septimo_pago_pagado = 0 OR sp.octavo_pago_pagado = 0 OR sp.noveno_pago_pagado = 0 OR
+                      sp.decimo_pago_pagado = 0 OR sp.decimoprimer_pago_pagado = 0 OR sp.decimosegundo_pago_pagado = 0)
+                THEN 'Pendiente'
+                ELSE 'Pagado'
+            END AS estadoPago,
+            tbp.numero_cuotas AS numeroCuotas
+        FROM servicios s
+        INNER JOIN clientes c ON s.id_cliente = c.id
+        INNER JOIN servicios_pagos sp ON sp.id_servicio = s.id
+        INNER JOIN tbpago_plazos tbp ON sp.id_pago_plazos = tbp.id
+        WHERE 
+            (sp.primer_pago_pagado = 0 OR
+             sp.segundo_pago_pagado = 0 OR
+             sp.tercer_pago_pagado = 0 OR
+             sp.cuarto_pago_pagado = 0 OR
+             sp.quinto_pago_pagado = 0 OR
+             sp.sexto_pago_pagado = 0 OR
+             sp.septimo_pago_pagado = 0 OR
+             sp.octavo_pago_pagado = 0 OR
+             sp.noveno_pago_pagado = 0 OR
+             sp.decimo_pago_pagado = 0 OR
+             sp.decimoprimer_pago_pagado = 0 OR
+             sp.decimosegundo_pago_pagado = 0)
+            AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
+            AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
+        ORDER BY s.fecha_fin_servicio ASC
+        """, nativeQuery = true)
+    List<Object[]> findServiciosPendientesPago(
+        @Param("fechaDesde") java.time.LocalDate fechaDesde,
+        @Param("fechaHasta") java.time.LocalDate fechaHasta
+    );
+
 }    

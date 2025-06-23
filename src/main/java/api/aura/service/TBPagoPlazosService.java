@@ -31,6 +31,7 @@ public class TBPagoPlazosService {
                 .map(pagoPlazo -> {
                     pagoPlazo.setNombre(pagoPlazoActualizado.getNombre());
                     pagoPlazo.setDescripcion(pagoPlazoActualizado.getDescripcion());
+                    pagoPlazo.setNumeroCuotas(pagoPlazoActualizado.getNumeroCuotas());
                     return pagoPlazosRepository.save(pagoPlazo);
                 })
                 .orElseThrow(() -> new RuntimeException("Pago plazo no encontrado con ID: " + id));

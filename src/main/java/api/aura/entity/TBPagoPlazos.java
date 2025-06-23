@@ -14,10 +14,11 @@ public class TBPagoPlazos {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
     @Column(length = 250)
     private String nombre;
 
     @Column(length = 250)
     private String descripcion;
+
+    private Integer numeroCuotas;
 }
