@@ -34,11 +34,17 @@ public class ServiciosPagosService {
         ServiciosPagos pagos = pagosOpt.get();
         List<CuotaServicioDTO> cuotas = new ArrayList<>();
 
-        // Crear cuotas para los 12 posibles pagos
+        // Obtener el número de cuotas desde la modalidad de pago
+        int numeroCuotas = 12;
+        if (pagos.getPagoPlazos() != null && pagos.getPagoPlazos().getNumeroCuotas() != null) {
+            numeroCuotas = pagos.getPagoPlazos().getNumeroCuotas();
+        }
+
+        // Crear cuotas solo hasta el número definido en la modalidad
         String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
                 "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
-        for (int i = 0; i < prefijos.length; i++) {
+        for (int i = 0; i < numeroCuotas && i < prefijos.length; i++) {
             try {
                 String prefijo = prefijos[i];
                 Field fechaField = ServiciosPagos.class.getDeclaredField(prefijo + "PagoFecha");
@@ -231,6 +237,9 @@ public class ServiciosPagosService {
             }
         }
 
+        // Helper para inicializar cuotas no usadas como pagadas
+        inicializarCuotasNoUsadasComoPagadas(serviciosPagos, numeroCuotas);
+
         return serviciosPagos;
     }
 
@@ -307,5 +316,20 @@ public class ServiciosPagosService {
         }
 
         throw new IllegalArgumentException("Número de cuota inválido: " + numero);
+    }
+
+    // Helper para inicializar cuotas no usadas como pagadas
+    private void inicializarCuotasNoUsadasComoPagadas(ServiciosPagos serviciosPagos, int numeroCuotas) {
+        String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
+                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
+        for (int i = numeroCuotas; i < 12; i++) {
+            try {
+                Field pagadoField = ServiciosPagos.class.getDeclaredField(prefijos[i] + "PagoPagado");
+                pagadoField.setAccessible(true);
+                pagadoField.set(serviciosPagos, true); // Marcar como pagado
+            } catch (Exception e) {
+                // Ignorar errores
+            }
+        }
     }
 }

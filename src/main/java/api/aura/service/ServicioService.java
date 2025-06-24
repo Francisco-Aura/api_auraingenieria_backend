@@ -20,6 +20,25 @@ public class ServicioService {
     private PuntoSuministroRepository puntoSuministroRepository;
 
     public Servicio guardarServicio(Servicio servicio) {
+        // Si es un nuevo servicio (sin ID) y tiene punto de suministro
+        if (servicio.getId() == null && servicio.getPuntoSuministro() != null && servicio.getFechaInicioServicio() != null) {
+            Integer puntoSuministroId = servicio.getPuntoSuministro().getId();
+            List<Servicio> serviciosAnteriores = servicioRepository.findByPuntoSuministroId(puntoSuministroId);
+            for (Servicio anterior : serviciosAnteriores) {
+                // Solo cerrar los que estén activos (sin fecha de fin o baja)
+                if ((anterior.getFechaFinServicio() == null || anterior.getFechaFinServicio().after(servicio.getFechaInicioServicio())) &&
+                    (anterior.getFechaBaja() == null)) {
+                    // Cerrar el anterior el día antes del nuevo inicio
+                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                    cal.setTime(servicio.getFechaInicioServicio());
+                    cal.add(java.util.Calendar.DATE, -1);
+                    java.sql.Date diaAnterior = new java.sql.Date(cal.getTimeInMillis());
+                    anterior.setFechaFinServicio(diaAnterior);
+                    anterior.setFechaBaja(diaAnterior);
+                    servicioRepository.save(anterior);
+                }
+            }
+        }
         return servicioRepository.save(servicio);
     }
 
