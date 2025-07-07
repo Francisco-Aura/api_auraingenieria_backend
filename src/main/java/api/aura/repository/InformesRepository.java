@@ -39,7 +39,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             potencia6 AS pot6,
             consumo_anual AS consumoAnual,
             exencion_impuesto_electricidad AS exencionIE,
-            autoconsumo AS autoconsumo,
+            contratos.autoconsumo AS autoconsumo,
             id_comercializadora_actual AS idComercializadoraActual,
             TRIM(ANT.nombre) AS comercializadoraActual,
             id_comercializadora_anterior AS idComercializadoraAnterior,

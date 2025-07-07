@@ -15,19 +15,20 @@ public class PuntosSuministrosCarteraDTO {
     private String provincia;
     private String cupsluz;
     private String cupsgas;
+    private String tarifaActual; // Tarifa del contrato actual
 
-    // Constructor específico para la consulta del repository findAllPuntosSuministro
+    // Constructor específico para la consulta del repository
+    // findAllPuntosSuministro
     public PuntosSuministrosCarteraDTO(
-        Integer id,
-        Integer idCliente,
-        String cliente,
-        String direccion,
-        String codigoPostal,
-        String poblacion,
-        String provincia,
-        String cupsluz,
-        String cupsgas
-    ) {
+            Integer id,
+            Integer idCliente,
+            String cliente,
+            String direccion,
+            String codigoPostal,
+            String poblacion,
+            String provincia,
+            String cupsluz,
+            String cupsgas) {
         this.id = id;
         this.idCliente = idCliente;
         this.cliente = cliente;
@@ -37,5 +38,30 @@ public class PuntosSuministrosCarteraDTO {
         this.provincia = provincia;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
+        this.tarifaActual = null; // Se establecerá en el repositorio
+    }
+
+    // Constructor con tarifa actual para la consulta con JOIN
+    public PuntosSuministrosCarteraDTO(
+            Integer id,
+            Integer idCliente,
+            String cliente,
+            String direccion,
+            String codigoPostal,
+            String poblacion,
+            String provincia,
+            String cupsluz,
+            String cupsgas,
+            String tarifaActual) {
+        this.id = id;
+        this.idCliente = idCliente;
+        this.cliente = cliente;
+        this.direccion = direccion;
+        this.codigoPostal = codigoPostal;
+        this.poblacion = poblacion;
+        this.provincia = provincia;
+        this.cupsluz = cupsluz;
+        this.cupsgas = cupsgas;
+        this.tarifaActual = tarifaActual;
     }
 }
