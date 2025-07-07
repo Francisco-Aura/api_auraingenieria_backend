@@ -41,6 +41,7 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                         AND (con.fechaBaja IS NULL OR con.fechaBaja = DATE('1900-01-01'))
                     LEFT JOIN TBTarifasLuz tl ON con.idTarifaLuz = tl.id
                     LEFT JOIN TBTarifasGas tg ON con.idTarifaGas = tg.id
+                    WHERE c.id IS NOT NULL
             """)
     List<PuntosSuministrosCarteraDTO> findAllPuntosSuministro();
 }
