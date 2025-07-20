@@ -26,14 +26,12 @@ public class PuntoSuministroController {
             return ResponseEntity.ok(guardado);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of(
-                "error", "Error de validación",
-                "mensaje", e.getMessage()
-            ));
+                    "error", "Error de validación",
+                    "mensaje", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "error", "Error interno del servidor",
-                "mensaje", e.getMessage()
-            ));
+                    "error", "Error interno del servidor",
+                    "mensaje", e.getMessage()));
         }
     }
 
@@ -59,6 +57,14 @@ public class PuntoSuministroController {
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<List<PuntoSuministro>> obtenerPorClienteId(@PathVariable Integer clienteId) {
         List<PuntoSuministro> puntos = puntoSuministroService.obtenerPorClienteId(clienteId);
+        return ResponseEntity.ok(puntos);
+    }
+
+    @GetMapping("/cliente/{clienteId}/cartera")
+    public ResponseEntity<List<PuntosSuministrosCarteraDTO>> obtenerCarteraPuntosSuministroPorCliente(
+            @PathVariable Integer clienteId) {
+        List<PuntosSuministrosCarteraDTO> puntos = puntoSuministroService
+                .obtenerCarteraPuntoSuministroPorCliente(clienteId);
         return ResponseEntity.ok(puntos);
     }
 

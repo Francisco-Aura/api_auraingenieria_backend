@@ -16,6 +16,13 @@ public class PuntosSuministrosCarteraDTO {
     private String cupsluz;
     private String cupsgas;
     private String tarifaActual; // Tarifa del contrato actual
+    // Potencias contratadas P1-P6
+    private Double potencia1;
+    private Double potencia2;
+    private Double potencia3;
+    private Double potencia4;
+    private Double potencia5;
+    private Double potencia6;
 
     // Constructor específico para la consulta del repository
     // findAllPuntosSuministro
@@ -39,6 +46,13 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
         this.tarifaActual = null; // Se establecerá en el repositorio
+        // Inicializar potencias como null
+        this.potencia1 = null;
+        this.potencia2 = null;
+        this.potencia3 = null;
+        this.potencia4 = null;
+        this.potencia5 = null;
+        this.potencia6 = null;
     }
 
     // Constructor con tarifa actual para la consulta con JOIN
@@ -63,5 +77,48 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
         this.tarifaActual = tarifaActual;
+        // Inicializar potencias como null
+        this.potencia1 = null;
+        this.potencia2 = null;
+        this.potencia3 = null;
+        this.potencia4 = null;
+        this.potencia5 = null;
+        this.potencia6 = null;
+    }
+
+    // Constructor completo con potencias para la consulta actualizada
+    public PuntosSuministrosCarteraDTO(
+            Integer id,
+            Integer idCliente,
+            String cliente,
+            String direccion,
+            String codigoPostal,
+            String poblacion,
+            String provincia,
+            String cupsluz,
+            String cupsgas,
+            String tarifaActual,
+            Double potencia1,
+            Double potencia2,
+            Double potencia3,
+            Double potencia4,
+            Double potencia5,
+            Double potencia6) {
+        this.id = id;
+        this.idCliente = idCliente;
+        this.cliente = cliente;
+        this.direccion = direccion;
+        this.codigoPostal = codigoPostal;
+        this.poblacion = poblacion;
+        this.provincia = provincia;
+        this.cupsluz = cupsluz;
+        this.cupsgas = cupsgas;
+        this.tarifaActual = tarifaActual;
+        this.potencia1 = potencia1;
+        this.potencia2 = potencia2;
+        this.potencia3 = potencia3;
+        this.potencia4 = potencia4;
+        this.potencia5 = potencia5;
+        this.potencia6 = potencia6;
     }
 }
