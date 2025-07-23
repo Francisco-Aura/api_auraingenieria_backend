@@ -35,6 +35,49 @@ public class ContratoService {
     public Contrato guardarContrato(Contrato contrato) {
         logger.info("Guardando contrato para cliente ID: {}", contrato.getCliente() != null ? contrato.getCliente().getId() : "null");
         
+        // Si el contrato tiene ID, es una actualización
+        if (contrato.getId() != null) {
+            logger.info("Actualizando contrato existente con ID: {}", contrato.getId());
+            
+            // Buscar el contrato existente
+            Optional<Contrato> contratoExistente = contratoRepository.findById(contrato.getId());
+            if (contratoExistente.isPresent()) {
+                Contrato contratoActual = contratoExistente.get();
+                
+                // Actualizar todos los campos explícitamente
+                contratoActual.setFecha(contrato.getFecha());
+                contratoActual.setFechaEnvio(contrato.getFechaEnvio());
+                contratoActual.setFechaInicio(contrato.getFechaInicio());
+                contratoActual.setFechaFin(contrato.getFechaFin());
+                contratoActual.setContrato(contrato.getContrato());
+                contratoActual.setIdTarifaLuz(contrato.getIdTarifaLuz());
+                contratoActual.setIdTarifaGas(contrato.getIdTarifaGas());
+                contratoActual.setPotencia1(contrato.getPotencia1());
+                contratoActual.setPotencia2(contrato.getPotencia2());
+                contratoActual.setPotencia3(contrato.getPotencia3());
+                contratoActual.setPotencia4(contrato.getPotencia4());
+                contratoActual.setPotencia5(contrato.getPotencia5());
+                contratoActual.setPotencia6(contrato.getPotencia6());
+                contratoActual.setConsumoAnual(contrato.getConsumoAnual());
+                contratoActual.setExencionImpuestoElectricidad(contrato.getExencionImpuestoElectricidad());
+                contratoActual.setIdComercializadoraActual(contrato.getIdComercializadoraActual());
+                contratoActual.setIdComercializadoraAnterior(contrato.getIdComercializadoraAnterior());
+                contratoActual.setAutoconsumo(contrato.getAutoconsumo());
+                contratoActual.setDenunciaContrato(contrato.getDenunciaContrato());
+                contratoActual.setFechaDenunciaContrato(contrato.getFechaDenunciaContrato());
+                contratoActual.setObservaciones(contrato.getObservaciones());
+                
+                logger.info("Campos del contrato actualizados. Guardando en base de datos...");
+                return contratoRepository.save(contratoActual);
+            } else {
+                logger.error("No se encontró el contrato con ID: {}", contrato.getId());
+                throw new IllegalArgumentException("No se encontró el contrato con ID: " + contrato.getId());
+            }
+        }
+        
+        // Si no tiene ID, es un contrato nuevo
+        logger.info("Creando nuevo contrato");
+        
         // Si el contrato tiene un cliente pero no está cargado completamente
         if (contrato.getCliente() != null && contrato.getCliente().getId() != null) {
             Optional<Cliente> clienteOpt = clienteRepository.findById(contrato.getCliente().getId());

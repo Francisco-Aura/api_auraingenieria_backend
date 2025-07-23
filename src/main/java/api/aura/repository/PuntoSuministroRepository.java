@@ -47,6 +47,13 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                     LEFT JOIN Contrato con ON ps.id = con.puntoSuministro.id
                         AND con.fechaFin > CURRENT_DATE
                         AND (con.fechaBaja IS NULL OR con.fechaBaja = DATE('1900-01-01'))
+                        AND con.id = (
+                            SELECT MAX(con2.id)
+                            FROM Contrato con2
+                            WHERE con2.puntoSuministro.id = ps.id
+                            AND con2.fechaFin > CURRENT_DATE
+                            AND (con2.fechaBaja IS NULL OR con2.fechaBaja = DATE('1900-01-01'))
+                        )
                     LEFT JOIN TBTarifasLuz tl ON con.idTarifaLuz = tl.id
                     LEFT JOIN TBTarifasGas tg ON con.idTarifaGas = tg.id
                     WHERE c.id IS NOT NULL
