@@ -6,6 +6,6 @@ deploy-back-release:
   only:
     - release
   script:
-    - echo "$SSH_PRIVATE_KEY_RELEASE" > key.pem
+    - echo "$SSH_PRIVATE_KEY_PRE" > key.pem
     - chmod 600 key.pem
     - ssh -o StrictHostKeyChecking=no -i key.pem babenza@5.34.148.92 'bash ~/deploy/backend/deploy-backend.sh'
