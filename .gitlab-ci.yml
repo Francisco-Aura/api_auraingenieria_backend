@@ -3,7 +3,7 @@ image: maven:3.9.6-eclipse-temurin-17
 stages:
   - deploy
 
-deploy_backend_pre:
+deploy_backend_PRE:
   stage: deploy
   only:
     - release # Solo se ejecuta en la rama release
