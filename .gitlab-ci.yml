@@ -9,4 +9,3 @@ deploy-backend-release:
     - echo "$SSH_PRIVATE_KEY_PRE" > key.pem
     - chmod 600 key.pem
     - ssh -o StrictHostKeyChecking=no -i key.pem babenza@5.34.148.92 'bash ~babenza/deploy_backend.sh'
-    
