@@ -3,7 +3,7 @@ image: maven:3.9.6-eclipse-temurin-17 # La imagen Docker que usarán tus trabajo
 stages:
   - deploy # Define las etapas de tu pipeline 
 
-deploy_backend:
+deploy_backend_PRO:
   stage: deploy
   only:    
     - main # Este trabajo solo se ejecutará cuando hagas push a la rama master ¡Cambiado de 'master' a 'main'!
