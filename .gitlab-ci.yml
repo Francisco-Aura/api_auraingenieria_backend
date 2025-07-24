@@ -1,12 +1,34 @@
+image: maven:3.9.6-eclipse-temurin-17
+
 stages:
   - deploy
 
-deploy-backend-release:
+deploy_backend_pre:
   stage: deploy
   only:
-    - release
+    - release # Solo se ejecuta en la rama release
   script:
-    - echo "$SSH_PRIVATE_KEY_PRE" > key.pem
-    - chmod 600 key.pem
-    - ssh -o StrictHostKeyChecking=no -i key.pem babenza@5.34.148.92 'bash ~babenza/deploy_backend.sh'
-    
+    # 1. Instalamos cliente SSH
+    - apt-get update -y && apt-get install -y openssh-client
+
+    # 2. Configuramos la clave SSH
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_PRE" > ~/.ssh/id_rsa_gitlab
+    - chmod 600 ~/.ssh/id_rsa_gitlab
+
+    # 3. Añadimos la IP de la Raspberry PRE al known_hosts
+    - ssh-keyscan 5.34.148.92 >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh/known_hosts
+
+    # 4. Compilamos el backend
+    - mvn clean package -DskipTests
+
+    # 5. Enviamos el JAR por SCP
+    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar
+
+    # 6. Ejecutamos el script remoto de despliegue
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 'bash /home/babenza/deploy_backend.sh'
+
+  cache:
+    paths:
+      - .m2/repository
