@@ -20,12 +20,14 @@ public interface ClienteRepository extends JpaRepository<Cliente, Integer> {
             CONCAT(c.direccion, ', ', c.poblacion, ', ', c.provincia),
             COUNT(ps.id),
             u.nombre,
-            c.nombreComercial
+            c.nombreComercial,
+            s.nombre
         )
         FROM Cliente c
         LEFT JOIN c.puntosSuministro ps
         LEFT JOIN c.usuario u
-        GROUP BY c.id, c.nombre, c.cif, c.direccion, c.poblacion, c.provincia, u.nombre, c.nombreComercial
+        LEFT JOIN TBSectores s ON c.codigoSector = s.id
+        GROUP BY c.id, c.nombre, c.cif, c.direccion, c.poblacion, c.provincia, u.nombre, c.nombreComercial, s.nombre
     """)
     List<ClienteCarteraDTO> obtenerCarteraClientes();
 }

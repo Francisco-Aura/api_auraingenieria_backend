@@ -12,9 +12,10 @@ public class ClienteCarteraDTO {
     private Long numeroPuntosSuministro;
     private String usuarioAsignado;
     private String nombreComercial;
+    private String nombreSector;
 
     // Constructor requerido por la consulta JPQL
-    public ClienteCarteraDTO(Integer idCliente, String nombre, String cif, String direccionFiscal, Long numeroPuntosSuministro, String usuarioAsignado, String nombreComercial) {
+    public ClienteCarteraDTO(Integer idCliente, String nombre, String cif, String direccionFiscal, Long numeroPuntosSuministro, String usuarioAsignado, String nombreComercial, String nombreSector) {
         this.idCliente = idCliente;
         this.nombre = nombre;
         this.cif = cif;
@@ -22,5 +23,6 @@ public class ClienteCarteraDTO {
         this.numeroPuntosSuministro = numeroPuntosSuministro;
         this.usuarioAsignado = usuarioAsignado;
         this.nombreComercial = nombreComercial;
+        this.nombreSector = nombreSector;
     }
 }
