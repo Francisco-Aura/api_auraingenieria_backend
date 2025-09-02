@@ -55,6 +55,18 @@ public class Servicio {
     @Column(length = 100)
     private String cups;
 
+    @Column
+    private Double importe;
+
+    @Column
+    private Double descuento;
+
+    @Column
+    private Double importeFinal;
+
+    @Column
+    private Integer idPagoPlazos;
+
     @Temporal(TemporalType.DATE)
     private Date fechaBaja;
 }

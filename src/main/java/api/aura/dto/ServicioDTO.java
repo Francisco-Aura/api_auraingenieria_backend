@@ -17,6 +17,10 @@ public class ServicioDTO {
     private Integer idComercializadora;
     private String observaciones;
     private String cups;
+    private Double importe;
+    private Double descuento;
+    private Double importeFinal;
+    private Integer idPagoPlazos;
     private Integer idCliente;
     private Integer idPuntoSuministro;
     private List<Boolean> pagos;
