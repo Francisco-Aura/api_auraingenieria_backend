@@ -89,4 +89,12 @@ public class Contrato {
 
     @Temporal(TemporalType.DATE)
     private Date fechaDenunciaContrato;
+
+    //Usuario para facturación online
+    @Column(length = 200)
+    private String userFO;
+
+    //Contraseña para facturación online
+    @Column(length = 200)
+    private String passwordFO;
 }
