@@ -19,7 +19,7 @@ public class TBPagoPlazosService {
     }
 
     public List<TBPagoPlazos> obtenerTodosLosPagosPlazos() {
-        return pagoPlazosRepository.findAll();
+        return pagoPlazosRepository.findAllByOrderByNumeroCuotasAsc();
     }
 
     public Optional<TBPagoPlazos> obtenerPagoPlazoPorId(Integer id) {

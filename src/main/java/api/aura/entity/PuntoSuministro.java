@@ -67,7 +67,7 @@ public class PuntoSuministro {
 
     private Integer propiedadContador;
 
-    @Column(length = 200)
+    @Column(length = 10000)
     private String observaciones;
 
     @ManyToOne

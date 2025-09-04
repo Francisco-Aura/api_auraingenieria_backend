@@ -52,6 +52,13 @@ public class ServicioService {
                 servicioActual.setIdComercializadora(servicio.getIdComercializadora());
                 servicioActual.setObservaciones(servicio.getObservaciones());
                 servicioActual.setCups(servicio.getCups());
+                servicioActual.setImporte(servicio.getImporte());
+                servicioActual.setDescuento(servicio.getDescuento());
+                servicioActual.setImporteFinal(servicio.getImporteFinal());
+                servicioActual.setIdPagoPlazos(servicio.getIdPagoPlazos());
+                
+                logger.info("Actualizando modalidad de pago: {} -> {}", 
+                    servicioActual.getIdPagoPlazos(), servicio.getIdPagoPlazos());
                 
                 logger.info("Campos del servicio actualizados. Guardando en base de datos...");
                 return servicioRepository.save(servicioActual);
@@ -127,6 +134,10 @@ public class ServicioService {
         nuevo.setIdComercializadora(original.getIdComercializadora());
         nuevo.setObservaciones(original.getObservaciones());
         nuevo.setCups(original.getCups());
+        nuevo.setImporte(original.getImporte());
+        nuevo.setDescuento(original.getDescuento());
+        nuevo.setImporteFinal(original.getImporteFinal());
+        nuevo.setIdPagoPlazos(original.getIdPagoPlazos());
         
         // Fechas: inicio hoy, fin +1 año
         java.sql.Date hoy = new java.sql.Date(System.currentTimeMillis());
@@ -157,6 +168,10 @@ public class ServicioService {
         dto.setIdProducto(servicio.getIdProducto());
         dto.setIdComercializadora(servicio.getIdComercializadora());
         dto.setObservaciones(servicio.getObservaciones());
+        dto.setImporte(servicio.getImporte());
+        dto.setDescuento(servicio.getDescuento());
+        dto.setImporteFinal(servicio.getImporteFinal());
+        dto.setIdPagoPlazos(servicio.getIdPagoPlazos());
         dto.setIdCliente(servicio.getCliente() != null ? servicio.getCliente().getId() : null);
         dto.setIdPuntoSuministro(servicio.getPuntoSuministro() != null ? servicio.getPuntoSuministro().getId() : null);
         // CUPS: lo traemos del punto de suministro si no está en el servicio

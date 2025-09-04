@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/tarifasLuz")
+@RequestMapping("/api/tarifas-luz")
 public class TBTarifasLuzController {
 
     @Autowired
