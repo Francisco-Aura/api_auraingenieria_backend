@@ -75,7 +75,7 @@ public class Contrato {
     @Column
     private Integer idComercializadoraAnterior;
 
-    @Column(length = 200)
+    @Column(length = 10000)
     private String observaciones;
 
     @Temporal(TemporalType.DATE)

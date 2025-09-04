@@ -49,7 +49,7 @@ public class Servicio {
     @Column
     private Integer idComercializadora;
 
-    @Column(length = 500)
+    @Column(length = 10000)
     private String observaciones;
 
     @Column(length = 100)
