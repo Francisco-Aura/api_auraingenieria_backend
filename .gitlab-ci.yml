@@ -1,32 +1,58 @@
-image: maven:3.9.6-eclipse-temurin-17 # La imagen Docker que usarán tus trabajos
+image: maven:3.9.6-eclipse-temurin-17 # Imagen base con Maven y Java 17
 
 stages:
-  - deploy # Define las etapas de tu pipeline 
+  - deploy
 
+# Despliegue en PRE (Rama release → Raspberry PRE)
+deploy_backend_PRE:
+  stage: deploy
+  only:
+    - release
+  script:
+    # 1. Configurar SSH para PRE
+    - apt-get update -y && apt-get install -y openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_PRE" > ~/.ssh/id_rsa_gitlab
+    - chmod 600 ~/.ssh/id_rsa_gitlab
+    - ssh-keyscan 5.34.148.92 >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh/known_hosts
+
+    # 2. Compilar proyecto
+    - mvn clean package -DskipTests
+
+    # 3. Copiar JAR a Raspberry PRE
+    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar
+
+    # 4. Ejecutar script de despliegue en PRE
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 'bash /home/babenza/deploy_backend.sh'
+
+  cache:
+    paths:
+      - .m2/repository
+
+# Despliegue en PRO (Rama main → Raspberry PRO)
 deploy_backend_PRO:
   stage: deploy
-  only:    
-    - main # Este trabajo solo se ejecutará cuando hagas push a la rama master ¡Cambiado de 'master' a 'main'!
+  only:
+    - main
   script:
-    # 1. Configurar SSH para que use la clave privada de la variable
-    - apt-get update -y && apt-get install -y openssh-client # Instala el cliente SSH si no está
+    # 1. Configurar SSH para PRO
+    - apt-get update -y && apt-get install -y openssh-client
     - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_gitlab # Escribe la clave privada en un archivo temporal
-    - chmod 600 ~/.ssh/id_rsa_gitlab # Asegura los permisos correctos
-    - ssh-keyscan 5.34.149.250 >> ~/.ssh/known_hosts # Añade la huella digital del servidor a known_hosts
-    - chmod 600 ~/.ssh/known_hosts # Asegura los permisos correctos
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_gitlab
+    - chmod 600 ~/.ssh/id_rsa_gitlab
+    - ssh-keyscan 5.34.149.250 >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh/known_hosts
 
-    # 2. Compilar el proyecto Spring Boot
-    - mvn clean package -DskipTests # Compila tu aplicación Spring Boot y crea el JAR
+    # 2. Compilar proyecto
+    - mvn clean package -DskipTests
 
-    # 3. Copiar el JAR a la Raspberry Pi usando SCP
-    # Usamos StrictHostKeyChecking=no y UserKnownHostsFile=/dev/null temporalmente para evitar problemas de known_hosts en el pipeline,
-    # aunque con ssh-keyscan ya deberíamos tenerlo cubierto. Lo más seguro es que ssh-keyscan funcione.
+    # 3. Copiar JAR a Raspberry PRO
     - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.149.250:/tmp/aura.jar
 
-    # 4. Ejecutar el script de despliegue en la Raspberry Pi usando SSH
+    # 4. Ejecutar script de despliegue en PRO
     - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.149.250 'bash /home/babenza/deploy_backend.sh'
 
   cache:
     paths:
-      - .m2/repository # Para cachear dependencias de Maven y acelerar builds futuros
+      - .m2/repository
