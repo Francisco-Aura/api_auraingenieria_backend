@@ -4,9 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.Date;
-import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
@@ -132,6 +130,47 @@ public class PuntoSuministro {
 
     @Column(name = "pass_monitorizacion", length = 255)
     private String passMonitorizacion;
+
+    // Campos de instalaciones - Batería de Condensadores
+    @Column(length = 10)
+    private String bateriaCondensadores; // SI/NO
+
+    @Column(length = 100)
+    private String potenciaBateria;
+
+    @Column(length = 100)
+    private String modeloBateria;
+
+    // Campos de instalaciones - Instalación Fotovoltaica
+    @Column(length = 10)
+    private String instalacionFV; // SI/NO
+
+    @Column(length = 100)
+    private String kwInversor;
+
+    @Column(length = 100)
+    private String kwPanelesSolares;
+
+    @ManyToOne
+    @JoinColumn(name = "TBmonitorizacion_id")
+    private AppMonitorizacion appMonitorizacion;
+
+    // Campos de instalaciones - Almacenamiento Energético
+    @Column(length = 10)
+    private String bateriaAlmacenamiento; // SI/NO
+
+    @Column(length = 100)
+    private String potenciaBateriaAlmacenamiento;
+
+    @Column(length = 10)
+    private String backup; // SI/NO
+
+    @Column(length = 10)
+    private String peaksaving; // SI/NO
+
+    @ManyToOne
+    @JoinColumn(name = "TBIntegracionSistemasFV_id")
+    private IntegracionSistemasFV integracionSistemasFV;
 
     /*
      * // Relación con servicios
