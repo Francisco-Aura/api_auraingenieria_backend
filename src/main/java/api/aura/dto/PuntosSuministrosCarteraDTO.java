@@ -2,6 +2,7 @@ package api.aura.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.Date;
 
 @Data
 @NoArgsConstructor // Constructor vacío para que Spring o frameworks puedan inicializar
@@ -23,6 +24,7 @@ public class PuntosSuministrosCarteraDTO {
     private Double potencia4;
     private Double potencia5;
     private Double potencia6;
+    private Date fechaBaja; // Fecha de baja del punto de suministro
 
     // Constructor específico para la consulta del repository
     // findAllPuntosSuministro
@@ -35,7 +37,8 @@ public class PuntosSuministrosCarteraDTO {
             String poblacion,
             String provincia,
             String cupsluz,
-            String cupsgas) {
+            String cupsgas,
+            Date fechaBaja) {
         this.id = id;
         this.idCliente = idCliente;
         this.cliente = cliente;
@@ -45,6 +48,7 @@ public class PuntosSuministrosCarteraDTO {
         this.provincia = provincia;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
+        this.fechaBaja = fechaBaja;
         this.tarifaActual = null; // Se establecerá en el repositorio
         // Inicializar potencias como null
         this.potencia1 = null;
@@ -66,6 +70,7 @@ public class PuntosSuministrosCarteraDTO {
             String provincia,
             String cupsluz,
             String cupsgas,
+            Date fechaBaja,
             String tarifaActual) {
         this.id = id;
         this.idCliente = idCliente;
@@ -76,6 +81,7 @@ public class PuntosSuministrosCarteraDTO {
         this.provincia = provincia;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
+        this.fechaBaja = fechaBaja;
         this.tarifaActual = tarifaActual;
         // Inicializar potencias como null
         this.potencia1 = null;
@@ -97,6 +103,7 @@ public class PuntosSuministrosCarteraDTO {
             String provincia,
             String cupsluz,
             String cupsgas,
+            Date fechaBaja,
             String tarifaActual,
             Double potencia1,
             Double potencia2,
@@ -113,6 +120,7 @@ public class PuntosSuministrosCarteraDTO {
         this.provincia = provincia;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
+        this.fechaBaja = fechaBaja;
         this.tarifaActual = tarifaActual;
         this.potencia1 = potencia1;
         this.potencia2 = potencia2;

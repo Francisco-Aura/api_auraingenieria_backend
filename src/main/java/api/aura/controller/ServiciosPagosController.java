@@ -94,4 +94,15 @@ public class ServiciosPagosController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @DeleteMapping("/servicio/{idServicio}")
+    public ResponseEntity<Void> eliminarPagosPorServicio(@PathVariable Integer idServicio) {
+        try {
+            serviciosPagosService.eliminarPagosPorServicio(idServicio);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            System.err.println("Error al eliminar pagos del servicio: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

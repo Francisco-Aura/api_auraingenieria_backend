@@ -184,4 +184,72 @@ public class InformesService {
         String sql = "UPDATE servicios_pagos SET " + campo + " = ? WHERE id_servicio = ?";
         jdbcTemplate.update(sql, pagado ? 1 : 0, idServicio);
     }
+
+    public List<ContratoVigenteDTO> obtenerContratosVigentes() {
+        List<Object[]> resultados = repository.findContratosVigentes();
+        return resultados.stream().map(this::mapToContratoVigenteDTO).collect(Collectors.toList());
+    }
+
+    private ContratoVigenteDTO mapToContratoVigenteDTO(Object[] row) {
+        ContratoVigenteDTO dto = new ContratoVigenteDTO();
+        dto.setCodigoContrato((Integer) row[0]);
+        dto.setFecha((Date) row[1]);
+        dto.setFechaEnvio((Date) row[2]);
+        dto.setFechaInicio((Date) row[3]);
+        dto.setFechaFin((Date) row[4]);
+        dto.setIdCliente((Integer) row[5]);
+        dto.setCliente((String) row[6]);
+        dto.setIdPuntoSuministro((Integer) row[7]);
+        dto.setCupsLuz((String) row[8]);
+        dto.setCupsGas((String) row[9]);
+        dto.setContrato((String) row[10]);
+        dto.setIdTarifaLuz((Integer) row[11]);
+        dto.setTarifaLuz((String) row[12]);
+        dto.setIdTarifaGas((Integer) row[13]);
+        dto.setTarifaGas((String) row[14]);
+        dto.setPotencia1((Double) row[15]);
+        dto.setPotencia2((Double) row[16]);
+        dto.setPotencia3((Double) row[17]);
+        dto.setPotencia4((Double) row[18]);
+        dto.setPotencia5((Double) row[19]);
+        dto.setPotencia6((Double) row[20]);
+        dto.setConsumoAnual((Double) row[21]);
+        dto.setExencionIE((Integer) row[22]);
+        dto.setAutoconsumo((Integer) row[23]);
+        dto.setIdComercializadoraActual((Integer) row[24]);
+        dto.setComercializadoraActual((String) row[25]);
+        dto.setIdComercializadoraAnterior((Integer) row[26]);
+        dto.setComercializadoraAnterior((String) row[27]);
+        dto.setObservaciones((String) row[28]);
+        return dto;
+    }
+
+    public List<ServicioVigenteDTO> obtenerServiciosVigentes(java.time.LocalDate fechaDesde, java.time.LocalDate fechaHasta) {
+        List<Object[]> resultados = repository.findServiciosVigentes(fechaDesde, fechaHasta);
+        return resultados.stream().map(this::mapToServicioVigenteDTO).collect(Collectors.toList());
+    }
+
+    private ServicioVigenteDTO mapToServicioVigenteDTO(Object[] row) {
+        ServicioVigenteDTO dto = new ServicioVigenteDTO();
+        dto.setIdServicio(Long.valueOf(row[0].toString()));
+        dto.setCliente((String) row[1]);
+        dto.setServicio((String) row[2]);
+        dto.setFechaInicioServicio((Date) row[3]);
+        dto.setFechaFinServicio((Date) row[4]);
+        dto.setFechaPago((Date) row[5]);
+        dto.setGestora((String) row[6]);
+        dto.setProducto((String) row[7]);
+        dto.setComercializadora((String) row[8]);
+        dto.setCups((String) row[9]);
+        dto.setImporte(row[10] != null ? java.math.BigDecimal.valueOf(((Number) row[10]).doubleValue()) : null);
+        dto.setDescuento(row[11] != null ? java.math.BigDecimal.valueOf(((Number) row[11]).doubleValue()) : null);
+        dto.setImporteFinal(row[12] != null ? java.math.BigDecimal.valueOf(((Number) row[12]).doubleValue()) : null);
+        dto.setMetodoPago((String) row[13]);
+        dto.setPagoPlazos((String) row[14]);
+        dto.setNumeroCuotas(toInt(row[15]));
+        dto.setObservaciones((String) row[16]);
+        dto.setEstadoVencimiento((String) row[17]);
+        dto.setEstadoPago((String) row[18]);
+        return dto;
+    }
 }

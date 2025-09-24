@@ -332,4 +332,11 @@ public class ServiciosPagosService {
             }
         }
     }
+
+    public void eliminarPagosPorServicio(Integer idServicio) {
+        Optional<ServiciosPagos> pagosOpt = serviciosPagosRepository.findByServicioId(idServicio);
+        if (pagosOpt.isPresent()) {
+            serviciosPagosRepository.delete(pagosOpt.get());
+        }
+    }
 }

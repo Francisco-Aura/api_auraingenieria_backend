@@ -76,4 +76,17 @@ public class InformesController {
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
         }
     }
+
+    @GetMapping("/contratos-vigentes")
+    public List<ContratoVigenteDTO> obtenerContratosVigentes() {
+        return servicio.obtenerContratosVigentes();
+    }
+
+    @GetMapping("/servicios-vigentes")
+    public List<ServicioVigenteDTO> obtenerServiciosVigentes(
+        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fechaDesde,
+        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fechaHasta
+    ) {
+        return servicio.obtenerServiciosVigentes(fechaDesde, fechaHasta);
+    }
 }

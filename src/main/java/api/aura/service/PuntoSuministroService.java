@@ -180,7 +180,20 @@ public class PuntoSuministroService {
     }
 
     public List<PuntosSuministrosCarteraDTO> obtenerCarteraPuntoSuministro() {
-        return puntoSuministroRepository.findAllPuntosSuministro();
+        List<PuntosSuministrosCarteraDTO> resultado = puntoSuministroRepository.findAllPuntosSuministro();
+        
+        // Debug específico para el punto problemático
+        resultado.stream()
+            .filter(p -> p.getId() == 44413)
+            .forEach(p -> {
+                System.out.println("=== DEBUG PUNTO 44413 ===");
+                System.out.println("ID: " + p.getId());
+                System.out.println("Cliente: " + p.getCliente());
+                System.out.println("TarifaActual: " + p.getTarifaActual());
+                System.out.println("=========================");
+            });
+        
+        return resultado;
     }
 
     public List<PuntosSuministrosCarteraDTO> obtenerCarteraPuntoSuministroPorCliente(Integer clienteId) {

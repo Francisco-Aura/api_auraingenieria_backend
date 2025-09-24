@@ -55,7 +55,13 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
         WHERE 
             (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL) 
-            AND (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
+            AND (
+                -- Contratos próximos a vencer (30 días antes hasta 90 días después)
+                (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
+                OR
+                -- Contratos vencidos de los últimos 3 meses que no tengan renovación
+                (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AND CURDATE())
+            )
         ORDER BY 
             fecha_fin ASC
         """, nativeQuery = true)    
@@ -136,6 +142,105 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
         ORDER BY s.fecha_fin_servicio ASC
         """, nativeQuery = true)
     List<Object[]> findServiciosPendientesPago(
+        @Param("fechaDesde") java.time.LocalDate fechaDesde,
+        @Param("fechaHasta") java.time.LocalDate fechaHasta
+    );
+
+    @Query(value = """
+        SELECT 
+            contratos.id AS codigoContrato,
+            contratos.fecha,
+            contratos.fecha_envio,
+            contratos.fecha_inicio,
+            contratos.fecha_fin,
+            contratos.id_cliente AS idCliente,
+            TRIM(clientes.nombre) AS cliente,
+            punto_suministro.ID AS idPuntoSuministro,
+            TRIM(punto_suministro.CUPSluz) AS cupsLuz,
+            TRIM(punto_suministro.CUPSgas) AS cupsGas,
+            TRIM(contrato) AS contrato,
+            tbtarifas_luz.ID AS idTarifaLuz,
+            TRIM(tbtarifas_luz.nombre) AS tarifaLuz,
+            tbtarifas_gas.ID AS idTarifaGas,
+            TRIM(tbtarifas_gas.nombre) AS tarifaGas,
+            potencia1,
+            potencia2,
+            potencia3,
+            potencia4,
+            potencia5,
+            potencia6,
+            consumo_anual AS consumoAnual,
+            exencion_impuesto_electricidad AS exencionIE,
+            contratos.autoconsumo AS autoconsumo,
+            id_comercializadora_actual AS idComercializadoraActual,
+            TRIM(ACT.nombre) AS comercializadoraActual,
+            id_comercializadora_anterior AS idComercializadoraAnterior,
+            TRIM(ANT.nombre) AS comercializadoraAnterior,
+            TRIM(contratos.observaciones) AS observaciones
+        FROM 
+            contratos
+            JOIN punto_suministro ON contratos.id_punto_suministro = punto_suministro.ID
+            JOIN tbtarifas_gas ON contratos.id_tarifa_gas = tbtarifas_gas.ID
+            JOIN tbtarifas_luz ON contratos.id_tarifa_luz = tbtarifas_luz.ID
+            JOIN clientes ON contratos.id_cliente = clientes.ID
+            LEFT JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
+            LEFT JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
+        WHERE 
+            (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL) 
+            AND contratos.fecha_fin > CURDATE()
+        ORDER BY 
+            fecha_fin ASC
+        """, nativeQuery = true)    
+    List<Object[]> findContratosVigentes();
+
+    @Query(value = """
+        SELECT 
+            s.id AS idServicio,
+            c.nombre AS cliente,
+            s.descripcion AS servicio,
+            s.fecha_inicio_servicio AS fechaInicioServicio,
+            s.fecha_fin_servicio AS fechaFinServicio,
+            s.fecha_pago AS fechaPago,
+            tg.nombre AS gestora,
+            tp.nombre AS producto,
+            tc.nombre AS comercializadora,
+            s.cups,
+            s.importe,
+            s.descuento,
+            s.importe_final AS importeFinal,
+            tmp.nombre AS metodoPago,
+            tpp.nombre AS pagoPlazos,
+            tpp.numero_cuotas AS numeroCuotas,
+            s.observaciones,
+            CASE 
+                WHEN s.fecha_fin_servicio < CURDATE() THEN 'Vencido'
+                WHEN s.fecha_fin_servicio <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'Próximo a vencer'
+                ELSE 'Vigente'
+            END AS estadoVencimiento,
+            CASE
+                WHEN sp.id IS NULL THEN 'Sin plan de pagos'
+                WHEN (sp.primer_pago_pagado = 0 OR sp.segundo_pago_pagado = 0 OR sp.tercer_pago_pagado = 0 OR
+                      sp.cuarto_pago_pagado = 0 OR sp.quinto_pago_pagado = 0 OR sp.sexto_pago_pagado = 0 OR
+                      sp.septimo_pago_pagado = 0 OR sp.octavo_pago_pagado = 0 OR sp.noveno_pago_pagado = 0 OR
+                      sp.decimo_pago_pagado = 0 OR sp.decimoprimer_pago_pagado = 0 OR sp.decimosegundo_pago_pagado = 0)
+                THEN 'Pendiente'
+                ELSE 'Pagado'
+            END AS estadoPago
+        FROM servicios s
+        INNER JOIN clientes c ON s.id_cliente = c.id
+        LEFT JOIN servicios_pagos sp ON sp.id_servicio = s.id
+        LEFT JOIN tbgestoras tg ON s.id_gestora = tg.id
+        LEFT JOIN tbproductos tp ON s.id_producto = tp.id
+        LEFT JOIN tbcomercializadoras tc ON s.id_comercializadora = tc.id
+        LEFT JOIN tbmetodo_pago tmp ON sp.id_metodo_pago = tmp.id
+        LEFT JOIN tbpago_plazos tpp ON sp.id_pago_plazos = tpp.id
+        WHERE 
+            (s.fecha_baja IS NULL OR s.fecha_baja = '0001-01-01')
+            AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
+            AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
+        ORDER BY s.fecha_fin_servicio ASC
+        """, nativeQuery = true)
+    List<Object[]> findServiciosVigentes(
         @Param("fechaDesde") java.time.LocalDate fechaDesde,
         @Param("fechaHasta") java.time.LocalDate fechaHasta
     );

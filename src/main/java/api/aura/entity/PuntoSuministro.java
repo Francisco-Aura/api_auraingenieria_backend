@@ -50,6 +50,7 @@ public class PuntoSuministro {
     private String CUPSgas;
 
     @Temporal(TemporalType.DATE)
+    @JsonProperty("fechaBaja")
     private Date fechaBaja;
 
     @Temporal(TemporalType.DATE)
