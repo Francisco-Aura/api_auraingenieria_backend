@@ -36,6 +36,11 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                             WHEN ps.CUPSgas IS NOT NULL AND ps.CUPSgas != '' AND tg.nombre IS NOT NULL AND tg.nombre != 'Sin Tarifa' THEN tg.nombre
                             ELSE NULL
                         END,
+                        (
+                            SELECT MAX(con3.fechaFin)
+                            FROM Contrato con3
+                            WHERE con3.puntoSuministro.id = ps.id
+                        ),
                         con.potencia1,
                         con.potencia2,
                         con.potencia3,
@@ -82,6 +87,11 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                             WHEN ps.CUPSgas IS NOT NULL AND ps.CUPSgas != '' AND tg.nombre IS NOT NULL AND tg.nombre != 'Sin Tarifa' THEN tg.nombre
                             ELSE NULL
                         END,
+                        (
+                            SELECT MAX(con3.fechaFin)
+                            FROM Contrato con3
+                            WHERE con3.puntoSuministro.id = ps.id
+                        ),
                         con.potencia1,
                         con.potencia2,
                         con.potencia3,

@@ -45,13 +45,6 @@ public class PuntoSuministroController {
     public ResponseEntity<List<PuntosSuministrosCarteraDTO>> obtenerCarteraPuntosSuministro() {
         List<PuntosSuministrosCarteraDTO> puntos = puntoSuministroService.obtenerCarteraPuntoSuministro();
         
-        // Debug: verificar tarifas para JUAN HERNANDEZ GARCIA
-        puntos.stream()
-            .filter(p -> p.getCliente() != null && p.getCliente().contains("JUAN HERNANDEZ GARCIA"))
-            .forEach(p -> System.out.println("DEBUG TARIFA: Punto ID=" + p.getId() + 
-                ", Cliente=" + p.getCliente() + 
-                ", TarifaActual=" + p.getTarifaActual()));
-        
         return ResponseEntity.ok(puntos);
     }
 

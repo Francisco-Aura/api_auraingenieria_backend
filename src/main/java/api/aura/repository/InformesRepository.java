@@ -41,9 +41,9 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             exencion_impuesto_electricidad AS exencionIE,
             contratos.autoconsumo AS autoconsumo,
             id_comercializadora_actual AS idComercializadoraActual,
-            TRIM(ANT.nombre) AS comercializadoraActual,
+            TRIM(ACT.nombre) AS comercializadoraActual,
             id_comercializadora_anterior AS idComercializadoraAnterior,
-            TRIM(ACT.nombre) AS comercializadoraAnterior,
+            TRIM(ANT.nombre) AS comercializadoraAnterior,
             TRIM(contratos.observaciones) AS observaciones
         FROM 
             contratos
@@ -91,9 +91,54 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
         SELECT 
             s.id AS idServicio,
             c.nombre AS cliente,
-            s.descripcion AS servicio,
-            s.fecha_fin_servicio AS fechaVencimiento,
+            tg.nombre AS gestora,
+            COALESCE(s.cups, ps.CUPSluz, ps.CUPSgas) AS cups,
+            CASE 
+                WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN sp.primer_pago_fecha
+                WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN sp.segundo_pago_fecha
+                WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN sp.tercer_pago_fecha
+                WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN sp.cuarto_pago_fecha
+                WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN sp.quinto_pago_fecha
+                WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN sp.sexto_pago_fecha
+                WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN sp.septimo_pago_fecha
+                WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN sp.octavo_pago_fecha
+                WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN sp.noveno_pago_fecha
+                WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN sp.decimo_pago_fecha
+                WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN sp.decimoprimer_pago_fecha
+                WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN sp.decimosegundo_pago_fecha
+                ELSE NULL
+            END AS fechaSiguientePago,
             sp.importe_final AS importeTotal,
+            CASE 
+                WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN 1
+                WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN 2
+                WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN 3
+                WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN 4
+                WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN 5
+                WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN 6
+                WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN 7
+                WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN 8
+                WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN 9
+                WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN 10
+                WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN 11
+                WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN 12
+                ELSE NULL
+            END AS siguientePagoNumero,
+            CASE 
+                WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN sp.primer_pago_importe
+                WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN sp.segundo_pago_importe
+                WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN sp.tercer_pago_importe
+                WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN sp.cuarto_pago_importe
+                WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN sp.quinto_pago_importe
+                WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN sp.sexto_pago_importe
+                WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN sp.septimo_pago_importe
+                WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN sp.octavo_pago_importe
+                WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN sp.noveno_pago_importe
+                WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN sp.decimo_pago_importe
+                WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN sp.decimoprimer_pago_importe
+                WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN sp.decimosegundo_pago_importe
+                ELSE NULL
+            END AS importeSiguientePago,
             sp.primer_pago_pagado,
             sp.segundo_pago_pagado,
             sp.tercer_pago_pagado,
@@ -106,16 +151,22 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             sp.decimo_pago_pagado,
             sp.decimoprimer_pago_pagado,
             sp.decimosegundo_pago_pagado,
-            CASE 
-                WHEN s.fecha_fin_servicio < CURDATE() THEN 'Vencido'
-                WHEN s.fecha_fin_servicio <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'Próximo a vencer'
-                ELSE 'Pendiente'
-            END AS estadoVencimiento,
             CASE
-                WHEN (sp.primer_pago_pagado = 0 OR sp.segundo_pago_pagado = 0 OR sp.tercer_pago_pagado = 0 OR
-                      sp.cuarto_pago_pagado = 0 OR sp.quinto_pago_pagado = 0 OR sp.sexto_pago_pagado = 0 OR
-                      sp.septimo_pago_pagado = 0 OR sp.octavo_pago_pagado = 0 OR sp.noveno_pago_pagado = 0 OR
-                      sp.decimo_pago_pagado = 0 OR sp.decimoprimer_pago_pagado = 0 OR sp.decimosegundo_pago_pagado = 0)
+                WHEN EXISTS (
+                    SELECT 1 WHERE 
+                    (COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0) OR
+                    (COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0)
+                )
                 THEN 'Pendiente'
                 ELSE 'Pagado'
             END AS estadoPago,
@@ -124,22 +175,25 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
         INNER JOIN clientes c ON s.id_cliente = c.id
         INNER JOIN servicios_pagos sp ON sp.id_servicio = s.id
         INNER JOIN tbpago_plazos tbp ON sp.id_pago_plazos = tbp.id
+        LEFT JOIN tbgestoras tg ON s.id_gestora = tg.id
+        LEFT JOIN punto_suministro ps ON s.id_punto_suministro = ps.id
         WHERE 
-            (sp.primer_pago_pagado = 0 OR
-             sp.segundo_pago_pagado = 0 OR
-             sp.tercer_pago_pagado = 0 OR
-             sp.cuarto_pago_pagado = 0 OR
-             sp.quinto_pago_pagado = 0 OR
-             sp.sexto_pago_pagado = 0 OR
-             sp.septimo_pago_pagado = 0 OR
-             sp.octavo_pago_pagado = 0 OR
-             sp.noveno_pago_pagado = 0 OR
-             sp.decimo_pago_pagado = 0 OR
-             sp.decimoprimer_pago_pagado = 0 OR
-             sp.decimosegundo_pago_pagado = 0)
+            ((COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0) OR
+             (COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0) OR
+             (COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0) OR
+             (COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0) OR
+             (COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0) OR
+             (COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0) OR
+             (COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0) OR
+             (COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0) OR
+             (COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0) OR
+             (COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0) OR
+             (COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0) OR
+             (COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0))
+            AND (ps.fecha_baja IS NULL OR ps.fecha_baja = '0001-01-01')
             AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
             AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
-        ORDER BY s.fecha_fin_servicio ASC
+        ORDER BY fechaSiguientePago ASC
         """, nativeQuery = true)
     List<Object[]> findServiciosPendientesPago(
         @Param("fechaDesde") java.time.LocalDate fechaDesde,

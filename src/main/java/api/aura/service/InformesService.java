@@ -137,32 +137,81 @@ public class InformesService {
 
     public List<ServicioPendientePagoDTO> obtenerServiciosPendientesPago(java.time.LocalDate fechaDesde, java.time.LocalDate fechaHasta) {
         List<Object[]> resultados = repository.findServiciosPendientesPago(fechaDesde, fechaHasta);
-        return resultados.stream().map(this::mapToServicioPendientePagoDTO).collect(Collectors.toList());
+        List<ServicioPendientePagoDTO> lista = resultados.stream().map(this::mapToServicioPendientePagoDTO).collect(Collectors.toList());
+        
+        
+        return lista;
     }
+
 
     private ServicioPendientePagoDTO mapToServicioPendientePagoDTO(Object[] row) {
         ServicioPendientePagoDTO dto = new ServicioPendientePagoDTO();
+        
         dto.setIdServicio(Long.valueOf(row[0].toString()));
         dto.setCliente((String) row[1]);
-        dto.setServicio((String) row[2]);
-        dto.setFechaVencimiento((java.sql.Date) row[3] != null ? ((java.sql.Date) row[3]).toLocalDate() : null);
-        dto.setImporteTotal(row[4] != null ? java.math.BigDecimal.valueOf(((Number) row[4]).doubleValue()) : null);
-        dto.setPrimerPagoPagado(toInt(row[5]));
-        dto.setSegundoPagoPagado(toInt(row[6]));
-        dto.setTercerPagoPagado(toInt(row[7]));
-        dto.setCuartoPagoPagado(toInt(row[8]));
-        dto.setQuintoPagoPagado(toInt(row[9]));
-        dto.setSextoPagoPagado(toInt(row[10]));
-        dto.setSeptimoPagoPagado(toInt(row[11]));
-        dto.setOctavoPagoPagado(toInt(row[12]));
-        dto.setNovenoPagoPagado(toInt(row[13]));
-        dto.setDecimoPagoPagado(toInt(row[14]));
-        dto.setDecimoprimerPagoPagado(toInt(row[15]));
-        dto.setDecimosegundoPagoPagado(toInt(row[16]));
-        dto.setEstadoVencimiento((String) row[17]);
-        dto.setEstadoPago((String) row[18]);
-        dto.setNumeroCuotas(toInt(row[19]));
+        dto.setGestora((String) row[2]);
+        dto.setCups((String) row[3]);
+        
+        // Mapear fecha del siguiente pago
+        dto.setFechaSiguientePago((java.sql.Date) row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null);
+        
+        dto.setImporteTotal(row[5] != null ? java.math.BigDecimal.valueOf(((Number) row[5]).doubleValue()) : null);
+        dto.setSiguientePagoNumero(toInt(row[6]));
+        dto.setImporteCuotaPendiente(row[7] != null ? java.math.BigDecimal.valueOf(((Number) row[7]).doubleValue()) : null);
+        
+        // Mapear estados de pago (indices 8-19)
+        dto.setPrimerPagoPagado(toInt(row[8]));
+        dto.setSegundoPagoPagado(toInt(row[9]));
+        dto.setTercerPagoPagado(toInt(row[10]));
+        dto.setCuartoPagoPagado(toInt(row[11]));
+        dto.setQuintoPagoPagado(toInt(row[12]));
+        dto.setSextoPagoPagado(toInt(row[13]));
+        dto.setSeptimoPagoPagado(toInt(row[14]));
+        dto.setOctavoPagoPagado(toInt(row[15]));
+        dto.setNovenoPagoPagado(toInt(row[16]));
+        dto.setDecimoPagoPagado(toInt(row[17]));
+        dto.setDecimoprimerPagoPagado(toInt(row[18]));
+        dto.setDecimosegundoPagoPagado(toInt(row[19]));
+        
+        dto.setEstadoPago((String) row[20]);
+        dto.setNumeroCuotas(toInt(row[21]));
+        
+        // Calcular dinámicamente el siguiente pago pendiente si no viene en la consulta
+        if (dto.getSiguientePagoNumero() == null) {
+            dto.setSiguientePagoNumero(calcularSiguientePagoVencido(dto.getIdServicio()));
+        }
+        
         return dto;
+    }
+    
+    private Integer calcularSiguientePagoVencido(Long idServicio) {
+        String sql = """
+            SELECT 
+                CASE 
+                    WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN 1
+                    WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN 2
+                    WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN 3
+                    WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN 4
+                    WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN 5
+                    WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN 6
+                    WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN 7
+                    WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN 8
+                    WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN 9
+                    WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN 10
+                    WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN 11
+                    WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN 12
+                    ELSE NULL
+                END AS siguientePagoNumero
+            FROM servicios_pagos sp
+            WHERE sp.id_servicio = ?
+            """;
+        
+        try {
+            return jdbcTemplate.queryForObject(sql, Integer.class, idServicio);
+        } catch (Exception e) {
+            System.out.println("Error calculando siguiente pago para servicio " + idServicio + ": " + e.getMessage());
+            return null;
+        }
     }
 
     public void actualizarPagoParcial(Long idServicio, int numeroPago, boolean pagado) {
@@ -183,6 +232,43 @@ public class InformesService {
         };
         String sql = "UPDATE servicios_pagos SET " + campo + " = ? WHERE id_servicio = ?";
         jdbcTemplate.update(sql, pagado ? 1 : 0, idServicio);
+    }
+
+    public void marcarSiguientePagoPendiente(Long idServicio) {
+        
+        // Obtener el siguiente pago pendiente
+        String sql = """
+            SELECT 
+                CASE 
+                    WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN 1
+                    WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN 2
+                    WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN 3
+                    WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN 4
+                    WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN 5
+                    WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN 6
+                    WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN 7
+                    WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN 8
+                    WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN 9
+                    WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN 10
+                    WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN 11
+                    WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN 12
+                    ELSE NULL
+                END AS siguientePagoNumero
+            FROM servicios_pagos sp
+            WHERE sp.id_servicio = ?
+            """;
+        
+        try {
+            Integer siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio);
+            
+            if (siguientePago != null) {
+                actualizarPagoParcial(idServicio, siguientePago, true);
+            } else {
+                throw new RuntimeException("No hay pagos pendientes para este servicio");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error al marcar el siguiente pago: " + e.getMessage());
+        }
     }
 
     public List<ContratoVigenteDTO> obtenerContratosVigentes() {

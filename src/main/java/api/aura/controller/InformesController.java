@@ -77,6 +77,16 @@ public class InformesController {
         }
     }
 
+    @PutMapping("/servicios-pendientes-pago/marcar-siguiente-pago/{idServicio}")
+    public ResponseEntity<?> marcarSiguientePagoPendiente(@PathVariable Long idServicio) {
+        try {
+            servicio.marcarSiguientePagoPendiente(idServicio);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Siguiente pago marcado como pagado correctamente"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @GetMapping("/contratos-vigentes")
     public List<ContratoVigenteDTO> obtenerContratosVigentes() {
         return servicio.obtenerContratosVigentes();

@@ -9,8 +9,11 @@ import api.aura.repository.TipoComunicacionRepository;
 import api.aura.repository.PropiedadRepository;
 import api.aura.repository.AppMonitorizacionRepository;
 import api.aura.repository.IntegracionSistemasFVRepository;
+import api.aura.repository.ContratoRepository;
+import api.aura.entity.Contrato;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,29 +36,13 @@ public class PuntoSuministroService {
     private AppMonitorizacionRepository appMonitorizacionRepository;
     @Autowired
     private IntegracionSistemasFVRepository integracionSistemasFVRepository;
+    
+    @Autowired
+    private ContratoRepository contratoRepository;
 
+    @Transactional
     public PuntoSuministro guardarPuntoSuministro(PuntoSuministro puntoSuministro) {
         try {
-            System.out.println("=== DEBUGGING PUNTO SUMINISTRO SAVE ===");
-            System.out.println("CUPSluz received: " + puntoSuministro.getCUPSluz());
-            System.out.println("CUPSgas received: " + puntoSuministro.getCUPSgas());
-            
-            // DEBUG: Campos de instalaciones
-            System.out.println("=== INSTALACIONES DEBUG ===");
-            System.out.println("Batería Condensadores: " + puntoSuministro.getBateriaCondensadores());
-            System.out.println("Potencia Batería: " + puntoSuministro.getPotenciaBateria());
-            System.out.println("Modelo Batería: " + puntoSuministro.getModeloBateria());
-            System.out.println("Instalación FV: " + puntoSuministro.getInstalacionFV());
-            System.out.println("KW Inversor: " + puntoSuministro.getKwInversor());
-            System.out.println("KW Paneles: " + puntoSuministro.getKwPanelesSolares());
-            System.out.println("Batería Almacenamiento: " + puntoSuministro.getBateriaAlmacenamiento());
-            System.out.println("Potencia Batería Almacenamiento: " + puntoSuministro.getPotenciaBateriaAlmacenamiento());
-            System.out.println("Backup: " + puntoSuministro.getBackup());
-            System.out.println("Peaksaving: " + puntoSuministro.getPeaksaving());
-            System.out.println("AppMonitorizacion ID: " + (puntoSuministro.getAppMonitorizacion() != null ? puntoSuministro.getAppMonitorizacion().getId() : "null"));
-            System.out.println("IntegracionSistemasFV ID: " + (puntoSuministro.getIntegracionSistemasFV() != null ? puntoSuministro.getIntegracionSistemasFV().getId() : "null"));
-            System.out.println("================================");
-
             // Validar campos obligatorios
             if (puntoSuministro.getDireccion() == null || puntoSuministro.getDireccion().trim().isEmpty() ||
                     puntoSuministro.getCodigoPostal() == null || puntoSuministro.getCodigoPostal().trim().isEmpty() ||
@@ -167,6 +154,9 @@ public class PuntoSuministroService {
             System.out.println("  Batería Almacenamiento: " + saved.getBateriaAlmacenamiento());
             System.out.println("===============================");
             
+            // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto de suministro
+            sincronizarContratosConPuntoSuministro(saved);
+            
             return saved;
         } catch (Exception e) {
             System.out.println("ERROR al guardar punto suministro: " + e.getMessage());
@@ -182,16 +172,6 @@ public class PuntoSuministroService {
     public List<PuntosSuministrosCarteraDTO> obtenerCarteraPuntoSuministro() {
         List<PuntosSuministrosCarteraDTO> resultado = puntoSuministroRepository.findAllPuntosSuministro();
         
-        // Debug específico para el punto problemático
-        resultado.stream()
-            .filter(p -> p.getId() == 44413)
-            .forEach(p -> {
-                System.out.println("=== DEBUG PUNTO 44413 ===");
-                System.out.println("ID: " + p.getId());
-                System.out.println("Cliente: " + p.getCliente());
-                System.out.println("TarifaActual: " + p.getTarifaActual());
-                System.out.println("=========================");
-            });
         
         return resultado;
     }
@@ -210,5 +190,60 @@ public class PuntoSuministroService {
 
     public void eliminarPorId(Integer id) {
         puntoSuministroRepository.deleteById(id);
+    }
+    
+    /**
+     * Sincroniza todos los contratos asociados a un punto de suministro
+     * con los valores de exención de impuesto eléctrico y autoconsumo del punto.
+     * 
+     * @param puntoSuministro El punto de suministro actualizado
+     */
+    private void sincronizarContratosConPuntoSuministro(PuntoSuministro puntoSuministro) {
+        try {
+            System.out.println("=== SINCRONIZACIÓN CONTRATOS ===");
+            System.out.println("Punto Suministro ID: " + puntoSuministro.getId());
+            System.out.println("Exención Impuesto Eléctrico: " + puntoSuministro.getExencionImpuestoElectrico());
+            System.out.println("Autoconsumo: " + puntoSuministro.getAutoconsumo());
+            
+            // Buscar todos los contratos asociados a este punto de suministro
+            List<Contrato> contratos = contratoRepository.findByPuntoSuministroId(puntoSuministro.getId());
+            
+            System.out.println("Contratos encontrados: " + contratos.size());
+            
+            // Actualizar cada contrato con los valores del punto de suministro
+            for (Contrato contrato : contratos) {
+                System.out.println("Actualizando contrato ID: " + contrato.getId() + 
+                    " - Contrato: " + contrato.getContrato());
+                
+                // Sincronizar exención de impuesto eléctrico (convertir Boolean a Integer)
+                contrato.setExencionImpuestoElectricidad(
+                    puntoSuministro.getExencionImpuestoElectrico() != null && puntoSuministro.getExencionImpuestoElectrico() ? 1 : 0
+                );
+                
+                // Sincronizar autoconsumo (convertir String a Integer)
+                // Si el campo tiene cualquier valor de autoconsumo, entonces es autoconsumo activo
+                boolean tieneAutoconsumo = puntoSuministro.getAutoconsumo() != null && 
+                    !puntoSuministro.getAutoconsumo().trim().isEmpty();
+                contrato.setAutoconsumo(tieneAutoconsumo ? 1 : 0);
+                
+                System.out.println("  - Exención actualizada a: " + contrato.getExencionImpuestoElectricidad());
+                System.out.println("  - Autoconsumo actualizado a: " + contrato.getAutoconsumo());
+            }
+            
+            // Guardar todos los contratos actualizados
+            if (!contratos.isEmpty()) {
+                contratoRepository.saveAll(contratos);
+                System.out.println("Contratos sincronizados exitosamente: " + contratos.size());
+            } else {
+                System.out.println("No hay contratos para sincronizar");
+            }
+            
+            System.out.println("===============================");
+            
+        } catch (Exception e) {
+            System.out.println("ERROR al sincronizar contratos: " + e.getMessage());
+            e.printStackTrace();
+            // No lanzar excepción para no afectar el guardado del punto de suministro
+        }
     }
 }

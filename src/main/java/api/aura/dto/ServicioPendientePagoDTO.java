@@ -8,9 +8,12 @@ import java.time.LocalDate;
 public class ServicioPendientePagoDTO {
     private Long idServicio;
     private String cliente;
-    private String servicio;
-    private LocalDate fechaVencimiento;
+    private String gestora;
+    private String cups;
+    private LocalDate fechaSiguientePago;
     private BigDecimal importeTotal;
+    private Integer siguientePagoNumero;
+    private BigDecimal importeCuotaPendiente;
     
     // Cuotas 1-6 (ya existentes)
     private Integer primerPagoPagado;
@@ -28,7 +31,6 @@ public class ServicioPendientePagoDTO {
     private Integer decimoprimerPagoPagado;
     private Integer decimosegundoPagoPagado;
     
-    private String estadoVencimiento;
     private String estadoPago;
     private Integer numeroCuotas;
 }

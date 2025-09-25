@@ -162,18 +162,8 @@ public class ContratoController {
 
     @GetMapping("/punto-suministro/{puntoSuministroId}")
     public ResponseEntity<List<Contrato>> obtenerPorPuntoSuministroId(@PathVariable Integer puntoSuministroId) {
-        System.out.println("=== DEBUG CONTRATOS PARA PUNTO " + puntoSuministroId + " ===");
+        
         List<Contrato> contratos = contratoService.obtenerPorPuntoSuministroId(puntoSuministroId);
-        System.out.println("Contratos encontrados: " + contratos.size());
-        contratos.forEach(c -> {
-            System.out.println("Contrato ID: " + c.getId() + 
-                ", FechaInicio: " + c.getFechaInicio() + 
-                ", FechaFin: " + c.getFechaFin() + 
-                ", FechaBaja: " + c.getFechaBaja() +
-                ", TarifaLuz: " + c.getIdTarifaLuz() +
-                ", TarifaGas: " + c.getIdTarifaGas());
-        });
-        System.out.println("==========================================");
         return ResponseEntity.ok(contratos);
     }
 
