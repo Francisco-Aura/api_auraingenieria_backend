@@ -5,8 +5,6 @@ import lombok.*;
 
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 @Entity
 @Table(name = "PuntoSuministro")
 @Data
@@ -42,15 +40,12 @@ public class PuntoSuministro {
     private String ubicacion;
 
     @Column(length = 100)
-    @JsonProperty("CUPSluz")
     private String CUPSluz;
 
     @Column(length = 100)
-    @JsonProperty("CUPSgas")
     private String CUPSgas;
 
     @Temporal(TemporalType.DATE)
-    @JsonProperty("fechaBaja")
     private Date fechaBaja;
 
     @Temporal(TemporalType.DATE)
