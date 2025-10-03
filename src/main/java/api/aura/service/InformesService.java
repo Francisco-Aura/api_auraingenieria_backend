@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class InformesService {
- 
+
     private final InformesRepository repository;
     private final ContratoRepository contratoRepository;
     private final PuntoSuministroRepository puntoSuministroRepository;
@@ -139,26 +139,26 @@ public class InformesService {
         List<Object[]> resultados = repository.findServiciosPendientesPago(fechaDesde, fechaHasta);
         List<ServicioPendientePagoDTO> lista = resultados.stream().map(this::mapToServicioPendientePagoDTO).collect(Collectors.toList());
         
-        
+
         return lista;
     }
 
 
     private ServicioPendientePagoDTO mapToServicioPendientePagoDTO(Object[] row) {
         ServicioPendientePagoDTO dto = new ServicioPendientePagoDTO();
-        
+
         dto.setIdServicio(Long.valueOf(row[0].toString()));
         dto.setCliente((String) row[1]);
         dto.setGestora((String) row[2]);
         dto.setCups((String) row[3]);
-        
+
         // Mapear fecha del siguiente pago
         dto.setFechaSiguientePago((java.sql.Date) row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null);
-        
+
         dto.setImporteTotal(row[5] != null ? java.math.BigDecimal.valueOf(((Number) row[5]).doubleValue()) : null);
         dto.setSiguientePagoNumero(toInt(row[6]));
         dto.setImporteCuotaPendiente(row[7] != null ? java.math.BigDecimal.valueOf(((Number) row[7]).doubleValue()) : null);
-        
+
         // Mapear estados de pago (indices 8-19)
         dto.setPrimerPagoPagado(toInt(row[8]));
         dto.setSegundoPagoPagado(toInt(row[9]));
@@ -172,40 +172,40 @@ public class InformesService {
         dto.setDecimoPagoPagado(toInt(row[17]));
         dto.setDecimoprimerPagoPagado(toInt(row[18]));
         dto.setDecimosegundoPagoPagado(toInt(row[19]));
-        
+
         dto.setEstadoPago((String) row[20]);
         dto.setNumeroCuotas(toInt(row[21]));
-        
+
         // Calcular dinámicamente el siguiente pago pendiente si no viene en la consulta
         if (dto.getSiguientePagoNumero() == null) {
             dto.setSiguientePagoNumero(calcularSiguientePagoVencido(dto.getIdServicio()));
         }
-        
+
         return dto;
     }
-    
+
     private Integer calcularSiguientePagoVencido(Long idServicio) {
         String sql = """
-            SELECT 
-                CASE 
-                    WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN 1
-                    WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN 2
-                    WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN 3
-                    WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN 4
-                    WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN 5
-                    WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN 6
-                    WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN 7
-                    WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN 8
-                    WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN 9
-                    WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN 10
-                    WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN 11
-                    WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN 12
-                    ELSE NULL
-                END AS siguientePagoNumero
-            FROM servicios_pagos sp
-            WHERE sp.id_servicio = ?
-            """;
-        
+                SELECT
+                    CASE
+                        WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN 1
+                        WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN 2
+                        WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN 3
+                        WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN 4
+                        WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN 5
+                        WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN 6
+                        WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN 7
+                        WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN 8
+                        WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN 9
+                        WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN 10
+                        WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN 11
+                        WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN 12
+                        ELSE NULL
+                    END AS siguientePagoNumero
+                FROM servicios_pagos sp
+                WHERE sp.id_servicio = ?
+                """;
+
         try {
             return jdbcTemplate.queryForObject(sql, Integer.class, idServicio);
         } catch (Exception e) {
@@ -235,29 +235,26 @@ public class InformesService {
     }
 
     public void marcarSiguientePagoPendiente(Long idServicio) {
-        
-        // Obtener el siguiente pago pendiente
         String sql = """
-            SELECT 
-                CASE 
-                    WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN 1
-                    WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN 2
-                    WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN 3
-                    WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN 4
-                    WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN 5
-                    WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN 6
-                    WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN 7
-                    WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN 8
-                    WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN 9
-                    WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN 10
-                    WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN 11
-                    WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN 12
-                    ELSE NULL
-                END AS siguientePagoNumero
-            FROM servicios_pagos sp
-            WHERE sp.id_servicio = ?
-            """;
-        
+                SELECT numero FROM (
+                    SELECT 1 AS numero, COALESCE(sp.primer_pago_pagado, 0) AS pagado, sp.primer_pago_fecha AS fecha, COALESCE(sp.primer_pago_importe, 0) AS importe
+                    UNION ALL SELECT 2, COALESCE(sp.segundo_pago_pagado, 0), sp.segundo_pago_fecha, COALESCE(sp.segundo_pago_importe, 0)
+                    UNION ALL SELECT 3, COALESCE(sp.tercer_pago_pagado, 0), sp.tercer_pago_fecha, COALESCE(sp.tercer_pago_importe, 0)
+                    UNION ALL SELECT 4, COALESCE(sp.cuarto_pago_pagado, 0), sp.cuarto_pago_fecha, COALESCE(sp.cuarto_pago_importe, 0)
+                    UNION ALL SELECT 5, COALESCE(sp.quinto_pago_pagado, 0), sp.quinto_pago_fecha, COALESCE(sp.quinto_pago_importe, 0)
+                    UNION ALL SELECT 6, COALESCE(sp.sexto_pago_pagado, 0), sp.segundo_pago_fecha, COALESCE(sp.sexto_pago_importe, 0)
+                    UNION ALL SELECT 7, COALESCE(sp.septimo_pago_pagado, 0), sp.septimo_pago_fecha, COALESCE(sp.septimo_pago_importe, 0)
+                    UNION ALL SELECT 8, COALESCE(sp.octavo_pago_pagado, 0), sp.octavo_pago_fecha, COALESCE(sp.octavo_pago_importe, 0)
+                    UNION ALL SELECT 9, COALESCE(sp.noveno_pago_pagado, 0), sp.noveno_pago_fecha, COALESCE(sp.noveno_pago_importe, 0)
+                    UNION ALL SELECT 10, COALESCE(sp.decimo_pago_pagado, 0), sp.decimo_pago_fecha, COALESCE(sp.decimo_pago_importe, 0)
+                    UNION ALL SELECT 11, COALESCE(sp.decimoprimer_pago_pagado, 0), sp.decimoprimer_pago_fecha, COALESCE(sp.decimoprimer_pago_importe, 0)
+                    UNION ALL SELECT 12, COALESCE(sp.decimosegundo_pago_pagado, 0), sp.decimosegundo_pago_fecha, COALESCE(sp.decimosegundo_pago_importe, 0)
+                ) AS pagos
+                WHERE pagado = 0 AND fecha <= CURDATE() AND importe > 0
+                ORDER BY numero
+                LIMIT 1
+                """;
+
         try {
             Integer siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio);
             
