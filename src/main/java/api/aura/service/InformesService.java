@@ -20,7 +20,8 @@ public class InformesService {
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
-    public InformesService(InformesRepository repository, ContratoRepository contratoRepository, PuntoSuministroRepository puntoSuministroRepository) {
+    public InformesService(InformesRepository repository, ContratoRepository contratoRepository,
+            PuntoSuministroRepository puntoSuministroRepository) {
         this.repository = repository;
         this.contratoRepository = contratoRepository;
         this.puntoSuministroRepository = puntoSuministroRepository;
@@ -69,7 +70,9 @@ public class InformesService {
 
     /**
      * Obtiene la lista de puntos de suministro que no tienen contratos asociados.
-     * @return Lista de DTOs con la información de los puntos de suministro sin contrato.
+     * 
+     * @return Lista de DTOs con la información de los puntos de suministro sin
+     *         contrato.
      */
     public List<PuntosSuministroSinContratoDTO> obtenerPuntosSuministroSinContrato() {
         List<Object[]> resultados = repository.findPuntosSuministroSinContrato();
@@ -90,23 +93,31 @@ public class InformesService {
         return dto;
     }
 
-    public ContratoPendienteRenovacionDTO actualizarContratoPendienteRenovacion(Integer id, ContratoPendienteRenovacionDTO dto) {
+    public ContratoPendienteRenovacionDTO actualizarContratoPendienteRenovacion(Integer id,
+            ContratoPendienteRenovacionDTO dto) {
         var contratoOpt = contratoRepository.findById(id);
         if (contratoOpt.isEmpty()) {
             throw new RuntimeException("Contrato no encontrado");
         }
         var contrato = contratoOpt.get();
-        if (dto.getContrato() != null) contrato.setContrato(dto.getContrato());
-        if (dto.getTarifaLuz() != null && dto.getIdTarifaLuz() != null) contrato.setIdTarifaLuz(dto.getIdTarifaLuz());
-        if (dto.getTarifaGas() != null && dto.getIdTarifaGas() != null) contrato.setIdTarifaGas(dto.getIdTarifaGas());
-        if (dto.getComercializadoraActual() != null && dto.getIdComercializadoraActual() != null) contrato.setIdComercializadoraActual(dto.getIdComercializadoraActual());
-        if (dto.getComercializadoraAnterior() != null && dto.getIdComercializadoraAnterior() != null) contrato.setIdComercializadoraAnterior(dto.getIdComercializadoraAnterior());
-        if (dto.getObservaciones() != null) contrato.setObservaciones(dto.getObservaciones());
+        if (dto.getContrato() != null)
+            contrato.setContrato(dto.getContrato());
+        if (dto.getTarifaLuz() != null && dto.getIdTarifaLuz() != null)
+            contrato.setIdTarifaLuz(dto.getIdTarifaLuz());
+        if (dto.getTarifaGas() != null && dto.getIdTarifaGas() != null)
+            contrato.setIdTarifaGas(dto.getIdTarifaGas());
+        if (dto.getComercializadoraActual() != null && dto.getIdComercializadoraActual() != null)
+            contrato.setIdComercializadoraActual(dto.getIdComercializadoraActual());
+        if (dto.getComercializadoraAnterior() != null && dto.getIdComercializadoraAnterior() != null)
+            contrato.setIdComercializadoraAnterior(dto.getIdComercializadoraAnterior());
+        if (dto.getObservaciones() != null)
+            contrato.setObservaciones(dto.getObservaciones());
         contratoRepository.save(contrato);
         return dto;
     }
 
-    public PuntosSuministroSinContratoDTO actualizarPuntoSuministroSinContrato(String id, PuntosSuministroSinContratoDTO dto) {
+    public PuntosSuministroSinContratoDTO actualizarPuntoSuministroSinContrato(String id,
+            PuntosSuministroSinContratoDTO dto) {
         Integer idInt;
         try {
             idInt = Integer.parseInt(id);
@@ -118,31 +129,40 @@ public class InformesService {
             throw new RuntimeException("Punto de suministro no encontrado");
         }
         var punto = puntoOpt.get();
-        if (dto.getDireccion() != null) punto.setDireccion(dto.getDireccion());
-        if (dto.getCodigoPostal() != null) punto.setCodigoPostal(dto.getCodigoPostal());
-        if (dto.getPoblacion() != null) punto.setPoblacion(dto.getPoblacion());
-        if (dto.getProvincia() != null) punto.setProvincia(dto.getProvincia());
-        if (dto.getCupsLuz() != null) punto.setCUPSluz(dto.getCupsLuz());
-        if (dto.getCupsGas() != null) punto.setCUPSgas(dto.getCupsGas());
+        if (dto.getDireccion() != null)
+            punto.setDireccion(dto.getDireccion());
+        if (dto.getCodigoPostal() != null)
+            punto.setCodigoPostal(dto.getCodigoPostal());
+        if (dto.getPoblacion() != null)
+            punto.setPoblacion(dto.getPoblacion());
+        if (dto.getProvincia() != null)
+            punto.setProvincia(dto.getProvincia());
+        if (dto.getCupsLuz() != null)
+            punto.setCUPSluz(dto.getCupsLuz());
+        if (dto.getCupsGas() != null)
+            punto.setCUPSgas(dto.getCupsGas());
         puntoSuministroRepository.save(punto);
         return dto;
     }
 
     private Integer toInt(Object value) {
-        if (value == null) return null;
-        if (value instanceof Number) return ((Number) value).intValue();
-        if (value instanceof Boolean) return (Boolean) value ? 1 : 0;
+        if (value == null)
+            return null;
+        if (value instanceof Number)
+            return ((Number) value).intValue();
+        if (value instanceof Boolean)
+            return (Boolean) value ? 1 : 0;
         return Integer.valueOf(value.toString());
     }
 
-    public List<ServicioPendientePagoDTO> obtenerServiciosPendientesPago(java.time.LocalDate fechaDesde, java.time.LocalDate fechaHasta) {
+    public List<ServicioPendientePagoDTO> obtenerServiciosPendientesPago(java.time.LocalDate fechaDesde,
+            java.time.LocalDate fechaHasta) {
         List<Object[]> resultados = repository.findServiciosPendientesPago(fechaDesde, fechaHasta);
-        List<ServicioPendientePagoDTO> lista = resultados.stream().map(this::mapToServicioPendientePagoDTO).collect(Collectors.toList());
-        
+        List<ServicioPendientePagoDTO> lista = resultados.stream().map(this::mapToServicioPendientePagoDTO)
+                .collect(Collectors.toList());
 
         return lista;
     }
-
 
     private ServicioPendientePagoDTO mapToServicioPendientePagoDTO(Object[] row) {
         ServicioPendientePagoDTO dto = new ServicioPendientePagoDTO();
@@ -157,7 +177,8 @@ public class InformesService {
 
         dto.setImporteTotal(row[5] != null ? java.math.BigDecimal.valueOf(((Number) row[5]).doubleValue()) : null);
         dto.setSiguientePagoNumero(toInt(row[6]));
-        dto.setImporteCuotaPendiente(row[7] != null ? java.math.BigDecimal.valueOf(((Number) row[7]).doubleValue()) : null);
+        dto.setImporteCuotaPendiente(
+                row[7] != null ? java.math.BigDecimal.valueOf(((Number) row[7]).doubleValue()) : null);
 
         // Mapear estados de pago (indices 8-19)
         dto.setPrimerPagoPagado(toInt(row[8]));
@@ -237,18 +258,18 @@ public class InformesService {
     public void marcarSiguientePagoPendiente(Long idServicio) {
         String sql = """
                 SELECT numero FROM (
-                    SELECT 1 AS numero, COALESCE(sp.primer_pago_pagado, 0) AS pagado, sp.primer_pago_fecha AS fecha, COALESCE(sp.primer_pago_importe, 0) AS importe
-                    UNION ALL SELECT 2, COALESCE(sp.segundo_pago_pagado, 0), sp.segundo_pago_fecha, COALESCE(sp.segundo_pago_importe, 0)
-                    UNION ALL SELECT 3, COALESCE(sp.tercer_pago_pagado, 0), sp.tercer_pago_fecha, COALESCE(sp.tercer_pago_importe, 0)
-                    UNION ALL SELECT 4, COALESCE(sp.cuarto_pago_pagado, 0), sp.cuarto_pago_fecha, COALESCE(sp.cuarto_pago_importe, 0)
-                    UNION ALL SELECT 5, COALESCE(sp.quinto_pago_pagado, 0), sp.quinto_pago_fecha, COALESCE(sp.quinto_pago_importe, 0)
-                    UNION ALL SELECT 6, COALESCE(sp.sexto_pago_pagado, 0), sp.segundo_pago_fecha, COALESCE(sp.sexto_pago_importe, 0)
-                    UNION ALL SELECT 7, COALESCE(sp.septimo_pago_pagado, 0), sp.septimo_pago_fecha, COALESCE(sp.septimo_pago_importe, 0)
-                    UNION ALL SELECT 8, COALESCE(sp.octavo_pago_pagado, 0), sp.octavo_pago_fecha, COALESCE(sp.octavo_pago_importe, 0)
-                    UNION ALL SELECT 9, COALESCE(sp.noveno_pago_pagado, 0), sp.noveno_pago_fecha, COALESCE(sp.noveno_pago_importe, 0)
-                    UNION ALL SELECT 10, COALESCE(sp.decimo_pago_pagado, 0), sp.decimo_pago_fecha, COALESCE(sp.decimo_pago_importe, 0)
-                    UNION ALL SELECT 11, COALESCE(sp.decimoprimer_pago_pagado, 0), sp.decimoprimer_pago_fecha, COALESCE(sp.decimoprimer_pago_importe, 0)
-                    UNION ALL SELECT 12, COALESCE(sp.decimosegundo_pago_pagado, 0), sp.decimosegundo_pago_fecha, COALESCE(sp.decimosegundo_pago_importe, 0)
+                    SELECT 1 AS numero, COALESCE(sp.primer_pago_pagado, 0) AS pagado, sp.primer_pago_fecha AS fecha, COALESCE(sp.primer_pago_importe, 0) AS importe FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 2, COALESCE(sp.segundo_pago_pagado, 0), sp.segundo_pago_fecha, COALESCE(sp.segundo_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 3, COALESCE(sp.tercer_pago_pagado, 0), sp.tercer_pago_fecha, COALESCE(sp.tercer_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 4, COALESCE(sp.cuarto_pago_pagado, 0), sp.cuarto_pago_fecha, COALESCE(sp.cuarto_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 5, COALESCE(sp.quinto_pago_pagado, 0), sp.quinto_pago_fecha, COALESCE(sp.quinto_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 6, COALESCE(sp.sexto_pago_pagado, 0), sp.sexto_pago_fecha, COALESCE(sp.sexto_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 7, COALESCE(sp.septimo_pago_pagado, 0), sp.septimo_pago_fecha, COALESCE(sp.septimo_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 8, COALESCE(sp.octavo_pago_pagado, 0), sp.octavo_pago_fecha, COALESCE(sp.octavo_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 9, COALESCE(sp.noveno_pago_pagado, 0), sp.noveno_pago_fecha, COALESCE(sp.noveno_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 10, COALESCE(sp.decimo_pago_pagado, 0), sp.decimo_pago_fecha, COALESCE(sp.decimo_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 11, COALESCE(sp.decimoprimer_pago_pagado, 0), sp.decimoprimer_pago_fecha, COALESCE(sp.decimoprimer_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
+                    UNION ALL SELECT 12, COALESCE(sp.decimosegundo_pago_pagado, 0), sp.decimosegundo_pago_fecha, COALESCE(sp.decimosegundo_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
                 ) AS pagos
                 WHERE pagado = 0 AND fecha <= CURDATE() AND importe > 0
                 ORDER BY numero
@@ -256,8 +277,10 @@ public class InformesService {
                 """;
 
         try {
-            Integer siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio);
-            
+            Integer siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio, idServicio, idServicio,
+                    idServicio, idServicio, idServicio, idServicio, idServicio, idServicio, idServicio, idServicio,
+                    idServicio);
+
             if (siguientePago != null) {
                 actualizarPagoParcial(idServicio, siguientePago, true);
             } else {
@@ -307,7 +330,8 @@ public class InformesService {
         return dto;
     }
 
-    public List<ServicioVigenteDTO> obtenerServiciosVigentes(java.time.LocalDate fechaDesde, java.time.LocalDate fechaHasta) {
+    public List<ServicioVigenteDTO> obtenerServiciosVigentes(java.time.LocalDate fechaDesde,
+            java.time.LocalDate fechaHasta) {
         List<Object[]> resultados = repository.findServiciosVigentes(fechaDesde, fechaHasta);
         return resultados.stream().map(this::mapToServicioVigenteDTO).collect(Collectors.toList());
     }
