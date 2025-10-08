@@ -1,5 +1,7 @@
 package api.aura.entity;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -7,7 +9,8 @@ import java.util.Date;
 
 @Entity
 @Table(name = "PuntoSuministro")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -40,9 +43,13 @@ public class PuntoSuministro {
     private String ubicacion;
 
     @Column(length = 100)
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    @Setter(AccessLevel.NONE) // No generar setter automático
     private String CUPSluz;
 
     @Column(length = 100)
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    @Setter(AccessLevel.NONE) // No generar setter automático
     private String CUPSgas;
 
     @Temporal(TemporalType.DATE)
@@ -177,5 +184,32 @@ public class PuntoSuministro {
      * @JsonIgnore // Evita la serialización de esta propiedad
      * private List<Servicio> servicios;
      */
+
+    // *** SETTERS PERSONALIZADOS PARA NORMALIZAR CUPS ***
+    public void setCUPSluz(String cupsLuz) {
+        this.CUPSluz = normalizarCupsEnEntity(cupsLuz);
+    }
+
+    public void setCUPSgas(String cupsGas) {
+        this.CUPSgas = normalizarCupsEnEntity(cupsGas);
+    }
+
+    /**
+     * Normaliza valores CUPS a nivel de entidad
+     */
+    private String normalizarCupsEnEntity(String cups) {
+        if (cups == null) {
+            return null;
+        }
+
+        String trimmed = cups.trim();
+
+        // Si es string vacío, literalmente "null", o "undefined", devolver null
+        if (trimmed.isEmpty() || "null".equals(trimmed) || "undefined".equals(trimmed)) {
+            return null;
+        }
+
+        return trimmed;
+    }
 
 }

@@ -36,7 +36,7 @@ public class PuntoSuministroService {
     private AppMonitorizacionRepository appMonitorizacionRepository;
     @Autowired
     private IntegracionSistemasFVRepository integracionSistemasFVRepository;
-    
+
     @Autowired
     private ContratoRepository contratoRepository;
 
@@ -99,9 +99,23 @@ public class PuntoSuministroService {
                 puntoSuministro.setPropiedad(null);
             }
 
-            // Validar CUPS
-            if ((puntoSuministro.getCUPSluz() == null || puntoSuministro.getCUPSluz().trim().isEmpty()) &&
-                    (puntoSuministro.getCUPSgas() == null || puntoSuministro.getCUPSgas().trim().isEmpty())) {
+            // Validar CUPS (ya normalizados en el controlador)
+            String cupsLuz = puntoSuministro.getCUPSluz();
+            String cupsGas = puntoSuministro.getCUPSgas();
+
+            System.out.println("=== DEBUG VALIDACIÓN CUPS EN SERVICIO ===");
+            System.out.println("CUPSluz: '" + cupsLuz + "'");
+            System.out.println("CUPSgas: '" + cupsGas + "'");
+
+            // Validar que al menos uno de los CUPS tenga un valor válido
+            boolean tieneCupsLuz = cupsLuz != null && !cupsLuz.trim().isEmpty();
+            boolean tieneCupsGas = cupsGas != null && !cupsGas.trim().isEmpty();
+
+            System.out.println("Tiene CUPS luz válido: " + tieneCupsLuz);
+            System.out.println("Tiene CUPS gas válido: " + tieneCupsGas);
+
+            if (!tieneCupsLuz && !tieneCupsGas) {
+                System.out.println("ERROR al guardar punto suministro: Debe proporcionar al menos un CUPS (luz o gas)");
                 throw new IllegalArgumentException("Debe proporcionar al menos un CUPS (luz o gas)");
             }
 
@@ -114,7 +128,8 @@ public class PuntoSuministroService {
             }
 
             // Manejar relaciones de instalaciones - AppMonitorizacion
-            if (puntoSuministro.getAppMonitorizacion() != null && puntoSuministro.getAppMonitorizacion().getId() != null) {
+            if (puntoSuministro.getAppMonitorizacion() != null
+                    && puntoSuministro.getAppMonitorizacion().getId() != null) {
                 appMonitorizacionRepository.findById(puntoSuministro.getAppMonitorizacion().getId())
                         .ifPresentOrElse(
                                 puntoSuministro::setAppMonitorizacion,
@@ -126,7 +141,8 @@ public class PuntoSuministroService {
             }
 
             // Manejar relaciones de instalaciones - IntegracionSistemasFV
-            if (puntoSuministro.getIntegracionSistemasFV() != null && puntoSuministro.getIntegracionSistemasFV().getId() != null) {
+            if (puntoSuministro.getIntegracionSistemasFV() != null
+                    && puntoSuministro.getIntegracionSistemasFV().getId() != null) {
                 integracionSistemasFVRepository.findById(puntoSuministro.getIntegracionSistemasFV().getId())
                         .ifPresentOrElse(
                                 puntoSuministro::setIntegracionSistemasFV,
@@ -143,9 +159,9 @@ public class PuntoSuministroService {
             System.out.println("  Batería Condensadores: " + puntoSuministro.getBateriaCondensadores());
             System.out.println("  Instalación FV: " + puntoSuministro.getInstalacionFV());
             System.out.println("  Batería Almacenamiento: " + puntoSuministro.getBateriaAlmacenamiento());
-            
+
             PuntoSuministro saved = puntoSuministroRepository.save(puntoSuministro);
-            
+
             System.out.println("=== DESPUÉS DE GUARDAR ===");
             System.out.println("Punto Suministro guardado con ID: " + saved.getId());
             System.out.println("Datos guardados de instalaciones:");
@@ -153,10 +169,11 @@ public class PuntoSuministroService {
             System.out.println("  Instalación FV: " + saved.getInstalacionFV());
             System.out.println("  Batería Almacenamiento: " + saved.getBateriaAlmacenamiento());
             System.out.println("===============================");
-            
-            // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto de suministro
+
+            // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto
+            // de suministro
             sincronizarContratosConPuntoSuministro(saved);
-            
+
             return saved;
         } catch (Exception e) {
             System.out.println("ERROR al guardar punto suministro: " + e.getMessage());
@@ -171,8 +188,7 @@ public class PuntoSuministroService {
 
     public List<PuntosSuministrosCarteraDTO> obtenerCarteraPuntoSuministro() {
         List<PuntosSuministrosCarteraDTO> resultado = puntoSuministroRepository.findAllPuntosSuministro();
-        
-        
+
         return resultado;
     }
 
@@ -191,7 +207,7 @@ public class PuntoSuministroService {
     public void eliminarPorId(Integer id) {
         puntoSuministroRepository.deleteById(id);
     }
-    
+
     /**
      * Sincroniza todos los contratos asociados a un punto de suministro
      * con los valores de exención de impuesto eléctrico y autoconsumo del punto.
@@ -204,32 +220,33 @@ public class PuntoSuministroService {
             System.out.println("Punto Suministro ID: " + puntoSuministro.getId());
             System.out.println("Exención Impuesto Eléctrico: " + puntoSuministro.getExencionImpuestoElectrico());
             System.out.println("Autoconsumo: " + puntoSuministro.getAutoconsumo());
-            
+
             // Buscar todos los contratos asociados a este punto de suministro
             List<Contrato> contratos = contratoRepository.findByPuntoSuministroId(puntoSuministro.getId());
-            
+
             System.out.println("Contratos encontrados: " + contratos.size());
-            
+
             // Actualizar cada contrato con los valores del punto de suministro
             for (Contrato contrato : contratos) {
-                System.out.println("Actualizando contrato ID: " + contrato.getId() + 
-                    " - Contrato: " + contrato.getContrato());
-                
+                System.out.println("Actualizando contrato ID: " + contrato.getId() +
+                        " - Contrato: " + contrato.getContrato());
+
                 // Sincronizar exención de impuesto eléctrico (convertir Boolean a Integer)
                 contrato.setExencionImpuestoElectricidad(
-                    puntoSuministro.getExencionImpuestoElectrico() != null && puntoSuministro.getExencionImpuestoElectrico() ? 1 : 0
-                );
-                
+                        puntoSuministro.getExencionImpuestoElectrico() != null
+                                && puntoSuministro.getExencionImpuestoElectrico() ? 1 : 0);
+
                 // Sincronizar autoconsumo (convertir String a Integer)
-                // Si el campo tiene cualquier valor de autoconsumo, entonces es autoconsumo activo
-                boolean tieneAutoconsumo = puntoSuministro.getAutoconsumo() != null && 
-                    !puntoSuministro.getAutoconsumo().trim().isEmpty();
+                // Si el campo tiene cualquier valor de autoconsumo, entonces es autoconsumo
+                // activo
+                boolean tieneAutoconsumo = puntoSuministro.getAutoconsumo() != null &&
+                        !puntoSuministro.getAutoconsumo().trim().isEmpty();
                 contrato.setAutoconsumo(tieneAutoconsumo ? 1 : 0);
-                
+
                 System.out.println("  - Exención actualizada a: " + contrato.getExencionImpuestoElectricidad());
                 System.out.println("  - Autoconsumo actualizado a: " + contrato.getAutoconsumo());
             }
-            
+
             // Guardar todos los contratos actualizados
             if (!contratos.isEmpty()) {
                 contratoRepository.saveAll(contratos);
@@ -237,13 +254,31 @@ public class PuntoSuministroService {
             } else {
                 System.out.println("No hay contratos para sincronizar");
             }
-            
+
             System.out.println("===============================");
-            
+
         } catch (Exception e) {
             System.out.println("ERROR al sincronizar contratos: " + e.getMessage());
             e.printStackTrace();
             // No lanzar excepción para no afectar el guardado del punto de suministro
         }
+    }
+
+    /**
+     * Normaliza valores CUPS para manejar correctamente null, vacío y "null" string
+     */
+    private String normalizarCups(String cups) {
+        if (cups == null) {
+            return null;
+        }
+
+        String trimmed = cups.trim();
+
+        // Si es string vacío o literalmente "null", devolver null
+        if (trimmed.isEmpty() || "null".equals(trimmed)) {
+            return null;
+        }
+
+        return trimmed;
     }
 }

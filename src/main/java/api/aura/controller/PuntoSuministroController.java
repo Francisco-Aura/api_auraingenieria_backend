@@ -22,6 +22,18 @@ public class PuntoSuministroController {
     @PostMapping
     public ResponseEntity<?> crearOActualizarPuntoSuministro(@Valid @RequestBody PuntoSuministro puntoSuministro) {
         try {
+            // *** NORMALIZACIÓN ROBUSTA DE CUPS EN EL CONTROLADOR ***
+            System.out.println("=== DEBUG CONTROLADOR ===");
+            System.out.println("CUPSluz recibido: '" + puntoSuministro.getCUPSluz() + "'");
+            System.out.println("CUPSgas recibido: '" + puntoSuministro.getCUPSgas() + "'");
+
+            // Normalizar CUPS antes de enviar al servicio
+            puntoSuministro.setCUPSluz(normalizarCupsEnControlador(puntoSuministro.getCUPSluz()));
+            puntoSuministro.setCUPSgas(normalizarCupsEnControlador(puntoSuministro.getCUPSgas()));
+
+            System.out.println("CUPSluz normalizado en controlador: '" + puntoSuministro.getCUPSluz() + "'");
+            System.out.println("CUPSgas normalizado en controlador: '" + puntoSuministro.getCUPSgas() + "'");
+
             PuntoSuministro guardado = puntoSuministroService.guardarPuntoSuministro(puntoSuministro);
             return ResponseEntity.ok(guardado);
         } catch (IllegalArgumentException e) {
@@ -35,6 +47,25 @@ public class PuntoSuministroController {
         }
     }
 
+    /**
+     * Normaliza valores CUPS en el controlador para manejar strings "null", vacíos,
+     * etc.
+     */
+    private String normalizarCupsEnControlador(String cups) {
+        if (cups == null) {
+            return null;
+        }
+
+        String trimmed = cups.trim();
+
+        // Si es string vacío, literalmente "null", o "undefined", devolver null
+        if (trimmed.isEmpty() || "null".equals(trimmed) || "undefined".equals(trimmed)) {
+            return null;
+        }
+
+        return trimmed;
+    }
+
     @GetMapping
     public ResponseEntity<List<PuntoSuministro>> obtenerTodos() {
         List<PuntoSuministro> puntos = puntoSuministroService.obtenerTodos();
@@ -44,7 +75,7 @@ public class PuntoSuministroController {
     @GetMapping("/all")
     public ResponseEntity<List<PuntosSuministrosCarteraDTO>> obtenerCarteraPuntosSuministro() {
         List<PuntosSuministrosCarteraDTO> puntos = puntoSuministroService.obtenerCarteraPuntoSuministro();
-        
+
         return ResponseEntity.ok(puntos);
     }
 
@@ -53,22 +84,22 @@ public class PuntoSuministroController {
         try {
             // Consulta directa a la base de datos para ver los contratos
             String sql = """
-                SELECT c.id, c.fecha_inicio, c.fecha_fin, c.fecha_baja, 
-                       c.id_tarifa_luz, c.id_tarifa_gas,
-                       tl.nombre as tarifa_luz, tg.nombre as tarifa_gas
-                FROM contratos c
-                LEFT JOIN tbtarifas_luz tl ON c.id_tarifa_luz = tl.id  
-                LEFT JOIN tbtarifas_gas tg ON c.id_tarifa_gas = tg.id
-                WHERE c.id_punto_suministro = ?
-                ORDER BY c.fecha_inicio DESC
-                """;
-            
+                    SELECT c.id, c.fecha_inicio, c.fecha_fin, c.fecha_baja,
+                           c.id_tarifa_luz, c.id_tarifa_gas,
+                           tl.nombre as tarifa_luz, tg.nombre as tarifa_gas
+                    FROM contratos c
+                    LEFT JOIN tbtarifas_luz tl ON c.id_tarifa_luz = tl.id
+                    LEFT JOIN tbtarifas_gas tg ON c.id_tarifa_gas = tg.id
+                    WHERE c.id_punto_suministro = ?
+                    ORDER BY c.fecha_inicio DESC
+                    """;
+
             StringBuilder debug = new StringBuilder();
             debug.append("=== CONTRATOS PARA PUNTO ").append(id).append(" ===\n");
             debug.append("Consulta SQL ejecutada.\n");
             debug.append("TODO: Implementar consulta JDBC directa para debug.\n");
             debug.append("Ver logs del backend para más detalles.\n");
-            
+
             return ResponseEntity.ok(debug.toString());
         } catch (Exception e) {
             return ResponseEntity.ok("Error en debug: " + e.getMessage());
