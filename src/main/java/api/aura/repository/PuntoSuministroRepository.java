@@ -30,11 +30,17 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                         ps.provincia,
                         ps.CUPSluz,
                         ps.CUPSgas,
+                        ps.fechaBaja,
                         CASE
                             WHEN ps.CUPSluz IS NOT NULL AND ps.CUPSluz != '' AND tl.nombre IS NOT NULL AND tl.nombre != 'Sin Tarifa' THEN tl.nombre
                             WHEN ps.CUPSgas IS NOT NULL AND ps.CUPSgas != '' AND tg.nombre IS NOT NULL AND tg.nombre != 'Sin Tarifa' THEN tg.nombre
                             ELSE NULL
                         END,
+                        (
+                            SELECT MAX(con3.fechaFin)
+                            FROM Contrato con3
+                            WHERE con3.puntoSuministro.id = ps.id
+                        ),
                         con.potencia1,
                         con.potencia2,
                         con.potencia3,
@@ -46,13 +52,11 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                     LEFT JOIN Cliente c ON ps.cliente.id = c.id
                     LEFT JOIN Contrato con ON ps.id = con.puntoSuministro.id
                         AND con.fechaFin > CURRENT_DATE
-                        AND (con.fechaBaja IS NULL OR con.fechaBaja = DATE('1900-01-01'))
                         AND con.id = (
                             SELECT MAX(con2.id)
                             FROM Contrato con2
                             WHERE con2.puntoSuministro.id = ps.id
                             AND con2.fechaFin > CURRENT_DATE
-                            AND (con2.fechaBaja IS NULL OR con2.fechaBaja = DATE('1900-01-01'))
                         )
                     LEFT JOIN TBTarifasLuz tl ON con.idTarifaLuz = tl.id
                     LEFT JOIN TBTarifasGas tg ON con.idTarifaGas = tg.id
@@ -77,11 +81,17 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                         ps.provincia,
                         ps.CUPSluz,
                         ps.CUPSgas,
+                        ps.fechaBaja,
                         CASE
                             WHEN ps.CUPSluz IS NOT NULL AND ps.CUPSluz != '' AND tl.nombre IS NOT NULL AND tl.nombre != 'Sin Tarifa' THEN tl.nombre
                             WHEN ps.CUPSgas IS NOT NULL AND ps.CUPSgas != '' AND tg.nombre IS NOT NULL AND tg.nombre != 'Sin Tarifa' THEN tg.nombre
                             ELSE NULL
                         END,
+                        (
+                            SELECT MAX(con3.fechaFin)
+                            FROM Contrato con3
+                            WHERE con3.puntoSuministro.id = ps.id
+                        ),
                         con.potencia1,
                         con.potencia2,
                         con.potencia3,
@@ -93,7 +103,12 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                     LEFT JOIN Cliente c ON ps.cliente.id = c.id
                     LEFT JOIN Contrato con ON ps.id = con.puntoSuministro.id
                         AND con.fechaFin > CURRENT_DATE
-                        AND (con.fechaBaja IS NULL OR con.fechaBaja = DATE('1900-01-01'))
+                        AND con.id = (
+                            SELECT MAX(con2.id)
+                            FROM Contrato con2
+                            WHERE con2.puntoSuministro.id = ps.id
+                            AND con2.fechaFin > CURRENT_DATE
+                        )
                     LEFT JOIN TBTarifasLuz tl ON con.idTarifaLuz = tl.id
                     LEFT JOIN TBTarifasGas tg ON con.idTarifaGas = tg.id
                     WHERE c.id = :clienteId

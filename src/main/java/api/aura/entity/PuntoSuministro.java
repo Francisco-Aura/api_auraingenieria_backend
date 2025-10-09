@@ -1,17 +1,16 @@
 package api.aura.entity;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.Date;
-import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "PuntoSuministro")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -44,11 +43,13 @@ public class PuntoSuministro {
     private String ubicacion;
 
     @Column(length = 100)
-    @JsonProperty("CUPSluz")
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    @Setter(AccessLevel.NONE) // No generar setter automático
     private String CUPSluz;
 
     @Column(length = 100)
-    @JsonProperty("CUPSgas")
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    @Setter(AccessLevel.NONE) // No generar setter automático
     private String CUPSgas;
 
     @Temporal(TemporalType.DATE)
@@ -133,6 +134,47 @@ public class PuntoSuministro {
     @Column(name = "pass_monitorizacion", length = 255)
     private String passMonitorizacion;
 
+    // Campos de instalaciones - Batería de Condensadores
+    @Column(length = 10)
+    private String bateriaCondensadores; // SI/NO
+
+    @Column(length = 100)
+    private String potenciaBateria;
+
+    @Column(length = 100)
+    private String modeloBateria;
+
+    // Campos de instalaciones - Instalación Fotovoltaica
+    @Column(length = 10)
+    private String instalacionFV; // SI/NO
+
+    @Column(length = 100)
+    private String kwInversor;
+
+    @Column(length = 100)
+    private String kwPanelesSolares;
+
+    @ManyToOne
+    @JoinColumn(name = "TBmonitorizacion_id")
+    private AppMonitorizacion appMonitorizacion;
+
+    // Campos de instalaciones - Almacenamiento Energético
+    @Column(length = 10)
+    private String bateriaAlmacenamiento; // SI/NO
+
+    @Column(length = 100)
+    private String potenciaBateriaAlmacenamiento;
+
+    @Column(length = 10)
+    private String backup; // SI/NO
+
+    @Column(length = 10)
+    private String peaksaving; // SI/NO
+
+    @ManyToOne
+    @JoinColumn(name = "TBIntegracionSistemasFV_id")
+    private IntegracionSistemasFV integracionSistemasFV;
+
     /*
      * // Relación con servicios
      * 
@@ -142,5 +184,32 @@ public class PuntoSuministro {
      * @JsonIgnore // Evita la serialización de esta propiedad
      * private List<Servicio> servicios;
      */
+
+    // *** SETTERS PERSONALIZADOS PARA NORMALIZAR CUPS ***
+    public void setCUPSluz(String cupsLuz) {
+        this.CUPSluz = normalizarCupsEnEntity(cupsLuz);
+    }
+
+    public void setCUPSgas(String cupsGas) {
+        this.CUPSgas = normalizarCupsEnEntity(cupsGas);
+    }
+
+    /**
+     * Normaliza valores CUPS a nivel de entidad
+     */
+    private String normalizarCupsEnEntity(String cups) {
+        if (cups == null) {
+            return null;
+        }
+
+        String trimmed = cups.trim();
+
+        // Si es string vacío, literalmente "null", o "undefined", devolver null
+        if (trimmed.isEmpty() || "null".equals(trimmed) || "undefined".equals(trimmed)) {
+            return null;
+        }
+
+        return trimmed;
+    }
 
 }

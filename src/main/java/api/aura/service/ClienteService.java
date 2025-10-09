@@ -9,12 +9,8 @@ import api.aura.dto.ClienteCarteraDTO;
 import api.aura.dto.ClienteDTO;
 import api.aura.entity.Cliente;
 import api.aura.entity.Usuario;
-import api.aura.entity.AppMonitorizacion;
-import api.aura.entity.IntegracionSistemasFV;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.UsuarioRepository;
-import api.aura.repository.AppMonitorizacionRepository;
-import api.aura.repository.IntegracionSistemasFVRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,12 +22,6 @@ public class ClienteService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private AppMonitorizacionRepository appMonitorizacionRepository;
-
-    @Autowired
-    private IntegracionSistemasFVRepository integracionSistemasFVRepository;
 
     // Crear un nuevo cliente
     public Cliente crearCliente(ClienteDTO clienteDTO) {
@@ -71,18 +61,6 @@ public class ClienteService {
         cliente.setUserTelemedida(clienteDTO.getUserTelemedida());
         cliente.setPassTelemedida(clienteDTO.getPassTelemedida());
 
-        // Campos de instalaciones
-        cliente.setBateriaCondensadores(clienteDTO.getBateriaCondensadores());
-        cliente.setPotenciaBateria(clienteDTO.getPotenciaBateria());
-        cliente.setModeloBateria(clienteDTO.getModeloBateria());
-        cliente.setInstalacionFV(clienteDTO.getInstalacionFV());
-        cliente.setKwInversor(clienteDTO.getKwInversor());
-        cliente.setKwPanelesSolares(clienteDTO.getKwPanelesSolares());
-        cliente.setBateriaAlmacenamiento(clienteDTO.getBateriaAlmacenamiento());
-        cliente.setPotenciaBateriaAlmacenamiento(clienteDTO.getPotenciaBateriaAlmacenamiento());
-        cliente.setBackup(clienteDTO.getBackup());
-        cliente.setPeaksaving(clienteDTO.getPeaksaving());
-
         // Servicios del cliente
         cliente.setGestionEnergetica(
                 clienteDTO.getGestionEnergetica() != null ? clienteDTO.getGestionEnergetica() : false);
@@ -90,29 +68,6 @@ public class ClienteService {
         cliente.setMonitorizacionEnergetica(
                 clienteDTO.getMonitorizacionEnergetica() != null ? clienteDTO.getMonitorizacionEnergetica() : false);
 
-        // Relación con AppMonitorizacion
-        if (clienteDTO.getAppMonitorizacionId() != null) {
-            Optional<AppMonitorizacion> appOpt = appMonitorizacionRepository
-                    .findById(clienteDTO.getAppMonitorizacionId());
-            if (appOpt.isPresent()) {
-                cliente.setAppMonitorizacion(appOpt.get());
-            } else {
-                throw new RuntimeException(
-                        "APP Monitorización no encontrada con ID: " + clienteDTO.getAppMonitorizacionId());
-            }
-        }
-
-        // Relación con IntegracionSistemasFV
-        if (clienteDTO.getIntegracionSistemasFVId() != null) {
-            Optional<IntegracionSistemasFV> integracionOpt = integracionSistemasFVRepository
-                    .findById(clienteDTO.getIntegracionSistemasFVId());
-            if (integracionOpt.isPresent()) {
-                cliente.setIntegracionSistemasFV(integracionOpt.get());
-            } else {
-                throw new RuntimeException(
-                        "Integración Sistemas FV no encontrada con ID: " + clienteDTO.getIntegracionSistemasFVId());
-            }
-        }
 
         // Relación con Usuario
         if (clienteDTO.getIdUsuario() != null) {
@@ -181,18 +136,6 @@ public class ClienteService {
                     cliente.setUserTelemedida(clienteDTO.getUserTelemedida());
                     cliente.setPassTelemedida(clienteDTO.getPassTelemedida());
 
-                    // Campos de instalaciones
-                    cliente.setBateriaCondensadores(clienteDTO.getBateriaCondensadores());
-                    cliente.setPotenciaBateria(clienteDTO.getPotenciaBateria());
-                    cliente.setModeloBateria(clienteDTO.getModeloBateria());
-                    cliente.setInstalacionFV(clienteDTO.getInstalacionFV());
-                    cliente.setKwInversor(clienteDTO.getKwInversor());
-                    cliente.setKwPanelesSolares(clienteDTO.getKwPanelesSolares());
-                    cliente.setBateriaAlmacenamiento(clienteDTO.getBateriaAlmacenamiento());
-                    cliente.setPotenciaBateriaAlmacenamiento(clienteDTO.getPotenciaBateriaAlmacenamiento());
-                    cliente.setBackup(clienteDTO.getBackup());
-                    cliente.setPeaksaving(clienteDTO.getPeaksaving());
-
                     // Servicios del cliente
                     cliente.setGestionEnergetica(
                             clienteDTO.getGestionEnergetica() != null ? clienteDTO.getGestionEnergetica() : false);
@@ -201,33 +144,6 @@ public class ClienteService {
                             clienteDTO.getMonitorizacionEnergetica() != null ? clienteDTO.getMonitorizacionEnergetica()
                                     : false);
 
-                    // Actualiza la relación con AppMonitorizacion
-                    if (clienteDTO.getAppMonitorizacionId() != null) {
-                        Optional<AppMonitorizacion> appOpt = appMonitorizacionRepository
-                                .findById(clienteDTO.getAppMonitorizacionId());
-                        if (appOpt.isPresent()) {
-                            cliente.setAppMonitorizacion(appOpt.get());
-                        } else {
-                            throw new RuntimeException(
-                                    "APP Monitorización no encontrada con ID: " + clienteDTO.getAppMonitorizacionId());
-                        }
-                    } else {
-                        cliente.setAppMonitorizacion(null);
-                    }
-
-                    // Actualiza la relación con IntegracionSistemasFV
-                    if (clienteDTO.getIntegracionSistemasFVId() != null) {
-                        Optional<IntegracionSistemasFV> integracionOpt = integracionSistemasFVRepository
-                                .findById(clienteDTO.getIntegracionSistemasFVId());
-                        if (integracionOpt.isPresent()) {
-                            cliente.setIntegracionSistemasFV(integracionOpt.get());
-                        } else {
-                            throw new RuntimeException("Integración Sistemas FV no encontrada con ID: "
-                                    + clienteDTO.getIntegracionSistemasFVId());
-                        }
-                    } else {
-                        cliente.setIntegracionSistemasFV(null);
-                    }
 
                     // Actualiza la relación con Usuario si es necesario
                     if (clienteDTO.getIdUsuario() != null) {
@@ -294,32 +210,13 @@ public class ClienteService {
         dto.setCodigoSubtipologia(cliente.getCodigoSubtipologia());
         dto.setActividad(cliente.getActividad());
         dto.setUserTelemedida(cliente.getUserTelemedida());
-        dto.setPassTelemedida(cliente.getPassTelemedida()); // Campos de instalaciones
-        dto.setBateriaCondensadores(cliente.getBateriaCondensadores());
-        dto.setPotenciaBateria(cliente.getPotenciaBateria());
-        dto.setModeloBateria(cliente.getModeloBateria());
-        dto.setInstalacionFV(cliente.getInstalacionFV());
-        dto.setKwInversor(cliente.getKwInversor());
-        dto.setKwPanelesSolares(cliente.getKwPanelesSolares());
-        dto.setBateriaAlmacenamiento(cliente.getBateriaAlmacenamiento());
-        dto.setPotenciaBateriaAlmacenamiento(cliente.getPotenciaBateriaAlmacenamiento());
-        dto.setBackup(cliente.getBackup());
-        dto.setPeaksaving(cliente.getPeaksaving());
+        dto.setPassTelemedida(cliente.getPassTelemedida());
 
         // Servicios del cliente
         dto.setGestionEnergetica(cliente.getGestionEnergetica());
         dto.setTelemedida(cliente.getTelemedida());
         dto.setMonitorizacionEnergetica(cliente.getMonitorizacionEnergetica());
 
-        // Relación con AppMonitorizacion
-        if (cliente.getAppMonitorizacion() != null) {
-            dto.setAppMonitorizacionId(cliente.getAppMonitorizacion().getId());
-        }
-
-        // Relación con IntegracionSistemasFV
-        if (cliente.getIntegracionSistemasFV() != null) {
-            dto.setIntegracionSistemasFVId(cliente.getIntegracionSistemasFV().getId());
-        }
 
         // Relación con Usuario
         if (cliente.getUsuario() != null) {

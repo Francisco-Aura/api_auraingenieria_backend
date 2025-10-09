@@ -23,7 +23,6 @@ public class ContratoService {
     private final ClienteRepository clienteRepository;
     private final PuntoSuministroRepository puntoSuministroRepository;
 
-    @Autowired
     public ContratoService(ContratoRepository contratoRepository, 
                          ClienteRepository clienteRepository,
                          PuntoSuministroRepository puntoSuministroRepository) {
@@ -66,6 +65,8 @@ public class ContratoService {
                 contratoActual.setDenunciaContrato(contrato.getDenunciaContrato());
                 contratoActual.setFechaDenunciaContrato(contrato.getFechaDenunciaContrato());
                 contratoActual.setObservaciones(contrato.getObservaciones());
+                contratoActual.setUserFO(contrato.getUserFO());
+                contratoActual.setPasswordFO(contrato.getPasswordFO());
                 
                 logger.info("Campos del contrato actualizados. Guardando en base de datos...");
                 return contratoRepository.save(contratoActual);
@@ -108,6 +109,10 @@ public class ContratoService {
 
     public List<Contrato> obtenerTodos() {
         return contratoRepository.findAll();
+    }
+
+    public List<Contrato> obtenerContratosActivos() {
+        return contratoRepository.findContratosActivos();
     }
 
     public Optional<Contrato> obtenerPorId(Integer id) {

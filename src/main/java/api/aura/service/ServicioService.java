@@ -96,6 +96,10 @@ public class ServicioService {
             throw new IllegalArgumentException("El servicio debe tener un cliente asociado");
         }
 
+        // COMENTADO: Esta lógica automática de cierre de servicios anteriores
+        // causaba que se modificaran las fechas de servicios existentes al crear nuevos servicios.
+        // Se debe manejar la gestión de fechas de manera explícita desde el frontend cuando sea necesario.
+        /*
         // Si es un nuevo servicio y tiene punto de suministro, cerrar servicios anteriores
         if (servicio.getFechaInicioServicio() != null) {
             Integer puntoSuministroId = servicio.getPuntoSuministro().getId();
@@ -115,6 +119,7 @@ public class ServicioService {
                 }
             }
         }
+        */
         
         return servicioRepository.save(servicio);
     }

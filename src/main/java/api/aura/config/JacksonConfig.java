@@ -1,7 +1,6 @@
 package api.aura.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -22,11 +21,14 @@ public class JacksonConfig {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         
-        // Incluir solo propiedades no nulas
+        // IMPORTANTE: Configurar serialización de fechas como strings ISO
+        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        
+        // Incluir todas las propiedades (incluso las nulas)
         objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
         
-        // Importante: NO configurar una estrategia de nombres global
-        // para respetar las anotaciones @JsonProperty individuales
+        // Configurar zona horaria para fechas
+        objectMapper.setTimeZone(java.util.TimeZone.getTimeZone("Europe/Madrid"));
         
         return objectMapper;
     }
