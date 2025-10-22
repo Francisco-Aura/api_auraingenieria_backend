@@ -20,7 +20,7 @@ deploy_backend_PRE:
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY_PRE" > ~/.ssh/id_rsa_gitlab
     - chmod 600 ~/.ssh/id_rsa_gitlab
-    - ssh-keyscan 185.93.81.224 >> ~/.ssh/known_hosts
+    - ssh-keyscan 5.34.148.141 >> ~/.ssh/known_hosts
     - chmod 600 ~/.ssh/known_hosts
 
     # 3. Compilar proyecto con dependencias frescas
@@ -33,25 +33,25 @@ deploy_backend_PRE:
 
     # 4. Verificar conexión SSH
     - echo "=== Verificando conexión SSH ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@185.93.81.224 "echo 'Conexión SSH exitosa'"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "echo 'Conexión SSH exitosa'"
 
     # 5. Hacer backup del JAR anterior
     - echo "=== Creando backup del JAR anterior ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@185.93.81.224 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
 
     # 6. Copiar JAR a Raspberry PRE
     - echo "=== Copiando JAR a PRE ==="
-    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@185.93.81.224:/tmp/aura.jar
+    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.141:/tmp/aura.jar
     - echo "=== Verificando JAR copiado ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@185.93.81.224 "ls -la /tmp/aura.jar && du -sh /tmp/aura.jar"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "ls -la /tmp/aura.jar && du -sh /tmp/aura.jar"
 
     # 7. Ejecutar script de despliegue
     - echo "=== Ejecutando despliegue en PRE ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@185.93.81.224 "bash /home/babenza/deploy_backend.sh"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "bash /home/babenza/deploy_backend.sh"
 
     # 8. Verificar que el servicio esté funcionando
     - echo "=== Verificando estado del servicio ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@185.93.81.224 "systemctl status aura-backend || echo 'Servicio no encontrado'"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "systemctl status aura-backend || echo 'Servicio no encontrado'"
 
   # ELIMINAR CACHE COMPLETAMENTE
   # cache:
