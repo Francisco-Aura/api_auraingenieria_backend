@@ -79,33 +79,6 @@ public class PuntoSuministroController {
         return ResponseEntity.ok(puntos);
     }
 
-    @GetMapping("/debug/{id}/contratos")
-    public ResponseEntity<String> debugContratos(@PathVariable Integer id) {
-        try {
-            // Consulta directa a la base de datos para ver los contratos
-            String sql = """
-                    SELECT c.id, c.fecha_inicio, c.fecha_fin, c.fecha_baja,
-                           c.id_tarifa_luz, c.id_tarifa_gas,
-                           tl.nombre as tarifa_luz, tg.nombre as tarifa_gas
-                    FROM contratos c
-                    LEFT JOIN tbtarifas_luz tl ON c.id_tarifa_luz = tl.id
-                    LEFT JOIN tbtarifas_gas tg ON c.id_tarifa_gas = tg.id
-                    WHERE c.id_punto_suministro = ?
-                    ORDER BY c.fecha_inicio DESC
-                    """;
-
-            StringBuilder debug = new StringBuilder();
-            debug.append("=== CONTRATOS PARA PUNTO ").append(id).append(" ===\n");
-            debug.append("Consulta SQL ejecutada.\n");
-            debug.append("TODO: Implementar consulta JDBC directa para debug.\n");
-            debug.append("Ver logs del backend para más detalles.\n");
-
-            return ResponseEntity.ok(debug.toString());
-        } catch (Exception e) {
-            return ResponseEntity.ok("Error en debug: " + e.getMessage());
-        }
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<PuntoSuministro> obtenerPorId(@PathVariable Integer id) {
         return puntoSuministroService.obtenerPorId(id)

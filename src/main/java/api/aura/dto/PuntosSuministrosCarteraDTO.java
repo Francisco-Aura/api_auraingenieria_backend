@@ -14,6 +14,7 @@ public class PuntosSuministrosCarteraDTO {
     private String codigoPostal;
     private String poblacion;
     private String provincia;
+    private String identificacion;
     private String cupsluz;
     private String cupsgas;
     private String tarifaActual; // Tarifa del contrato actual
@@ -37,6 +38,7 @@ public class PuntosSuministrosCarteraDTO {
             String codigoPostal,
             String poblacion,
             String provincia,
+            String identificacion,
             String cupsluz,
             String cupsgas,
             Date fechaBaja) {
@@ -47,6 +49,7 @@ public class PuntosSuministrosCarteraDTO {
         this.codigoPostal = codigoPostal;
         this.poblacion = poblacion;
         this.provincia = provincia;
+        this.identificacion = identificacion;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
@@ -70,6 +73,7 @@ public class PuntosSuministrosCarteraDTO {
             String codigoPostal,
             String poblacion,
             String provincia,
+            String identificacion,
             String cupsluz,
             String cupsgas,
             Date fechaBaja,
@@ -81,6 +85,7 @@ public class PuntosSuministrosCarteraDTO {
         this.codigoPostal = codigoPostal;
         this.poblacion = poblacion;
         this.provincia = provincia;
+        this.identificacion = identificacion;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
@@ -104,6 +109,7 @@ public class PuntosSuministrosCarteraDTO {
             String codigoPostal,
             String poblacion,
             String provincia,
+            String identificacion,
             String cupsluz,
             String cupsgas,
             Date fechaBaja,
@@ -121,6 +127,7 @@ public class PuntosSuministrosCarteraDTO {
         this.codigoPostal = codigoPostal;
         this.poblacion = poblacion;
         this.provincia = provincia;
+        this.identificacion = identificacion;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
@@ -143,6 +150,7 @@ public class PuntosSuministrosCarteraDTO {
             String codigoPostal,
             String poblacion,
             String provincia,
+            String identificacion,
             String cupsluz,
             String cupsgas,
             Date fechaBaja,
@@ -161,6 +169,7 @@ public class PuntosSuministrosCarteraDTO {
         this.codigoPostal = codigoPostal;
         this.poblacion = poblacion;
         this.provincia = provincia;
+        this.identificacion = identificacion;
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
