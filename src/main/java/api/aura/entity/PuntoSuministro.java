@@ -73,7 +73,7 @@ public class PuntoSuministro {
 
     @ManyToOne
     @JoinColumn(name = "id_distribuidora")
-    private Distribuidora distribuidora;
+    private TBDistribuidora distribuidora;
 
     @Column(name = "potencia_bie")
     private Double potenciaBIE;
@@ -86,11 +86,11 @@ public class PuntoSuministro {
 
     @ManyToOne
     @JoinColumn(name = "id_tipo_contador")
-    private TipoContador tipoContador;
+    private TBTipoContador tipoContador;
 
     @ManyToOne
     @JoinColumn(name = "id_tipo_comunicacion")
-    private TipoComunicacion tipoComunicacion;
+    private TBTipoComunicacion tipoComunicacion;
 
     @Column(name = "numero_contador", length = 255)
     private String numeroContador;
@@ -109,7 +109,7 @@ public class PuntoSuministro {
 
     @ManyToOne
     @JoinColumn(name = "id_propiedad")
-    private Propiedad propiedad;
+    private TBPropiedad propiedad;
 
     @Column(name = "exencion_impuesto_electrico", columnDefinition = "BIT(1)")
     private Boolean exencionImpuestoElectrico;
@@ -156,7 +156,7 @@ public class PuntoSuministro {
 
     @ManyToOne
     @JoinColumn(name = "TBmonitorizacion_id")
-    private AppMonitorizacion appMonitorizacion;
+    private TBAppMonitorizacion appMonitorizacion;
 
     // Campos de instalaciones - Almacenamiento Energético
     @Column(length = 10)
@@ -173,7 +173,7 @@ public class PuntoSuministro {
 
     @ManyToOne
     @JoinColumn(name = "TBIntegracionSistemasFV_id")
-    private IntegracionSistemasFV integracionSistemasFV;
+    private TBIntegracionSistemasFV integracionSistemasFV;
 
     /*
      * // Relación con servicios

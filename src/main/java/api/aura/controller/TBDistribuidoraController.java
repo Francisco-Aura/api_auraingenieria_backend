@@ -13,16 +13,16 @@ import java.util.List;
 public class TBDistribuidoraController {
 
     @Autowired
-    private DistribuidoraRepository distribuidoraRepository;
+    private TBDistribuidoraRepository distribuidoraRepository;
 
     @GetMapping
-    public ResponseEntity<List<Distribuidora>> obtenerTodas() {
-        List<Distribuidora> distribuidoras = distribuidoraRepository.findAll();
+    public ResponseEntity<List<TBDistribuidora>> obtenerTodas() {
+        List<TBDistribuidora> distribuidoras = distribuidoraRepository.findAll();
         return ResponseEntity.ok(distribuidoras);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Distribuidora> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<TBDistribuidora> obtenerPorId(@PathVariable Integer id) {
         return distribuidoraRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
