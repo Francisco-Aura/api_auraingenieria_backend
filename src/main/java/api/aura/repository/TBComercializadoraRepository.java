@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ComercializadoraRepository extends JpaRepository<Comercializadora, Long> {
-    List<Comercializadora> findByActivoTrue();
+public interface TBComercializadoraRepository extends JpaRepository<TBComercializadora, Long> {
+    List<TBComercializadora> findByActivoTrue();
 } 

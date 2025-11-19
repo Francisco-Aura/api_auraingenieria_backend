@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/distribuidoras")
-public class DistribuidoraController {
+public class TBDistribuidoraController {
 
     @Autowired
     private DistribuidoraRepository distribuidoraRepository;

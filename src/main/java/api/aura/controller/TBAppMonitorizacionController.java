@@ -12,26 +12,26 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/app-monitorizacion")
-public class AppMonitorizacionController {
+public class TBAppMonitorizacionController {
 
     @Autowired
-    private AppMonitorizacionRepository appMonitorizacionRepository;
+    private TBAppMonitorizacionRepository appMonitorizacionRepository;
 
     @GetMapping
-    public List<AppMonitorizacion> obtenerTodos() {
+    public List<TBAppMonitorizacion> obtenerTodos() {
         return appMonitorizacionRepository.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AppMonitorizacion> obtenerPorId(@PathVariable Long id) {
-        Optional<AppMonitorizacion> appMonitorizacion = appMonitorizacionRepository.findById(id);
+    public ResponseEntity<TBAppMonitorizacion> obtenerPorId(@PathVariable Long id) {
+        Optional<TBAppMonitorizacion> appMonitorizacion = appMonitorizacionRepository.findById(id);
         return appMonitorizacion.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<AppMonitorizacion> crear(@RequestBody AppMonitorizacion appMonitorizacion) {
+    public ResponseEntity<TBAppMonitorizacion> crear(@RequestBody TBAppMonitorizacion appMonitorizacion) {
         try {
-            AppMonitorizacion nueva = appMonitorizacionRepository.save(appMonitorizacion);
+            TBAppMonitorizacion nueva = appMonitorizacionRepository.save(appMonitorizacion);
             return new ResponseEntity<>(nueva, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -39,11 +39,11 @@ public class AppMonitorizacionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AppMonitorizacion> actualizar(@PathVariable Long id,
-            @RequestBody AppMonitorizacion appMonitorizacion) {
-        Optional<AppMonitorizacion> datos = appMonitorizacionRepository.findById(id);
+    public ResponseEntity<TBAppMonitorizacion> actualizar(@PathVariable Long id,
+            @RequestBody TBAppMonitorizacion appMonitorizacion) {
+        Optional<TBAppMonitorizacion> datos = appMonitorizacionRepository.findById(id);
         if (datos.isPresent()) {
-            AppMonitorizacion existente = datos.get();
+            TBAppMonitorizacion existente = datos.get();
             existente.setNombre(appMonitorizacion.getNombre());
             existente.setDescripcion(appMonitorizacion.getDescripcion());
             return new ResponseEntity<>(appMonitorizacionRepository.save(existente), HttpStatus.OK);

@@ -12,7 +12,7 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TipoContador {
+public class TBTipoContador {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

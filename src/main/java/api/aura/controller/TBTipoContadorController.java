@@ -10,19 +10,19 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tipos-contador")
-public class TipoContadorController {
+public class TBTipoContadorController {
 
     @Autowired
-    private TipoContadorRepository tipoContadorRepository;
+    private TBTipoContadorRepository tipoContadorRepository;
 
     @GetMapping
-    public ResponseEntity<List<TipoContador>> obtenerTodos() {
-        List<TipoContador> tipos = tipoContadorRepository.findAll();
+    public ResponseEntity<List<TBTipoContador>> obtenerTodos() {
+        List<TBTipoContador> tipos = tipoContadorRepository.findAll();
         return ResponseEntity.ok(tipos);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TipoContador> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<TBTipoContador> obtenerPorId(@PathVariable Integer id) {
         return tipoContadorRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

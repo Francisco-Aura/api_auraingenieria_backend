@@ -10,19 +10,19 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/propiedades")
-public class PropiedadController {
+public class TBPropiedadController {
 
     @Autowired
-    private PropiedadRepository propiedadRepository;
+    private TBPropiedadRepository propiedadRepository;
 
     @GetMapping
-    public ResponseEntity<List<Propiedad>> obtenerTodas() {
-        List<Propiedad> propiedades = propiedadRepository.findAll();
+    public ResponseEntity<List<TBPropiedad>> obtenerTodas() {
+        List<TBPropiedad> propiedades = propiedadRepository.findAll();
         return ResponseEntity.ok(propiedades);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Propiedad> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<TBPropiedad> obtenerPorId(@PathVariable Integer id) {
         return propiedadRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

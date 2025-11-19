@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/integracion-sistemas-fv")
-public class IntegracionSistemasFVController {
+public class TBIntegracionSistemasFVController {
 
     @Autowired
     private IntegracionSistemasFVRepository integracionSistemasFVRepository;

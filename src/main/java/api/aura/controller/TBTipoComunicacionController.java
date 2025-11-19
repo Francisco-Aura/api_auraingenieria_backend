@@ -10,19 +10,19 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tipos-comunicacion")
-public class TipoComunicacionController {
+public class TBTipoComunicacionController {
 
     @Autowired
-    private TipoComunicacionRepository tipoComunicacionRepository;
+    private TBTipoComunicacionRepository tipoComunicacionRepository;
 
     @GetMapping
-    public ResponseEntity<List<TipoComunicacion>> obtenerTodos() {
-        List<TipoComunicacion> tipos = tipoComunicacionRepository.findAll();
+    public ResponseEntity<List<TBTipoComunicacion>> obtenerTodos() {
+        List<TBTipoComunicacion> tipos = tipoComunicacionRepository.findAll();
         return ResponseEntity.ok(tipos);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TipoComunicacion> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<TBTipoComunicacion> obtenerPorId(@PathVariable Integer id) {
         return tipoComunicacionRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
