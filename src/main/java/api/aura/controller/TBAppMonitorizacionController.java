@@ -1,7 +1,7 @@
 package api.aura.controller;
 
-import api.aura.entity.AppMonitorizacion;
-import api.aura.repository.AppMonitorizacionRepository;
+import api.aura.entity.TBAppMonitorizacion;
+import api.aura.repository.TBAppMonitorizacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

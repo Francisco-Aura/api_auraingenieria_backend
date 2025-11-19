@@ -1,7 +1,7 @@
 package api.aura.controller;
 
-import api.aura.entity.Propiedad;
-import api.aura.repository.PropiedadRepository;
+import api.aura.entity.TBPropiedad;
+import api.aura.repository.TBPropiedadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

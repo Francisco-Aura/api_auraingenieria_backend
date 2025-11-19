@@ -1,7 +1,7 @@
 package api.aura.controller;
 
-import api.aura.entity.TipoContador;
-import api.aura.repository.TipoContadorRepository;
+import api.aura.entity.TBTipoContador;
+import api.aura.repository.TBTipoContadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

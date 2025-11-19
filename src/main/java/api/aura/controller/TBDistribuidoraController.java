@@ -1,7 +1,7 @@
 package api.aura.controller;
 
-import api.aura.entity.Distribuidora;
-import api.aura.repository.DistribuidoraRepository;
+import api.aura.entity.TBDistribuidora;
+import api.aura.repository.TBDistribuidoraRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

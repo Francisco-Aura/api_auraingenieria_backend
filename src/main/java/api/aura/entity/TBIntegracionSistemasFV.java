@@ -17,10 +17,10 @@ public class TBIntegracionSistemasFV {
     private String descripcion;
 
     // Constructores
-    public IntegracionSistemasFV() {
+    public TBIntegracionSistemasFV() {
     }
 
-    public IntegracionSistemasFV(String nombre, String descripcion) {
+    public TBIntegracionSistemasFV(String nombre, String descripcion) {
         this.nombre = nombre;
         this.descripcion = descripcion;
     }

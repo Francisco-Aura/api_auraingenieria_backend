@@ -17,10 +17,10 @@ public class TBAppMonitorizacion {
     private String descripcion;
 
     // Constructores
-    public AppMonitorizacion() {
+    public TBAppMonitorizacion() {
     }
 
-    public AppMonitorizacion(String nombre, String descripcion) {
+    public TBAppMonitorizacion(String nombre, String descripcion) {
         this.nombre = nombre;
         this.descripcion = descripcion;
     }

@@ -1,6 +1,6 @@
 package api.aura.repository;
 
-import api.aura.entity.TipoContador;
+import api.aura.entity.TBTipoContador;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

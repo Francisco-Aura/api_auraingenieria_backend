@@ -1,7 +1,7 @@
 package api.aura.controller;
 
-import api.aura.entity.IntegracionSistemasFV;
-import api.aura.repository.IntegracionSistemasFVRepository;
+import api.aura.entity.TBIntegracionSistemasFV;
+import api.aura.repository.TBIntegracionSistemasFVRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

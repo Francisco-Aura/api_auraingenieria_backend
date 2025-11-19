@@ -1,7 +1,7 @@
 package api.aura.controller;
 
-import api.aura.entity.TipoComunicacion;
-import api.aura.repository.TipoComunicacionRepository;
+import api.aura.entity.TBTipoComunicacion;
+import api.aura.repository.TBTipoComunicacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
