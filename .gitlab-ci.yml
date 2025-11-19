@@ -3,82 +3,58 @@ image: maven:3.9.6-eclipse-temurin-17
 stages:
   - deploy
 
-.deploy_template: &deploy_template
+variables:
+  MAVEN_CLI_OPTS: "-DskipTests -U"
+
+.deploy_backend_template: &deploy_backend_template
+  stage: deploy
   before_script:
     - echo "=== Limpiando cache de Maven ==="
     - rm -rf .m2/repository
     - mvn dependency:purge-local-repository
-
     - echo "=== Instalando SSH client ==="
     - apt-get update -y && apt-get install -y openssh-client
-
     - echo "=== Configurando SSH ==="
     - mkdir -p ~/.ssh
-    - if [ -z "$SSH_PRIVATE_KEY" ]; then echo "ERROR: SSH_PRIVATE_KEY no está definida"; exit 1; fi
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_gitlab
     - chmod 600 ~/.ssh/id_rsa_gitlab
-    - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+    - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
     - echo "=== Verificando archivos SSH ==="
     - ls -la ~/.ssh
+  script:
+    - echo "=== Compilando proyecto ==="
+    - mvn clean package $MAVEN_CLI_OPTS
+    - echo "=== Verificando JAR generado ==="
+    - ls -la target/*.jar
+    - du -sh target/*.jar
+    - echo "=== Verificando conexión SSH ==="
+    - ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "echo 'Conexión SSH exitosa'"
+    - echo "=== Haciendo backup del JAR anterior ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "cp $DEPLOY_PATH/aura.jar $DEPLOY_PATH/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
+    - echo "=== Copiando JAR ==="
+    - scp -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar $SSH_USER@$SSH_HOST:$DEPLOY_PATH/aura.jar
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "ls -la $DEPLOY_PATH/aura.jar && du -sh $DEPLOY_PATH/aura.jar"
+    - echo "=== Ejecutando script de despliegue ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "bash $DEPLOY_PATH/deploy_backend.sh"
+    - echo "=== Verificando estado del servicio ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "systemctl status aura-backend || echo 'Servicio no encontrado'"
 
 deploy_backend_PRE:
-  stage: deploy
+  <<: *deploy_backend_template
   only:
     - release
   variables:
-    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY_PRE
-    SSH_HOST: 5.34.148.141
-  <<: *deploy_template
-  script:
-    - echo "=== Compilando proyecto ==="
-    - mvn clean package -DskipTests -U
-    - echo "=== Verificando JAR generado ==="
-    - ls -la target/*.jar
-    - du -sh target/*.jar
-
-    - echo "=== Verificando conexión SSH ==="
-    - ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "echo 'Conexión SSH exitosa'"
-
-    - echo "=== Haciendo backup del JAR anterior ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
-
-    - echo "=== Copiando JAR a PRE ==="
-    - scp -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@$SSH_HOST:/tmp/aura.jar
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "ls -la /tmp/aura.jar && du -sh /tmp/aura.jar"
-
-    - echo "=== Ejecutando script de despliegue ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "bash /home/babenza/deploy_backend.sh"
-
-    - echo "=== Verificando estado del servicio ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "systemctl status aura-backend || echo 'Servicio no encontrado'"
+    SSH_HOST: "5.34.148.141"
+    SSH_USER: "babenza"
+    SSH_PRIVATE_KEY: "$SSH_PRIVATE_KEY_PRE"
+    DEPLOY_PATH: "/tmp"
 
 deploy_backend_PRO:
-  stage: deploy
+  <<: *deploy_backend_template
   only:
     - main
   variables:
-    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
-    SSH_HOST: 5.34.149.250
-  <<: *deploy_template
-  script:
-    - echo "=== Compilando proyecto ==="
-    - mvn clean package -DskipTests -U
-    - echo "=== Verificando JAR generado ==="
-    - ls -la target/*.jar
-    - du -sh target/*.jar
-
-    - echo "=== Verificando conexión SSH ==="
-    - ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "echo 'Conexión SSH exitosa'"
-
-    - echo "=== Haciendo backup del JAR anterior ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
-
-    - echo "=== Copiando JAR a PRO ==="
-    - scp -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@$SSH_HOST:/tmp/aura.jar
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "ls -la /tmp/aura.jar && du -sh /tmp/aura.jar"
-
-    - echo "=== Ejecutando script de despliegue ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "bash /home/babenza/deploy_backend.sh"
-
-    - echo "=== Verificando estado del servicio ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@$SSH_HOST "systemctl status aura-backend || echo 'Servicio no encontrado'"
+    SSH_HOST: "5.34.149.250"
+    SSH_USER: "babenza"
+    SSH_PRIVATE_KEY: "$SSH_PRIVATE_KEY"
+    DEPLOY_PATH: "/tmp"
