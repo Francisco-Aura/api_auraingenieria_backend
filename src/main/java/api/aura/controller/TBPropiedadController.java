@@ -1,7 +1,7 @@
 package api.aura.controller;
 
-import api.aura.entity.Propiedad;
-import api.aura.repository.PropiedadRepository;
+import api.aura.entity.TBPropiedad;
+import api.aura.repository.TBPropiedadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,19 +10,19 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/propiedades")
-public class PropiedadController {
+public class TBPropiedadController {
 
     @Autowired
-    private PropiedadRepository propiedadRepository;
+    private TBPropiedadRepository propiedadRepository;
 
     @GetMapping
-    public ResponseEntity<List<Propiedad>> obtenerTodas() {
-        List<Propiedad> propiedades = propiedadRepository.findAll();
+    public ResponseEntity<List<TBPropiedad>> obtenerTodas() {
+        List<TBPropiedad> propiedades = propiedadRepository.findAll();
         return ResponseEntity.ok(propiedades);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Propiedad> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<TBPropiedad> obtenerPorId(@PathVariable Integer id) {
         return propiedadRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

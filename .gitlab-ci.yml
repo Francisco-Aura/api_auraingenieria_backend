@@ -3,7 +3,7 @@ image: maven:3.9.6-eclipse-temurin-17
 stages:
   - deploy
 
-# Despliegue en PRE (Rama release → Raspberry PRE)
+# Despliegue en PRE (Rama release → Raspberry PRE 5.34.148.141)
 deploy_backend_PRE:
   stage: deploy
   only:
@@ -58,7 +58,7 @@ deploy_backend_PRE:
   #   paths:
   #     - .m2/repository
 
-# Despliegue en PRO (Rama main → Raspberry PRO)
+# Despliegue en PRO (Rama main → Raspberry PRO 5.34.149.250)
 deploy_backend_PRO:
   stage: deploy
   only:

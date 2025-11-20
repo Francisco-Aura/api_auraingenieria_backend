@@ -7,12 +7,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 @Entity
-@Table(name = "tb_tipos_comunicacion")
+@Table(name = "tb_distribuidoras")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TipoComunicacion {
+public class TBDistribuidora {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

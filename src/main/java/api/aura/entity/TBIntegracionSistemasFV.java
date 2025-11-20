@@ -3,8 +3,8 @@ package api.aura.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "TBmonitorizacion")
-public class AppMonitorizacion {
+@Table(name = "TBIntegracionSistemasFV")
+public class TBIntegracionSistemasFV {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,10 +17,10 @@ public class AppMonitorizacion {
     private String descripcion;
 
     // Constructores
-    public AppMonitorizacion() {
+    public TBIntegracionSistemasFV() {
     }
 
-    public AppMonitorizacion(String nombre, String descripcion) {
+    public TBIntegracionSistemasFV(String nombre, String descripcion) {
         this.nombre = nombre;
         this.descripcion = descripcion;
     }
@@ -52,7 +52,7 @@ public class AppMonitorizacion {
 
     @Override
     public String toString() {
-        return "AppMonitorizacion{" +
+        return "IntegracionSistemasFV{" +
                 "id=" + id +
                 ", nombre='" + nombre + '\'' +
                 ", descripcion='" + descripcion + '\'' +

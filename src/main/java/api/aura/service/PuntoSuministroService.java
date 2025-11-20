@@ -3,12 +3,12 @@ package api.aura.service;
 import api.aura.dto.PuntosSuministrosCarteraDTO;
 import api.aura.entity.PuntoSuministro;
 import api.aura.repository.PuntoSuministroRepository;
-import api.aura.repository.DistribuidoraRepository;
-import api.aura.repository.TipoContadorRepository;
-import api.aura.repository.TipoComunicacionRepository;
-import api.aura.repository.PropiedadRepository;
-import api.aura.repository.AppMonitorizacionRepository;
-import api.aura.repository.IntegracionSistemasFVRepository;
+import api.aura.repository.TBDistribuidoraRepository;
+import api.aura.repository.TBTipoContadorRepository;
+import api.aura.repository.TBTipoComunicacionRepository;
+import api.aura.repository.TBPropiedadRepository;
+import api.aura.repository.TBAppMonitorizacionRepository;
+import api.aura.repository.TBIntegracionSistemasFVRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.entity.Contrato;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,17 +25,17 @@ public class PuntoSuministroService {
     private PuntoSuministroRepository puntoSuministroRepository;
 
     @Autowired
-    private DistribuidoraRepository distribuidoraRepository;
+    private TBDistribuidoraRepository distribuidoraRepository;
     @Autowired
-    private TipoContadorRepository tipoContadorRepository;
+    private TBTipoContadorRepository tipoContadorRepository;
     @Autowired
-    private TipoComunicacionRepository tipoComunicacionRepository;
+    private TBTipoComunicacionRepository tipoComunicacionRepository;
     @Autowired
-    private PropiedadRepository propiedadRepository;
+    private TBPropiedadRepository propiedadRepository;
     @Autowired
-    private AppMonitorizacionRepository appMonitorizacionRepository;
+    private TBAppMonitorizacionRepository appMonitorizacionRepository;
     @Autowired
-    private IntegracionSistemasFVRepository integracionSistemasFVRepository;
+    private TBIntegracionSistemasFVRepository integracionSistemasFVRepository;
 
     @Autowired
     private ContratoRepository contratoRepository;
