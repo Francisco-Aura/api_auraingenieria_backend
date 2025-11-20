@@ -2,9 +2,10 @@ package api.aura.service;
 
 import api.aura.dto.CuotaServicioDTO;
 import api.aura.entity.ServiciosPagos;
-import api.aura.entity.TBPagoPlazos;
+import api.aura.entity.tablas_maestras.TBPagoPlazos;
 import api.aura.repository.ServiciosPagosRepository;
-import api.aura.repository.TBPagoPlazosRepository;
+import api.aura.repository.tablas_maestras.TBPagoPlazosRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

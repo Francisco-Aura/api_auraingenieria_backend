@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.util.Date;
 
+import api.aura.entity.tablas_maestras.TBMetodoPago;
+import api.aura.entity.tablas_maestras.TBPagoPlazos;
+
 @Entity
 @Table(name = "ServiciosPagos")
 @Data
