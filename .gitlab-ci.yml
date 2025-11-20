@@ -3,58 +3,111 @@ image: maven:3.9.6-eclipse-temurin-17
 stages:
   - deploy
 
-variables:
-  MAVEN_CLI_OPTS: "-DskipTests -U"
-
-.deploy_backend_template: &deploy_backend_template
+# Despliegue en PRE (Rama release → Raspberry PRE 5.34.148.141)
+deploy_backend_PRE:
   stage: deploy
-  before_script:
+  only:
+    - release
+  script:
+    # 1. Limpiar cache de Maven completamente
     - echo "=== Limpiando cache de Maven ==="
     - rm -rf .m2/repository
     - mvn dependency:purge-local-repository
-    - echo "=== Instalando SSH client ==="
+
+    # 2. Configurar SSH para PRE
+    - echo "=== Configurando SSH para PRE ==="
     - apt-get update -y && apt-get install -y openssh-client
-    - echo "=== Configurando SSH ==="
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_PRE" > ~/.ssh/id_rsa_gitlab
+    - chmod 600 ~/.ssh/id_rsa_gitlab
+    - ssh-keyscan 5.34.148.141 >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh/known_hosts
+
+    # 3. Compilar proyecto con dependencias frescas
+    - echo "=== Compilando proyecto ==="
+    - mvn clean package -DskipTests -U
+    - echo "=== Verificando JAR generado ==="
+    - ls -la target/*.jar
+    - echo "=== Tamaño del JAR ==="
+    - du -sh target/*.jar
+
+    # 4. Verificar conexión SSH
+    - echo "=== Verificando conexión SSH ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "echo 'Conexión SSH exitosa'"
+
+    # 5. Hacer backup del JAR anterior
+    - echo "=== Creando backup del JAR anterior ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
+
+    # 6. Copiar JAR a Raspberry PRE
+    - echo "=== Copiando JAR a PRE ==="
+    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.141:/tmp/aura.jar
+    - echo "=== Verificando JAR copiado ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "ls -la /tmp/aura.jar && du -sh /tmp/aura.jar"
+
+    # 7. Ejecutar script de despliegue
+    - echo "=== Ejecutando despliegue en PRE ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "bash /home/babenza/deploy_backend.sh"
+
+    # 8. Verificar que el servicio esté funcionando
+    - echo "=== Verificando estado del servicio ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.141 "systemctl status aura-backend || echo 'Servicio no encontrado'"
+
+  # ELIMINAR CACHE COMPLETAMENTE
+  # cache:
+  #   paths:
+  #     - .m2/repository
+
+# Despliegue en PRO (Rama main → Raspberry PRO 5.34.149.250)
+deploy_backend_PRO:
+  stage: deploy
+  only:
+    - main
+  script:
+    # 1. Limpiar cache de Maven completamente
+    - echo "=== Limpiando cache de Maven ==="
+    - rm -rf .m2/repository
+    - mvn dependency:purge-local-repository
+
+    # 2. Configurar SSH para PRO
+    - echo "=== Configurando SSH para PRO ==="
+    - apt-get update -y && apt-get install -y openssh-client
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_gitlab
     - chmod 600 ~/.ssh/id_rsa_gitlab
-    - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
-    - echo "=== Verificando archivos SSH ==="
-    - ls -la ~/.ssh
-  script:
+    - ssh-keyscan 5.34.149.250 >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh/known_hosts
+
+    # 3. Compilar proyecto con dependencias frescas
     - echo "=== Compilando proyecto ==="
-    - mvn clean package $MAVEN_CLI_OPTS
+    - mvn clean package -DskipTests -U
     - echo "=== Verificando JAR generado ==="
     - ls -la target/*.jar
+    - echo "=== Tamaño del JAR ==="
     - du -sh target/*.jar
+
+    # 4. Verificar conexión SSH
     - echo "=== Verificando conexión SSH ==="
-    - ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "echo 'Conexión SSH exitosa'"
-    - echo "=== Haciendo backup del JAR anterior ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "cp $DEPLOY_PATH/aura.jar $DEPLOY_PATH/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
-    - echo "=== Copiando JAR ==="
-    - scp -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar $SSH_USER@$SSH_HOST:$DEPLOY_PATH/aura.jar
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "ls -la $DEPLOY_PATH/aura.jar && du -sh $DEPLOY_PATH/aura.jar"
-    - echo "=== Ejecutando script de despliegue ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "bash $DEPLOY_PATH/deploy_backend.sh"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.149.250 "echo 'Conexión SSH exitosa'"
+
+    # 5. Hacer backup del JAR anterior
+    - echo "=== Creando backup del JAR anterior ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.149.250 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || echo 'No existe JAR anterior'"
+
+    # 6. Copiar JAR a Raspberry PRO
+    - echo "=== Copiando JAR a PRO ==="
+    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.149.250:/tmp/aura.jar
+    - echo "=== Verificando JAR copiado ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.149.250 "ls -la /tmp/aura.jar && du -sh /tmp/aura.jar"
+
+    # 7. Ejecutar script de despliegue
+    - echo "=== Ejecutando despliegue en PRO ==="
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.149.250 "bash /home/babenza/deploy_backend.sh"
+
+    # 8. Verificar que el servicio esté funcionando
     - echo "=== Verificando estado del servicio ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab $SSH_USER@$SSH_HOST "systemctl status aura-backend || echo 'Servicio no encontrado'"
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.149.250 "systemctl status aura-backend || echo 'Servicio no encontrado'"
 
-deploy_backend_PRE:
-  <<: *deploy_backend_template
-  only:
-    - release
-  variables:
-    SSH_HOST: "5.34.148.141"
-    SSH_USER: "babenza"
-    SSH_PRIVATE_KEY: "$SSH_PRIVATE_KEY_PRE"
-    DEPLOY_PATH: "/tmp"
-
-deploy_backend_PRO:
-  <<: *deploy_backend_template
-  only:
-    - main
-  variables:
-    SSH_HOST: "5.34.149.250"
-    SSH_USER: "babenza"
-    SSH_PRIVATE_KEY: "$SSH_PRIVATE_KEY"
-    DEPLOY_PATH: "/tmp"
+  # ELIMINAR CACHE COMPLETAMENTE
+  # cache:
+  #     - .m2/repository
