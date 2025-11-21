@@ -54,7 +54,8 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
             JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
         WHERE 
-            (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL) 
+            (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
+            AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL) 
             AND (
                 -- Contratos próximos a vencer (30 días antes hasta 90 días después)
                 (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
@@ -92,7 +93,8 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             punto_suministro 
             LEFT JOIN clientes ON punto_suministro.id_cliente = clientes.id
         WHERE 
-            NOT EXISTS (SELECT id_punto_suministro FROM contratos WHERE contratos.id_punto_suministro = punto_suministro.id)
+            (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
+            AND NOT EXISTS (SELECT id_punto_suministro FROM contratos WHERE contratos.id_punto_suministro = punto_suministro.id)
         """, nativeQuery = true)
     List<Object[]> findPuntosSuministroSinContrato();
 
@@ -199,6 +201,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
              (COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0) OR
              (COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0) OR
              (COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0))
+            AND (s.fecha_baja IS NULL OR s.fecha_baja = '0001-01-01')
             AND (ps.fecha_baja IS NULL OR ps.fecha_baja = '0001-01-01')
             AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
             AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
@@ -250,6 +253,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             LEFT JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
         WHERE 
             (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL) 
+            AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
             AND contratos.fecha_fin > CURDATE()
         ORDER BY 
             fecha_fin ASC
