@@ -16,18 +16,19 @@ public class mt_Tarea {
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
-    private Long assignedTo; 
-    private Long createdBy;
-    private Long clientId;
+    private Long idUsuarioAsignado; 
+    private Long idUsuarioCreador;
+    private Long idCliente;
 
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
-    private LocalDateTime dueDate;
-
-    private Boolean important = false;
+    private LocalDateTime fechaInicio;
+    private LocalDateTime fechaFinalizacion;
+    private LocalDateTime fechaVencimiento;    
+    
+    @Enumerated(EnumType.STRING)
+    private Prioridad prioridad = Prioridad.MEDIA;
 
     @Enumerated(EnumType.STRING)
-    private EstadoTarea status = EstadoTarea.PENDING;
+    private EstadoTarea estado = EstadoTarea.PENDIENTE;
 
     @ManyToOne
     @JoinColumn(name = "categoria_id")
@@ -37,14 +38,23 @@ public class mt_Tarea {
     @JoinColumn(name = "subcategoria_id")
     private mt_SubCategoria subcategoria;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaActualizacion;
 
     // getters y setters
 
-    public enum EstadoTarea {
-        PENDING,
-        IN_PROGRESS,
-        COMPLETED
+    public enum EstadoTarea {        
+        PENDIENTE,
+        EN_PROGRESO,
+        BLOQUEADA,
+        COMPLETADA,
+        CANCELADA
+    }
+
+    public enum Prioridad {
+        BAJA,
+        MEDIA,
+        ALTA,
+        URGENTE
     }
 }

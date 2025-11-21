@@ -12,14 +12,14 @@ public class mt_Comentario {
 
     @ManyToOne
     @JoinColumn(name = "tarea_id", nullable = false)
-    private mt_Tarea task;
+    private mt_Tarea tarea;
 
-    private Long userId;
+    private Long idUsuarioAutor;
 
     @Column(columnDefinition = "TEXT")
-    private String comment;
+    private String comentario;
 
-    private LocalDateTime createdAt;
+    private LocalDateTime fechaComentario;
 
     // getters y setters
 }
