@@ -59,8 +59,17 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 -- Contratos próximos a vencer (30 días antes hasta 90 días después)
                 (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
                 OR
-                -- Contratos vencidos de los últimos 3 meses que no tengan renovación
+                -- Contratos vencidos de los últimos 3 meses
                 (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AND CURDATE())
+            )
+            -- Excluir contratos que ya tienen una renovación (otro contrato con fecha_inicio >= fecha_fin del actual)
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM contratos AS renovacion
+                WHERE renovacion.id_punto_suministro = contratos.id_punto_suministro
+                    AND renovacion.id != contratos.id
+                    AND renovacion.fecha_inicio >= contratos.fecha_fin
+                    AND (renovacion.fecha_baja = '0001-01-01' OR renovacion.fecha_baja IS NULL)
             )
         ORDER BY 
             fecha_fin ASC

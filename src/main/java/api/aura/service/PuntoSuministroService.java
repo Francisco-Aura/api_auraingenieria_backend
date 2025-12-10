@@ -263,22 +263,4 @@ public class PuntoSuministroService {
             // No lanzar excepción para no afectar el guardado del punto de suministro
         }
     }
-
-    /**
-     * Normaliza valores CUPS para manejar correctamente null, vacío y "null" string
-     */
-    private String normalizarCups(String cups) {
-        if (cups == null) {
-            return null;
-        }
-
-        String trimmed = cups.trim();
-
-        // Si es string vacío o literalmente "null", devolver null
-        if (trimmed.isEmpty() || "null".equals(trimmed)) {
-            return null;
-        }
-
-        return trimmed;
-    }
 }

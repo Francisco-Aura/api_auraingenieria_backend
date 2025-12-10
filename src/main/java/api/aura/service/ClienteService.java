@@ -175,6 +175,16 @@ public class ClienteService {
         return clienteRepository.findAll(pageRequest);
     }
 
+    // Buscar clientes por término
+    public Page<ClienteDTO> buscarClientes(String termino, PageRequest pageRequest) {
+        String sanitized = termino == null ? "" : termino.trim();
+        if (sanitized.isEmpty()) {
+            return Page.empty(pageRequest);
+        }
+        return clienteRepository.buscarPorTermino(sanitized, pageRequest)
+                .map(this::toDTO);
+    }
+
     // Convertir entidad Cliente a DTO
     public ClienteDTO toDTO(Cliente cliente) {
         ClienteDTO dto = new ClienteDTO();

@@ -9,7 +9,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.1</version> <!-- Versión de Spring Boot que estás usando -->
+		<version>3.5.8</version> <!-- Versión de Spring Boot que estás usando -->
 		<relativePath/> <!-- Indica que el padre se busca en el repositorio -->
 	</parent>
 

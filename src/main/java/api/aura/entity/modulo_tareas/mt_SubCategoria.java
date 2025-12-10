@@ -1,20 +1,34 @@
 package api.aura.entity.modulo_tareas;
 
 import jakarta.persistence.*;
-import java.util.Set;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "modulotareas_subcategorias")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class mt_SubCategoria {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String nombre;
 
-    @ManyToMany(mappedBy = "subcategorias")
-    private Set<mt_Categoria> categorias;
+    @Column(length = 10)
+    private String codigo;
 
-    // getters y setters
+    @Column(nullable = false)
+    private Boolean activo;
+
+    @ManyToMany(mappedBy = "subcategorias")
+    @Builder.Default
+    private List<mt_Categoria> categorias = new ArrayList<>();
 }

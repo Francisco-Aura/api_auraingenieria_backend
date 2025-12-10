@@ -1,25 +1,40 @@
 package api.aura.entity.modulo_tareas;
 
+import api.aura.entity.Usuario;
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "modulotareas_comentarios")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class mt_Comentario {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tarea_id", nullable = false)
     private mt_Tarea tarea;
 
-    private Long idUsuarioAutor;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuarioAutor;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String comentario;
 
-    private LocalDateTime fechaComentario;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime fechaCreacion;
 
-    // getters y setters
+    @PrePersist
+    public void onCreate() {
+        this.fechaCreacion = LocalDateTime.now();
+    }
 }
