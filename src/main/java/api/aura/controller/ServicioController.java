@@ -52,7 +52,7 @@ public class ServicioController {
                 // Aquí se procesaría el archivo PDF si estuviera implementado
                 if (archivo != null && !archivo.isEmpty()) {
                     logger.info("Se recibió un archivo adjunto: {}", archivo.getOriginalFilename());
-                    // TODO: Implementar el guardado del archivo PDF
+                    // Implementar el guardado del archivo PDF
                 }
             }
 
@@ -118,7 +118,7 @@ public class ServicioController {
                 // Aquí se procesaría el archivo PDF si estuviera implementado
                 if (archivo != null && !archivo.isEmpty()) {
                     logger.info("Se recibió un archivo adjunto para actualizar: {}", archivo.getOriginalFilename());
-                    // TODO: Implementar el guardado del archivo PDF
+                    // Implementar el guardado del archivo PDF
                 }
             }
 
@@ -140,14 +140,16 @@ public class ServicioController {
     @PostMapping("/{id}/renovar")
     public ResponseEntity<Servicio> renovarServicio(@PathVariable Integer id) {
         Servicio renovado = servicioService.renovarServicio(id);
-        if (renovado != null) return ResponseEntity.ok(renovado);
+        if (renovado != null)
+            return ResponseEntity.ok(renovado);
         return ResponseEntity.notFound().build();
     }
 
-    // Descargar PDF de un servicio (dummy, implementa lógica real si tienes PDF guardado)
+    // Descargar PDF de un servicio (dummy, implementa lógica real si tienes PDF
+    // guardado)
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> descargarPDF(@PathVariable Integer id) {
-        // TODO: Implementar lógica real de descarga de PDF
+        // Implementar lógica real de descarga de PDF
         return ResponseEntity.notFound().build();
     }
 

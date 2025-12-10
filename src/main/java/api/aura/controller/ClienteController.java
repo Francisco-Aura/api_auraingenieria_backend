@@ -48,6 +48,22 @@ public class ClienteController {
         return ResponseEntity.ok(clientes);
     }
 
+    // Buscar clientes por término
+    @GetMapping("/buscar")
+    public ResponseEntity<Page<ClienteDTO>> buscarClientes(
+            @RequestParam(name = "q") String termino,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        logger.info("Buscando clientes con el término: {}", termino);
+        try {
+            Page<ClienteDTO> clientes = clienteService.buscarClientes(termino, PageRequest.of(page, size));
+            return ResponseEntity.ok(clientes);
+        } catch (Exception e) {
+            logger.error("Error al buscar clientes: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     //Obtener Cartera Clientes
     @GetMapping("/cartera")
     public List<ClienteCarteraDTO> obternerCarteraClientes() {

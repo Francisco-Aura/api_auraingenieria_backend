@@ -48,30 +48,34 @@ public class UsuarioController {
     // Endpoint para verificar usuario y contraseña (login)
     @GetMapping("/login")
     public ResponseEntity<Map<String, Object>> Autenticar(
-            @RequestParam String user, 
+            @RequestParam String user,
             @RequestParam String pass) {
+        System.out.println("===== DEBUG LOGIN =====");
+        System.out.println("Usuario solicitado: " + user);
         Optional<Usuario> usuario = usuarioService.obtenerUsuarioPorNombreUsuarioPass(user, pass);
 
         if (usuario.isPresent()) {
+            System.out.println(
+                    "Usuario encontrado - ID: " + usuario.get().getId() + ", Nombre: " + usuario.get().getNombre());
             // Construimos un mapa con la información necesaria del usuario
             Map<String, Object> respuesta = Map.of(
-                "id", usuario.get().getId(),
-                "nombre", usuario.get().getNombre(),
-                "email", usuario.get().getEmail(),
-                "nivelAcceso", usuario.get().getNivelAcceso()
-            );
+                    "id", usuario.get().getId(),
+                    "nombre", usuario.get().getNombre(),
+                    "email", usuario.get().getEmail(),
+                    "nivelAcceso", usuario.get().getNivelAcceso());
 
             return ResponseEntity.ok(respuesta);
         } else {
             // Devolvemos un código 401 (No autorizado) con un mensaje de error
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .body(Map.of("error", "Usuario o contraseña incorrectos"));
+                    .body(Map.of("error", "Usuario o contraseña incorrectos"));
         }
     }
 
     // Endpoint para actualizar un usuario
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Integer id, @RequestBody Usuario usuarioActualizado) {
+    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Integer id,
+            @RequestBody Usuario usuarioActualizado) {
         Usuario usuario = usuarioService.actualizarUsuario(id, usuarioActualizado);
         return ResponseEntity.ok(usuario);
     }

@@ -2,6 +2,13 @@ package api.aura.entity;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+
+import api.aura.entity.tablas_maestras.TBAppMonitorizacion;
+import api.aura.entity.tablas_maestras.TBDistribuidora;
+import api.aura.entity.tablas_maestras.TBIntegracionSistemasFV;
+import api.aura.entity.tablas_maestras.TBPropiedad;
+import api.aura.entity.tablas_maestras.TBTipoComunicacion;
+import api.aura.entity.tablas_maestras.TBTipoContador;
 import jakarta.persistence.*;
 import lombok.*;
 
