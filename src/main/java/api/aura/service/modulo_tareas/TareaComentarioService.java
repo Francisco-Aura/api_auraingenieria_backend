@@ -2,15 +2,19 @@ package api.aura.service.modulo_tareas;
 
 import api.aura.dto.modulo_tareas.ComentarioDTO;
 import api.aura.entity.Usuario;
+import api.aura.entity.modulo_tareas.mt_Adjunto;
 import api.aura.entity.modulo_tareas.mt_Comentario;
 import api.aura.entity.modulo_tareas.mt_Tarea;
 import api.aura.repository.UsuarioRepository;
+import api.aura.repository.modulo_tareas.AdjuntoRepository;
 import api.aura.repository.modulo_tareas.mt_ComentarioRepository;
 import api.aura.repository.modulo_tareas.mt_TareaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +27,8 @@ public class TareaComentarioService {
     private final mt_TareaRepository tareaRepository;
     private final UsuarioRepository usuarioRepository;
     private final TareaNotificacionService notificacionService;
+    private final AdjuntoRepository adjuntoRepository;
+    private final FileStorageService fileStorageService;
 
     public List<ComentarioDTO> obtenerPorTarea(Long tareaId) {
         return comentarioRepository.findByTarea_IdOrderByFechaCreacionAsc(tareaId)
@@ -60,7 +66,41 @@ public class TareaComentarioService {
         comentarioRepository.deleteById(id);
     }
 
+    public mt_Adjunto agregarAdjunto(Long comentarioId, MultipartFile file) throws IOException {
+        mt_Comentario comentario = comentarioRepository.findById(comentarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Comentario no encontrado"));
+
+        mt_Adjunto adjunto = fileStorageService.guardarAdjunto(file, comentario);
+        return adjuntoRepository.save(adjunto);
+    }
+
+    public mt_Adjunto obtenerAdjunto(Long adjuntoId) {
+        return adjuntoRepository.findById(adjuntoId)
+                .orElseThrow(() -> new IllegalArgumentException("Adjunto no encontrado"));
+    }
+
+    public void eliminarAdjunto(Long adjuntoId) throws IOException {
+        mt_Adjunto adjunto = adjuntoRepository.findById(adjuntoId)
+                .orElseThrow(() -> new IllegalArgumentException("Adjunto no encontrado"));
+
+        // Eliminar archivo físico
+        fileStorageService.eliminarArchivo(adjunto.getRutaArchivo());
+
+        // Eliminar registro de base de datos
+        adjuntoRepository.delete(adjunto);
+    }
+
     private ComentarioDTO toDto(mt_Comentario comentario) {
+        List<ComentarioDTO.AdjuntoDTO> adjuntosDTO = comentario.getAdjuntos().stream()
+                .map(adj -> ComentarioDTO.AdjuntoDTO.builder()
+                        .id(adj.getId())
+                        .nombreArchivo(adj.getNombreArchivo())
+                        .tamanio(adj.getTamanio())
+                        .tipoMime(adj.getTipoMime())
+                        .fechaSubida(adj.getFechaSubida())
+                        .build())
+                .collect(Collectors.toList());
+
         return ComentarioDTO.builder()
                 .id(comentario.getId())
                 .tareaId(comentario.getTarea().getId())
@@ -68,6 +108,7 @@ public class TareaComentarioService {
                 .usuarioNombre(comentario.getUsuarioAutor().getNombre())
                 .comentario(comentario.getComentario())
                 .fechaCreacion(comentario.getFechaCreacion())
+                .adjuntos(adjuntosDTO)
                 .build();
     }
 }

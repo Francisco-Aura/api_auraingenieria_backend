@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "modulotareas_comentarios")
@@ -32,6 +34,10 @@ public class mt_Comentario {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
+
+    @OneToMany(mappedBy = "comentario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<mt_Adjunto> adjuntos = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {
