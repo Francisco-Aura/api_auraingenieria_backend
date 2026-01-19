@@ -20,7 +20,15 @@ public class TareaNotificacionService {
     private final mt_NotificacionRepository notificacionRepository;
 
     public void notificarAsignacion(mt_Tarea tarea) {
+        notificarAsignacion(tarea, null);
+    }
+
+    public void notificarAsignacion(mt_Tarea tarea, Integer usuarioAccionId) {
         if (tarea.getUsuarioAsignado() == null) {
+            return;
+        }
+        // No notificar si el usuario que asigna es el mismo que el asignado
+        if (usuarioAccionId != null && usuarioAccionId.equals(tarea.getUsuarioAsignado().getId())) {
             return;
         }
         crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.ASIGNADA,
@@ -28,7 +36,15 @@ public class TareaNotificacionService {
     }
 
     public void notificarCambioEstado(mt_Tarea tarea, String estadoDestino) {
+        notificarCambioEstado(tarea, estadoDestino, null);
+    }
+
+    public void notificarCambioEstado(mt_Tarea tarea, String estadoDestino, Integer usuarioAccionId) {
         if (tarea.getUsuarioAsignado() == null) {
+            return;
+        }
+        // No notificar si el usuario que cambia el estado es el mismo que el asignado
+        if (usuarioAccionId != null && usuarioAccionId.equals(tarea.getUsuarioAsignado().getId())) {
             return;
         }
         crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.CAMBIO_ESTADO,
@@ -53,7 +69,15 @@ public class TareaNotificacionService {
     }
 
     public void notificarCambioTarea(mt_Tarea tarea, String detallesCambio) {
+        notificarCambioTarea(tarea, detallesCambio, null);
+    }
+
+    public void notificarCambioTarea(mt_Tarea tarea, String detallesCambio, Integer usuarioAccionId) {
         if (tarea.getUsuarioAsignado() == null) {
+            return;
+        }
+        // No notificar si el usuario que modifica es el mismo que el asignado
+        if (usuarioAccionId != null && usuarioAccionId.equals(tarea.getUsuarioAsignado().getId())) {
             return;
         }
         crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.CAMBIO_ESTADO,
@@ -61,7 +85,15 @@ public class TareaNotificacionService {
     }
 
     public void notificarCampoEspecifico(mt_Tarea tarea, String tipoCampo, String mensaje) {
+        notificarCampoEspecifico(tarea, tipoCampo, mensaje, null);
+    }
+
+    public void notificarCampoEspecifico(mt_Tarea tarea, String tipoCampo, String mensaje, Integer usuarioAccionId) {
         if (tarea.getUsuarioAsignado() == null) {
+            return;
+        }
+        // No notificar si el usuario que modifica es el mismo que el asignado
+        if (usuarioAccionId != null && usuarioAccionId.equals(tarea.getUsuarioAsignado().getId())) {
             return;
         }
         // Usar el tipo CAMBIO_ESTADO para campos modificados, será diferenciado por el

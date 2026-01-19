@@ -27,10 +27,12 @@ public class TareaDTO {
     private String estadoNombre;
     private String estadoColor;
     private Boolean estadoFinal;
+    private Boolean estadoBloqueo;
     private Integer usuarioAsignadoId;
     private String usuarioAsignadoNombre;
     private Integer usuarioCreadorId;
     private String usuarioCreadorNombre;
+    private Integer nivelAccesoCreador;
     private Integer clienteRelacionadoId;
     private String clienteRelacionadoNombre;
     private Long categoriaId;

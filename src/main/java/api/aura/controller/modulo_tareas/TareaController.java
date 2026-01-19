@@ -39,13 +39,7 @@ public class TareaController {
     @GetMapping("/usuario/{usuarioId}/estadisticas")
     public EstadisticasTareasDTO estadisticas(@PathVariable Integer usuarioId,
             @RequestParam(required = false) Integer nivelAcceso) {
-        System.out.println("===== DEBUG ESTADISTICAS =====");
-        System.out.println("Usuario ID solicitado: " + usuarioId);
-        System.out.println("Nivel de acceso: " + nivelAcceso);
-        EstadisticasTareasDTO stats = tareaService.obtenerEstadisticas(usuarioId, nivelAcceso);
-        System.out.println("Estadísticas calculadas: " + stats.getTotalTareas() + " tareas totales");
-        System.out.println("==============================");
-        return stats;
+        return tareaService.obtenerEstadisticas(usuarioId, nivelAcceso);
     }
 
     @GetMapping("/{id}")
@@ -61,6 +55,16 @@ public class TareaController {
     @PutMapping("/{id}")
     public TareaDTO actualizar(@PathVariable Long id, @RequestBody TareaDTO dto) {
         return tareaService.actualizar(id, dto);
+    }
+
+    @PatchMapping("/{id}/fijada")
+    public ResponseEntity<?> toggleFijada(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> body) {
+        Boolean fijada = body.get("fijada");
+        if (fijada == null) {
+            return ResponseEntity.badRequest().body("Se requiere el campo 'fijada'");
+        }
+        tareaService.actualizarFijada(id, fijada);
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{tareaId}/estado/{estadoId}")

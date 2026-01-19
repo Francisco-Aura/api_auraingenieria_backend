@@ -8,9 +8,11 @@ import api.aura.repository.ClienteRepository;
 import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class TareaService {
 
     private final mt_TareaRepository tareaRepository;
@@ -32,6 +35,8 @@ public class TareaService {
     private final TareaNotificacionService notificacionService;
     private final TareaComentarioService comentarioService;
     private final mt_TareaHistorialRepository historialRepository;
+    private final AdjuntoRepository adjuntoRepository;
+    private final FileStorageService fileStorageService;
 
     public List<TareaDTO> obtenerTodas() {
         return tareaRepository.findAll().stream()
@@ -52,6 +57,13 @@ public class TareaService {
         mt_Tarea tarea = tareaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
         return toDto(tarea, true);
+    }
+
+    public void actualizarFijada(Long id, Boolean fijada) {
+        mt_Tarea tarea = tareaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
+        tarea.setFijada(fijada);
+        tareaRepository.save(tarea);
     }
 
     public TareaDTO crear(TareaDTO dto) {
@@ -103,41 +115,44 @@ public class TareaService {
         Long estadoNuevo = actualizada.getEstado() != null ? actualizada.getEstado().getId() : null;
         String estadoNombreNuevo = actualizada.getEstado() != null ? actualizada.getEstado().getNombre() : null;
 
+        // ID del usuario que realiza la acción (para no auto-notificar)
+        Integer usuarioAccionId = dto.getUsuarioCreadorId();
+
         // Si el usuario asignado cambió
         if (!java.util.Objects.equals(usuarioAsignadoNuevo, usuarioAsignadoAnterior)) {
             if (usuarioAsignadoNuevo != null) {
-                System.out.println("Notificando asignación de tarea a usuario " + usuarioAsignadoNuevo);
-                notificacionService.notificarAsignacion(actualizada);
+                log.debug("Notificando asignación de tarea a usuario {}", usuarioAsignadoNuevo);
+                notificacionService.notificarAsignacion(actualizada, usuarioAccionId);
             }
         }
 
         // Si el estado cambió
         if (!java.util.Objects.equals(estadoNuevo, estadoAnterior)) {
-            System.out.println("Notificando cambio de estado de " + estadoNombreAnterior + " a " + estadoNombreNuevo);
-            notificacionService.notificarCambioEstado(actualizada, estadoNombreNuevo);
+            log.debug("Notificando cambio de estado de {} a {}", estadoNombreAnterior, estadoNombreNuevo);
+            notificacionService.notificarCambioEstado(actualizada, estadoNombreNuevo, usuarioAccionId);
         }
 
         // Si el título cambió
         if (!java.util.Objects.equals(actualizada.getTitulo(), tituloAnterior)) {
-            System.out.println("Notificando cambio de título");
+            log.debug("Notificando cambio de título");
             notificacionService.notificarCampoEspecifico(actualizada, "TITULO",
-                    String.format("Título modificado: '%s'", actualizada.getTitulo()));
+                    String.format("Título modificado: '%s'", actualizada.getTitulo()), usuarioAccionId);
         }
 
         // Si la descripción cambió
         if (!java.util.Objects.equals(actualizada.getDescripcion(), descripcionAnterior)) {
-            System.out.println("Notificando cambio de descripción");
+            log.debug("Notificando cambio de descripción");
             notificacionService.notificarCampoEspecifico(actualizada, "DESCRIPCION",
-                    "La descripción de la tarea fue actualizada");
+                    "La descripción de la tarea fue actualizada", usuarioAccionId);
         }
 
         // Si la fecha de vencimiento cambió (comparar ignorando milisegundos)
         if (!sonFechasIguales(actualizada.getFechaVencimiento(), fechaVencimientoAnterior)) {
-            System.out.println("Notificando cambio de fecha de vencimiento");
+            log.debug("Notificando cambio de fecha de vencimiento");
             String fechaFormato = actualizada.getFechaVencimiento() != null ? actualizada.getFechaVencimiento()
                     .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "sin fecha";
             notificacionService.notificarCampoEspecifico(actualizada, "FECHA_VENCIMIENTO",
-                    String.format("Fecha de vencimiento: %s", fechaFormato));
+                    String.format("Fecha de vencimiento: %s", fechaFormato), usuarioAccionId);
 
             // Reiniciar flag de notificación para que se notifique de nuevo 1h antes de la
             // nueva fecha
@@ -147,10 +162,10 @@ public class TareaService {
 
         // Si la prioridad cambió
         if (!java.util.Objects.equals(actualizada.getPrioridad(), prioridadAnterior)) {
-            System.out.println("Notificando cambio de prioridad");
+            log.debug("Notificando cambio de prioridad");
             String prioridad = obtenerNombrePrioridad(actualizada.getPrioridad());
             notificacionService.notificarCampoEspecifico(actualizada, "PRIORIDAD",
-                    String.format("Prioridad cambiada a: %s", prioridad));
+                    String.format("Prioridad cambiada a: %s", prioridad), usuarioAccionId);
         }
 
         // Si la categoría cambió
@@ -158,10 +173,10 @@ public class TareaService {
         String categoriaNombreNueva = actualizada.getCategoria() != null ? actualizada.getCategoria().getNombre()
                 : null;
         if (!java.util.Objects.equals(categoriaNueva, categoriaAnterior)) {
-            System.out.println("Notificando cambio de categoría");
+            log.debug("Notificando cambio de categoría");
             String categoriaTexto = categoriaNombreNueva != null ? categoriaNombreNueva : "sin categoría";
             notificacionService.notificarCampoEspecifico(actualizada, "CATEGORIA",
-                    String.format("Categoría: %s", categoriaTexto));
+                    String.format("Categoría: %s", categoriaTexto), usuarioAccionId);
         }
 
         return toDto(actualizada, true);
@@ -192,6 +207,16 @@ public class TareaService {
     }
 
     public void eliminar(Long id) {
+        // Primero eliminar archivos físicos de todos los adjuntos asociados a la tarea
+        List<mt_Adjunto> adjuntos = adjuntoRepository.findByComentario_Tarea_Id(id);
+        for (mt_Adjunto adjunto : adjuntos) {
+            try {
+                fileStorageService.eliminarArchivo(adjunto.getRutaArchivo());
+            } catch (IOException e) {
+                log.warn("No se pudo eliminar el archivo físico: {}", adjunto.getRutaArchivo(), e);
+            }
+        }
+        // Eliminar la tarea (cascada eliminará comentarios y adjuntos en BD)
         tareaRepository.deleteById(id);
     }
 
@@ -243,20 +268,18 @@ public class TareaService {
     }
 
     public EstadisticasTareasDTO obtenerEstadisticas(Integer usuarioId, Integer nivelAcceso) {
-        System.out.println("===== SERVICIO - OBTENER ESTADISTICAS =====");
-        System.out.println("Usuario ID solicitado: " + usuarioId);
-        System.out.println("Nivel de acceso: " + nivelAcceso);
+        log.debug("Obteniendo estadísticas - Usuario ID: {}, Nivel de acceso: {}", usuarioId, nivelAcceso);
 
         // Si el usuario tiene nivel 1, ve TODAS las tareas
         List<mt_Tarea> tareas;
         if (nivelAcceso != null && nivelAcceso == 1) {
-            System.out.println("Nivel 1 detectado - mostrando TODAS las tareas");
+            log.debug("Nivel 1 detectado - mostrando TODAS las tareas");
             tareas = tareaRepository.findAll();
         } else {
             tareas = tareaRepository.findByUsuarioAsignado_Id(usuarioId);
         }
 
-        System.out.println("Tareas encontradas: " + tareas.size());
+        log.debug("Tareas encontradas: {}", tareas.size());
 
         long total = tareas.size();
         LocalDateTime ahora = LocalDateTime.now();
@@ -278,9 +301,9 @@ public class TareaService {
                 .filter(t -> Boolean.TRUE.equals(valorEstadoFinal(t)))
                 .count();
 
-        System.out.println("Métricas Básicas - Total: " + total + ", Vencidas: " + vencidas + ", En Progreso: "
-                + enProgreso +
-                ", Pendientes: " + pendientes + ", Completadas: " + completadas + ", Bloqueadas: " + tareasBloqueadas);
+        log.debug(
+                "Métricas Básicas - Total: {}, Vencidas: {}, En Progreso: {}, Pendientes: {}, Completadas: {}, Bloqueadas: {}",
+                total, vencidas, enProgreso, pendientes, completadas, tareasBloqueadas);
 
         // Calcular estadísticas semanales (lunes a domingo actual)
         LocalDateTime inicioSemana = ahora.minusDays(ahora.getDayOfWeek().getValue() - 1).toLocalDate().atStartOfDay();
@@ -324,8 +347,7 @@ public class TareaService {
         // * 100
         long tareasAsignadas = completadas + pendientes + enProgreso;
         double tasaCompletacion = tareasAsignadas == 0 ? 0 : (double) completadas / tareasAsignadas * 100;
-        System.out
-                .println("Tasa Completación: " + completadas + "/" + tareasAsignadas + " = " + tasaCompletacion + "%");
+        log.debug("Tasa Completación: {}/{} = {}%", completadas, tareasAsignadas, tasaCompletacion);
 
         // Eficiencia: tareas completadas a tiempo vs tareas completadas
         long completadasATiempo = tareas.stream()
@@ -346,14 +368,13 @@ public class TareaService {
                         .mapToLong(t -> Duration.between(t.getFechaVencimiento(), ahora).toDays())
                         .average()
                         .orElse(0);
-        System.out.println(
-                "Tareas Vencidas: " + tareasVencidasList.size() + ", Delay Promedio: " + delayPromedioDias + " días");
+        log.debug("Tareas Vencidas: {}, Delay Promedio: {} días", tareasVencidasList.size(), delayPromedioDias);
 
         // Tareas bloqueadas en el período actual
         long tareasBloqueadasPeriodo = tareas.stream()
                 .filter(t -> t.getEstado() != null && Boolean.TRUE.equals(t.getEstado().getEsBloqueo()))
                 .count();
-        System.out.println("Tareas Bloqueadas: " + tareasBloqueadasPeriodo);
+        log.debug("Tareas Bloqueadas: {}", tareasBloqueadasPeriodo);
 
         // Tareas próximas a vencer (próximos 3 días)
         LocalDateTime proximosTresDias = ahora.plusDays(3);
@@ -363,7 +384,7 @@ public class TareaService {
                         t.getFechaVencimiento().isAfter(ahora) &&
                         t.getFechaVencimiento().isBefore(proximosTresDias))
                 .count();
-        System.out.println("Tareas Próximas a Vencer: " + tareasProximasAVencer);
+        log.debug("Tareas Próximas a Vencer: {}", tareasProximasAVencer);
 
         // Prioridad promedio de las tareas pendientes
         double prioridadPromedioPendientes = tareas.stream()
@@ -376,7 +397,7 @@ public class TareaService {
         long tareasSinAsignar = tareas.stream()
                 .filter(t -> Boolean.FALSE.equals(valorEstadoFinal(t)) && t.getUsuarioAsignado() == null)
                 .count();
-        System.out.println("Tareas Sin Asignar: " + tareasSinAsignar);
+        log.debug("Tareas Sin Asignar: {}", tareasSinAsignar);
 
         return EstadisticasTareasDTO.builder()
                 .totalTareas(total)
@@ -489,6 +510,14 @@ public class TareaService {
         if (dto.getSubcategoriaId() != null) {
             mt_SubCategoria subCategoria = subCategoriaRepository.findById(dto.getSubcategoriaId())
                     .orElseThrow(() -> new IllegalArgumentException("Subcategoría inexistente"));
+            // Validar que la subcategoría pertenece a la categoría seleccionada (relación
+            // ManyToMany)
+            if (tarea.getCategoria() != null && subCategoria.getCategorias() != null
+                    && !subCategoria.getCategorias().isEmpty()
+                    && subCategoria.getCategorias().stream()
+                            .noneMatch(cat -> cat.getId().equals(tarea.getCategoria().getId()))) {
+                throw new IllegalArgumentException("La subcategoría no pertenece a la categoría seleccionada");
+            }
             tarea.setSubcategoria(subCategoria);
         } else {
             tarea.setSubcategoria(null);
@@ -525,11 +554,14 @@ public class TareaService {
                 .estadoNombre(tarea.getEstado() != null ? tarea.getEstado().getNombre() : null)
                 .estadoColor(tarea.getEstado() != null ? tarea.getEstado().getColorHex() : null)
                 .estadoFinal(valorEstadoFinal(tarea))
+                .estadoBloqueo(tarea.getEstado() != null ? tarea.getEstado().getEsBloqueo() : null)
                 .usuarioAsignadoId(tarea.getUsuarioAsignado() != null ? tarea.getUsuarioAsignado().getId() : null)
                 .usuarioAsignadoNombre(
                         tarea.getUsuarioAsignado() != null ? tarea.getUsuarioAsignado().getNombre() : null)
                 .usuarioCreadorId(tarea.getUsuarioCreador() != null ? tarea.getUsuarioCreador().getId() : null)
                 .usuarioCreadorNombre(tarea.getUsuarioCreador() != null ? tarea.getUsuarioCreador().getNombre() : null)
+                .nivelAccesoCreador(
+                        tarea.getUsuarioCreador() != null ? tarea.getUsuarioCreador().getNivelAcceso() : null)
                 .clienteRelacionadoId(
                         tarea.getClienteRelacionado() != null ? tarea.getClienteRelacionado().getId() : null)
                 .clienteRelacionadoNombre(

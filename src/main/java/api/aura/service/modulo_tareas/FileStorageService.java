@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -29,11 +30,15 @@ public class FileStorageService {
     /**
      * Guarda un archivo adjunto asociado a un comentario de tarea
      * Estructura:
-     * uploads/tareas/{clienteNombre}_{dni}/{tareaId}_{tareaTitulo}/{timestamp}_{filename}
+     * uploads/tareas/{clienteNombre}_{dni}/{tareaId}/{timestamp}_{filename}
      */
     public mt_Adjunto guardarAdjunto(MultipartFile file, mt_Comentario comentario) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("El archivo está vacío");
+        }
+
+        if (comentario == null || comentario.getTarea() == null) {
+            throw new IllegalArgumentException("El comentario o la tarea asociada son nulos");
         }
 
         mt_Tarea tarea = comentario.getTarea();
@@ -71,7 +76,7 @@ public class FileStorageService {
 
     /**
      * Construye la ruta del directorio según la estructura:
-     * uploads/tareas/{clienteNombre}_{dni}/{tareaId}_{tareaTitulo}
+     * uploads/tareas/{clienteNombre}_{dni}/{tareaId}
      */
     private String construirRutaDirectorio(Cliente cliente, mt_Tarea tarea) {
         StringBuilder ruta = new StringBuilder(baseUploadDir);
@@ -80,55 +85,49 @@ public class FileStorageService {
         // Carpeta del cliente
         if (cliente != null) {
             String nombreCliente = limpiarNombre(cliente.getNombre());
-            String dni = cliente.getCif();
+            String cif = cliente.getCif();
 
             if (nombreCliente != null && !nombreCliente.isEmpty()) {
                 ruta.append(nombreCliente);
             } else {
-                ruta.append("cliente_").append(cliente.getId());
+                ruta.append("cliente");
             }
 
             ruta.append("_");
 
-            if (dni != null && !dni.isEmpty()) {
-                ruta.append(dni.replaceAll("[^a-zA-Z0-9]", ""));
+            if (cif != null && !cif.trim().isEmpty()) {
+                ruta.append(cif.replaceAll("[^a-zA-Z0-9]", ""));
             } else {
-                ruta.append("sin_dni");
+                // Si no hay CIF, usar ID del cliente
+                ruta.append("id").append(cliente.getId());
             }
         } else {
-            ruta.append("sin_cliente");
+            ruta.append("general");
         }
 
-        // Subcarpeta de la tarea
+        // Subcarpeta de la tarea (solo ID)
         ruta.append("/");
-        ruta.append(tarea.getId()).append("_");
-
-        String tituloTarea = limpiarNombre(tarea.getTitulo());
-        if (tituloTarea != null && !tituloTarea.isEmpty()) {
-            // Limitar longitud del título para evitar rutas muy largas
-            if (tituloTarea.length() > 50) {
-                tituloTarea = tituloTarea.substring(0, 50);
-            }
-            ruta.append(tituloTarea);
-        } else {
-            ruta.append("sin_titulo");
-        }
+        ruta.append(tarea.getId());
 
         return ruta.toString();
     }
 
     /**
      * Limpia un nombre para usarlo en rutas de archivo
-     * Elimina caracteres especiales y espacios
+     * Normaliza acentos y elimina caracteres especiales
      */
     private String limpiarNombre(String nombre) {
         if (nombre == null || nombre.trim().isEmpty()) {
             return "";
         }
 
+        // Normalizar caracteres acentuados (á→a, ñ→n, ü→u, etc.)
+        String normalizado = Normalizer.normalize(nombre, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+
         // Convertir a minúsculas, reemplazar espacios por guiones bajos
         // y eliminar caracteres especiales excepto letras, números y guiones
-        return nombre.toLowerCase()
+        return normalizado.toLowerCase()
                 .trim()
                 .replaceAll("\\s+", "_")
                 .replaceAll("[^a-z0-9_-]", "")
