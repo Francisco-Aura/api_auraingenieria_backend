@@ -25,6 +25,7 @@ public class TareaSubcategoriaController {
 
     // Listar todas las subcategorías (para administración)
     @GetMapping
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> obtenerTodas() {
         return subcategoriaRepository.findAll().stream()
                 .map(this::toMap)
@@ -33,6 +34,7 @@ public class TareaSubcategoriaController {
 
     // Obtener por ID
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> obtenerPorId(@PathVariable Long id) {
         return subcategoriaRepository.findById(id)
                 .map(sub -> ResponseEntity.ok(toMap(sub)))
