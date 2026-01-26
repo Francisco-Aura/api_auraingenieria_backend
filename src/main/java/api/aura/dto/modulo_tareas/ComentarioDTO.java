@@ -20,6 +20,9 @@ public class ComentarioDTO {
     private LocalDateTime fechaCreacion;
 
     @Builder.Default
+    private Boolean fijado = false;
+
+    @Builder.Default
     private List<AdjuntoDTO> adjuntos = new ArrayList<>();
 
     @Getter

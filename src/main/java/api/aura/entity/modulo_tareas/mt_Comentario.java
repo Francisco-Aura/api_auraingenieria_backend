@@ -35,6 +35,10 @@ public class mt_Comentario {
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean fijado = false;
+
     @OneToMany(mappedBy = "comentario", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<mt_Adjunto> adjuntos = new ArrayList<>();

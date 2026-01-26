@@ -48,6 +48,11 @@ public class TareaComentarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{id}/fijado")
+    public ComentarioDTO toggleFijado(@PathVariable Long id) {
+        return comentarioService.toggleFijado(id);
+    }
+
     @PostMapping("/{comentarioId}/adjuntos")
     public ResponseEntity<Map<String, Object>> subirAdjunto(
             @PathVariable Long comentarioId,
