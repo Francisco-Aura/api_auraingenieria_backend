@@ -51,7 +51,7 @@ public class ContratoController {
                 // Aquí se procesaría el archivo PDF si estuviera implementado
                 if (archivo != null && !archivo.isEmpty()) {
                     logger.info("Se recibió un archivo adjunto: {}", archivo.getOriginalFilename());
-                    // TODO: Implementar el guardado del archivo PDF
+                    // Implementar el guardado del archivo PDF
                 }
             }
 
@@ -117,7 +117,7 @@ public class ContratoController {
                 // Aquí se procesaría el archivo PDF si estuviera implementado
                 if (archivo != null && !archivo.isEmpty()) {
                     logger.info("Se recibió un archivo adjunto para actualizar: {}", archivo.getOriginalFilename());
-                    // TODO: Implementar el guardado del archivo PDF
+                    // Implementar el guardado del archivo PDF
                 }
             }
 
@@ -162,7 +162,7 @@ public class ContratoController {
 
     @GetMapping("/punto-suministro/{puntoSuministroId}")
     public ResponseEntity<List<Contrato>> obtenerPorPuntoSuministroId(@PathVariable Integer puntoSuministroId) {
-        
+
         List<Contrato> contratos = contratoService.obtenerPorPuntoSuministroId(puntoSuministroId);
         return ResponseEntity.ok(contratos);
     }

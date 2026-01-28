@@ -3,12 +3,12 @@ package api.aura.service;
 import api.aura.dto.PuntosSuministrosCarteraDTO;
 import api.aura.entity.PuntoSuministro;
 import api.aura.repository.PuntoSuministroRepository;
-import api.aura.repository.TBDistribuidoraRepository;
-import api.aura.repository.TBTipoContadorRepository;
-import api.aura.repository.TBTipoComunicacionRepository;
-import api.aura.repository.TBPropiedadRepository;
-import api.aura.repository.TBAppMonitorizacionRepository;
-import api.aura.repository.TBIntegracionSistemasFVRepository;
+import api.aura.repository.tablas_maestras.TBAppMonitorizacionRepository;
+import api.aura.repository.tablas_maestras.TBDistribuidoraRepository;
+import api.aura.repository.tablas_maestras.TBIntegracionSistemasFVRepository;
+import api.aura.repository.tablas_maestras.TBPropiedadRepository;
+import api.aura.repository.tablas_maestras.TBTipoComunicacionRepository;
+import api.aura.repository.tablas_maestras.TBTipoContadorRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.entity.Contrato;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -262,23 +262,5 @@ public class PuntoSuministroService {
             e.printStackTrace();
             // No lanzar excepción para no afectar el guardado del punto de suministro
         }
-    }
-
-    /**
-     * Normaliza valores CUPS para manejar correctamente null, vacío y "null" string
-     */
-    private String normalizarCups(String cups) {
-        if (cups == null) {
-            return null;
-        }
-
-        String trimmed = cups.trim();
-
-        // Si es string vacío o literalmente "null", devolver null
-        if (trimmed.isEmpty() || "null".equals(trimmed)) {
-            return null;
-        }
-
-        return trimmed;
     }
 }

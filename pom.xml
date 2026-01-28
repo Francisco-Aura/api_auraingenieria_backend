@@ -9,7 +9,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.1</version> <!-- Versión de Spring Boot que estás usando -->
+		<version>3.5.8</version> <!-- Versión de Spring Boot que estás usando -->
 		<relativePath/> <!-- Indica que el padre se busca en el repositorio -->
 	</parent>
 
@@ -38,6 +38,10 @@
 	<!-- Propiedades globales del proyecto -->
 	<properties>
 		<java.version>17</java.version> <!-- Especifica que el proyecto usa Java 17 -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
+		<ci.build.number>img-23309214w</ci.build.number>
 	</properties>
 
 	<!-- Dependencias necesarias para tu proyecto -->

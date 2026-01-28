@@ -6,7 +6,6 @@ import api.aura.entity.PuntoSuministro;
 import api.aura.repository.ContratoRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.PuntoSuministroRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,26 +22,27 @@ public class ContratoService {
     private final ClienteRepository clienteRepository;
     private final PuntoSuministroRepository puntoSuministroRepository;
 
-    public ContratoService(ContratoRepository contratoRepository, 
-                         ClienteRepository clienteRepository,
-                         PuntoSuministroRepository puntoSuministroRepository) {
+    public ContratoService(ContratoRepository contratoRepository,
+            ClienteRepository clienteRepository,
+            PuntoSuministroRepository puntoSuministroRepository) {
         this.contratoRepository = contratoRepository;
         this.clienteRepository = clienteRepository;
         this.puntoSuministroRepository = puntoSuministroRepository;
     }
 
     public Contrato guardarContrato(Contrato contrato) {
-        logger.info("Guardando contrato para cliente ID: {}", contrato.getCliente() != null ? contrato.getCliente().getId() : "null");
-        
+        logger.info("Guardando contrato para cliente ID: {}",
+                contrato.getCliente() != null ? contrato.getCliente().getId() : "null");
+
         // Si el contrato tiene ID, es una actualización
         if (contrato.getId() != null) {
             logger.info("Actualizando contrato existente con ID: {}", contrato.getId());
-            
+
             // Buscar el contrato existente
             Optional<Contrato> contratoExistente = contratoRepository.findById(contrato.getId());
             if (contratoExistente.isPresent()) {
                 Contrato contratoActual = contratoExistente.get();
-                
+
                 // Actualizar todos los campos explícitamente
                 contratoActual.setFecha(contrato.getFecha());
                 contratoActual.setFechaEnvio(contrato.getFechaEnvio());
@@ -67,7 +67,7 @@ public class ContratoService {
                 contratoActual.setObservaciones(contrato.getObservaciones());
                 contratoActual.setUserFO(contrato.getUserFO());
                 contratoActual.setPasswordFO(contrato.getPasswordFO());
-                
+
                 logger.info("Campos del contrato actualizados. Guardando en base de datos...");
                 return contratoRepository.save(contratoActual);
             } else {
@@ -75,10 +75,10 @@ public class ContratoService {
                 throw new IllegalArgumentException("No se encontró el contrato con ID: " + contrato.getId());
             }
         }
-        
+
         // Si no tiene ID, es un contrato nuevo
         logger.info("Creando nuevo contrato");
-        
+
         // Si el contrato tiene un cliente pero no está cargado completamente
         if (contrato.getCliente() != null && contrato.getCliente().getId() != null) {
             Optional<Cliente> clienteOpt = clienteRepository.findById(contrato.getCliente().getId());
@@ -90,8 +90,10 @@ public class ContratoService {
                 throw new IllegalArgumentException("No se encontró el cliente especificado");
             }
         } else if (contrato.getPuntoSuministro() != null && contrato.getPuntoSuministro().getId() != null) {
-            // Si no tiene cliente pero tiene punto de suministro, buscamos el cliente a través del punto de suministro
-            Optional<PuntoSuministro> puntoSuministroOpt = puntoSuministroRepository.findById(contrato.getPuntoSuministro().getId());
+            // Si no tiene cliente pero tiene punto de suministro, buscamos el cliente a
+            // través del punto de suministro
+            Optional<PuntoSuministro> puntoSuministroOpt = puntoSuministroRepository
+                    .findById(contrato.getPuntoSuministro().getId());
             if (puntoSuministroOpt.isPresent() && puntoSuministroOpt.get().getCliente() != null) {
                 contrato.setCliente(puntoSuministroOpt.get().getCliente());
                 logger.info("Cliente asociado al contrato a través del punto de suministro");
@@ -103,7 +105,7 @@ public class ContratoService {
             logger.error("El contrato no tiene un cliente asociado");
             throw new IllegalArgumentException("El contrato debe tener un cliente asociado");
         }
-        
+
         return contratoRepository.save(contrato);
     }
 
@@ -132,16 +134,17 @@ public class ContratoService {
         contratos.forEach(contrato -> {
             System.out.println("Procesando contrato ID: " + contrato.getId());
             if (contrato.getCliente() != null) {
-                System.out.println("Contrato " + contrato.getId() + " tiene cliente asociado con ID: " + contrato.getCliente().getId());
+                System.out.println("Contrato " + contrato.getId() + " tiene cliente asociado con ID: "
+                        + contrato.getCliente().getId());
                 // Cargar la información completa del cliente
                 clienteRepository.findById(contrato.getCliente().getId())
-                    .ifPresent(cliente -> {
-                        contrato.setCliente(cliente);
-                        System.out.println("  Cliente cargado para contrato " + contrato.getId() + ":");
-                        System.out.println("    Nombre: " + cliente.getNombre());
-                        System.out.println("    DNI Autorizado: " + cliente.getDniAutorizado());
-                        System.out.println("    CIF: " + cliente.getCif());
-                    });
+                        .ifPresent(cliente -> {
+                            contrato.setCliente(cliente);
+                            System.out.println("  Cliente cargado para contrato " + contrato.getId() + ":");
+                            System.out.println("    Nombre: " + cliente.getNombre());
+                            System.out.println("    DNI Autorizado: " + cliente.getDniAutorizado());
+                            System.out.println("    CIF: " + cliente.getCif());
+                        });
             } else {
                 System.out.println("Contrato " + contrato.getId() + " NO tiene cliente asociado.");
             }
