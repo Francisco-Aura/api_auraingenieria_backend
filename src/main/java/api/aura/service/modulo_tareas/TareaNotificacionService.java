@@ -64,8 +64,13 @@ public class TareaNotificacionService {
                 || tarea.getUsuarioAsignado().getId().equals(autor.getId())) {
             return;
         }
+        // Truncar comentario a 180 caracteres para caber en VARCHAR(255) con el prefijo
+        String comentarioTruncado = comentario;
+        if (comentario != null && comentario.length() > 180) {
+            comentarioTruncado = comentario.substring(0, 180) + "...";
+        }
         crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.COMENTARIO,
-                String.format("%s comentó en '%s': %s", autor.getNombre(), tarea.getTitulo(), comentario));
+                String.format("%s comentó: %s", autor.getNombre(), comentarioTruncado));
     }
 
     public void notificarCambioTarea(mt_Tarea tarea, String detallesCambio) {
