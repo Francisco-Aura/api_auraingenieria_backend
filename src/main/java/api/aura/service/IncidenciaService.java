@@ -14,22 +14,18 @@ public class IncidenciaService {
     @Autowired
     private IncidenciaRepository incidenciaRepository;
 
-    // Crear una nueva incidencia
     public Incidencia crearIncidencia(Incidencia incidencia) {
         return incidenciaRepository.save(incidencia);
     }
 
-    // Obtener todas las incidencias
     public List<Incidencia> obtenerTodasLasIncidencias() {
         return incidenciaRepository.findAll();
     }
 
-    // Obtener una incidencia por ID
     public Optional<Incidencia> obtenerIncidenciaPorId(Integer id) {
         return incidenciaRepository.findById(id);
     }
 
-    // Actualizar una incidencia existente
     public Incidencia actualizarIncidencia(Integer id, Incidencia incidenciaActualizada) {
         return incidenciaRepository.findById(id)
                 .map(incidencia -> {
@@ -45,7 +41,6 @@ public class IncidenciaService {
                 .orElseThrow(() -> new RuntimeException("Incidencia no encontrada con ID: " + id));
     }
 
-    // Eliminar una incidencia
     public void eliminarIncidencia(Integer id) {
         incidenciaRepository.deleteById(id);
     }

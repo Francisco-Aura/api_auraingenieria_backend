@@ -108,6 +108,26 @@ public class TareaComentarioService {
                 adjuntoRepository.delete(adjunto);
         }
 
+        public mt_Adjunto actualizarAdjunto(Long adjuntoId, MultipartFile file) throws IOException {
+                mt_Adjunto adjunto = adjuntoRepository.findById(adjuntoId)
+                                .orElseThrow(() -> new IllegalArgumentException("Adjunto no encontrado"));
+
+                // Eliminar archivo físico anterior
+                fileStorageService.eliminarArchivo(adjunto.getRutaArchivo());
+
+                // Guardar nuevo archivo
+                mt_Comentario comentario = adjunto.getComentario();
+                mt_Adjunto nuevoAdjunto = fileStorageService.guardarAdjunto(file, comentario);
+
+                // Actualizar datos del adjunto existente
+                adjunto.setNombreArchivo(nuevoAdjunto.getNombreArchivo());
+                adjunto.setRutaArchivo(nuevoAdjunto.getRutaArchivo());
+                adjunto.setTipoMime(nuevoAdjunto.getTipoMime());
+                adjunto.setTamanio(nuevoAdjunto.getTamanio());
+
+                return adjuntoRepository.save(adjunto);
+        }
+
         private ComentarioDTO toDto(mt_Comentario comentario) {
                 List<ComentarioDTO.AdjuntoDTO> adjuntosDTO = comentario.getAdjuntos().stream()
                                 .map(adj -> ComentarioDTO.AdjuntoDTO.builder()

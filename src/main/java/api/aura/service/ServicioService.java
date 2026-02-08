@@ -34,13 +34,11 @@ public class ServicioService {
         // Si el servicio tiene ID, es una actualización
         if (servicio.getId() != null) {
             logger.info("Actualizando servicio existente con ID: {}", servicio.getId());
-            
-            // Buscar el servicio existente
+
             Optional<Servicio> servicioExistente = servicioRepository.findById(servicio.getId());
             if (servicioExistente.isPresent()) {
                 Servicio servicioActual = servicioExistente.get();
-                
-                // Actualizar todos los campos explícitamente
+
                 servicioActual.setFecha(servicio.getFecha());
                 servicioActual.setFechaInicioServicio(servicio.getFechaInicioServicio());
                 servicioActual.setFechaFinServicio(servicio.getFechaFinServicio());

@@ -16,31 +16,26 @@ public class IncidenciaController {
     @Autowired
     private IncidenciaService incidenciaService;
 
-    // Crear una nueva incidencia
     @PostMapping
     public ResponseEntity<Incidencia> crearIncidencia(@RequestBody Incidencia incidencia) {
         return ResponseEntity.ok(incidenciaService.crearIncidencia(incidencia));
     }
 
-    // Obtener todas las incidencias
     @GetMapping
     public List<Incidencia> obtenerTodasLasIncidencias() {
         return incidenciaService.obtenerTodasLasIncidencias();
     }
 
-    // Obtener una incidencia por ID
     @GetMapping("/{id}")
     public ResponseEntity<Optional<Incidencia>> obtenerIncidenciaPorId(@PathVariable Integer id) {
         return ResponseEntity.ok(incidenciaService.obtenerIncidenciaPorId(id));
     }
 
-    // Actualizar una incidencia existente
     @PutMapping("/{id}")
     public ResponseEntity<Incidencia> actualizarIncidencia(@PathVariable Integer id, @RequestBody Incidencia incidenciaActualizada) {
         return ResponseEntity.ok(incidenciaService.actualizarIncidencia(id, incidenciaActualizada));
     }
 
-    // Eliminar una incidencia
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarIncidencia(@PathVariable Integer id) {
         incidenciaService.eliminarIncidencia(id);

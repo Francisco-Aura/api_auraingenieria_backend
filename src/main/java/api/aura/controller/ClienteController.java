@@ -25,7 +25,6 @@ public class ClienteController {
     @Autowired
     private ClienteService clienteService;
 
-    // Crear un cliente
     @PostMapping
     public ResponseEntity<Cliente> crearCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
         logger.info("Solicitud para crear cliente: {}", clienteDTO);
@@ -39,7 +38,6 @@ public class ClienteController {
         }
     }
 
-     // Obtener todos los clientes con paginación
     @GetMapping
     public ResponseEntity<Page<Cliente>> obtenerTodosLosClientes(
             @RequestParam(defaultValue = "0") int page,
@@ -48,7 +46,6 @@ public class ClienteController {
         return ResponseEntity.ok(clientes);
     }
 
-    // Buscar clientes por término
     @GetMapping("/buscar")
     public ResponseEntity<Page<ClienteDTO>> buscarClientes(
             @RequestParam(name = "q") String termino,
@@ -64,13 +61,11 @@ public class ClienteController {
         }
     }
 
-    //Obtener Cartera Clientes
     @GetMapping("/cartera")
     public List<ClienteCarteraDTO> obternerCarteraClientes() {
         return clienteService.obtenerCarteraClientes();
     }
 
-    // Obtener cliente por ID
     @GetMapping("/{id}")
     public ResponseEntity<ClienteDTO> obtenerClientePorId(@PathVariable Integer id) {
         return clienteService.obtenerClientePorId(id)
@@ -78,7 +73,6 @@ public class ClienteController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Actualizar un cliente
     @PutMapping("/{id}")
     public ResponseEntity<Cliente> actualizarCliente(@PathVariable Integer id, @Valid @RequestBody ClienteDTO clienteDTO) {
         try {
@@ -90,7 +84,6 @@ public class ClienteController {
         }
     }
 
-    // Eliminar cliente (baja lógica)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarCliente(@PathVariable Integer id) {
         clienteService.eliminarCliente(id);

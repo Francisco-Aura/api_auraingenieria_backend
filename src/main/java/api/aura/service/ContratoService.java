@@ -38,7 +38,6 @@ public class ContratoService {
         if (contrato.getId() != null) {
             logger.info("Actualizando contrato existente con ID: {}", contrato.getId());
 
-            // Buscar el contrato existente
             Optional<Contrato> contratoExistente = contratoRepository.findById(contrato.getId());
             if (contratoExistente.isPresent()) {
                 Contrato contratoActual = contratoExistente.get();

@@ -23,11 +23,9 @@ public class ClienteService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    // Crear un nuevo cliente
     public Cliente crearCliente(ClienteDTO clienteDTO) {
         Cliente cliente = new Cliente();
 
-        // Asignación de campos desde el DTO a la entidad
         cliente.setNombre(clienteDTO.getNombre());
         cliente.setCif(clienteDTO.getCif());
         cliente.setDireccion(clienteDTO.getDireccion());
@@ -61,15 +59,12 @@ public class ClienteService {
         cliente.setUserTelemedida(clienteDTO.getUserTelemedida());
         cliente.setPassTelemedida(clienteDTO.getPassTelemedida());
 
-        // Servicios del cliente
         cliente.setGestionEnergetica(
                 clienteDTO.getGestionEnergetica() != null ? clienteDTO.getGestionEnergetica() : false);
         cliente.setTelemedida(clienteDTO.getTelemedida() != null ? clienteDTO.getTelemedida() : false);
         cliente.setMonitorizacionEnergetica(
                 clienteDTO.getMonitorizacionEnergetica() != null ? clienteDTO.getMonitorizacionEnergetica() : false);
 
-
-        // Relación con Usuario
         if (clienteDTO.getIdUsuario() != null) {
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(clienteDTO.getIdUsuario());
             if (usuarioOpt.isPresent()) {
@@ -79,26 +74,21 @@ public class ClienteService {
             }
         }
 
-        // Guarda el cliente en la base de datos
         return clienteRepository.save(cliente);
     }
 
-    // Listar todos los clientes
     public List<Cliente> obtenerTodosLosClientes() {
         return clienteRepository.findAll();
     }
 
-    // Obtiene una lista de clientes con información resumida
     public List<ClienteCarteraDTO> obtenerCarteraClientes() {
         return clienteRepository.obtenerCarteraClientes();
     }
 
-    // Buscar cliente por ID
     public Optional<Cliente> obtenerClientePorId(Integer id) {
         return clienteRepository.findById(id);
     }
 
-    // Actualizar un cliente existente
     public Cliente actualizarCliente(Integer id, ClienteDTO clienteDTO) {
         return clienteRepository.findById(id)
                 .map(cliente -> {
@@ -144,7 +134,6 @@ public class ClienteService {
                             clienteDTO.getMonitorizacionEnergetica() != null ? clienteDTO.getMonitorizacionEnergetica()
                                     : false);
 
-
                     // Actualiza la relación con Usuario si es necesario
                     if (clienteDTO.getIdUsuario() != null) {
                         Optional<Usuario> usuarioOpt = usuarioRepository.findById(clienteDTO.getIdUsuario());
@@ -162,7 +151,6 @@ public class ClienteService {
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + id));
     }
 
-    // Baja lógica del cliente
     public void eliminarCliente(Integer id) {
         clienteRepository.findById(id).ifPresent(cliente -> {
             cliente.setFechaBaja(new java.util.Date());
@@ -170,12 +158,10 @@ public class ClienteService {
         });
     }
 
-    // Obtener clientes paginados
     public Page<Cliente> obtenerTodosLosClientes(PageRequest pageRequest) {
         return clienteRepository.findAll(pageRequest);
     }
 
-    // Buscar clientes por término
     public Page<ClienteDTO> buscarClientes(String termino, PageRequest pageRequest) {
         String sanitized = termino == null ? "" : termino.trim();
         if (sanitized.isEmpty()) {
@@ -185,7 +171,6 @@ public class ClienteService {
                 .map(this::toDTO);
     }
 
-    // Convertir entidad Cliente a DTO
     public ClienteDTO toDTO(Cliente cliente) {
         ClienteDTO dto = new ClienteDTO();
         dto.setId(cliente.getId());
@@ -222,13 +207,10 @@ public class ClienteService {
         dto.setUserTelemedida(cliente.getUserTelemedida());
         dto.setPassTelemedida(cliente.getPassTelemedida());
 
-        // Servicios del cliente
         dto.setGestionEnergetica(cliente.getGestionEnergetica());
         dto.setTelemedida(cliente.getTelemedida());
         dto.setMonitorizacionEnergetica(cliente.getMonitorizacionEnergetica());
 
-
-        // Relación con Usuario
         if (cliente.getUsuario() != null) {
             dto.setIdUsuario(cliente.getUsuario().getId());
         }

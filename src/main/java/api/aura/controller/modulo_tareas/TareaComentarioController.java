@@ -103,4 +103,24 @@ public class TareaComentarioController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/adjuntos/{adjuntoId}")
+    public ResponseEntity<Map<String, Object>> actualizarAdjunto(
+            @PathVariable Long adjuntoId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            mt_Adjunto adjunto = comentarioService.actualizarAdjunto(adjuntoId, file);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", adjunto.getId());
+            response.put("nombreArchivo", adjunto.getNombreArchivo());
+            response.put("tamanio", adjunto.getTamanio());
+            response.put("tipoMime", adjunto.getTipoMime());
+            response.put("fechaSubida", adjunto.getFechaSubida());
+
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

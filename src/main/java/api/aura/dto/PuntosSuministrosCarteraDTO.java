@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 
 @Data
-@NoArgsConstructor // Constructor vacío para que Spring o frameworks puedan inicializar
+@NoArgsConstructor
 public class PuntosSuministrosCarteraDTO {
     private Integer id;
     private Integer idCliente;
@@ -17,19 +17,16 @@ public class PuntosSuministrosCarteraDTO {
     private String identificacion;
     private String cupsluz;
     private String cupsgas;
-    private String tarifaActual; // Tarifa del contrato actual
-    // Potencias contratadas P1-P6
+    private String tarifaActual;
     private Double potencia1;
     private Double potencia2;
     private Double potencia3;
     private Double potencia4;
     private Double potencia5;
     private Double potencia6;
-    private Date fechaBaja; // Fecha de baja del punto de suministro
-    private Date fechaFinUltimoContrato; // Fecha fin del último contrato
+    private Date fechaBaja;
+    private Date fechaFinUltimoContrato;
 
-    // Constructor específico para la consulta del repository
-    // findAllPuntosSuministro
     public PuntosSuministrosCarteraDTO(
             Integer id,
             Integer idCliente,
@@ -53,9 +50,8 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsluz = cupsluz;
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
-        this.tarifaActual = null; // Se establecerá en el repositorio
-        this.fechaFinUltimoContrato = null; // Se establecerá en el repositorio
-        // Inicializar potencias como null
+        this.tarifaActual = null;
+        this.fechaFinUltimoContrato = null;
         this.potencia1 = null;
         this.potencia2 = null;
         this.potencia3 = null;
@@ -64,7 +60,6 @@ public class PuntosSuministrosCarteraDTO {
         this.potencia6 = null;
     }
 
-    // Constructor con tarifa actual para la consulta con JOIN
     public PuntosSuministrosCarteraDTO(
             Integer id,
             Integer idCliente,
@@ -90,8 +85,7 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
         this.tarifaActual = tarifaActual;
-        this.fechaFinUltimoContrato = null; // Se establecerá en el repositorio
-        // Inicializar potencias como null
+        this.fechaFinUltimoContrato = null;
         this.potencia1 = null;
         this.potencia2 = null;
         this.potencia3 = null;
@@ -100,7 +94,6 @@ public class PuntosSuministrosCarteraDTO {
         this.potencia6 = null;
     }
 
-    // Constructor completo con potencias para la consulta actualizada
     public PuntosSuministrosCarteraDTO(
             Integer id,
             Integer idCliente,
@@ -132,7 +125,7 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
         this.tarifaActual = tarifaActual;
-        this.fechaFinUltimoContrato = null; // Se establecerá en el repositorio
+        this.fechaFinUltimoContrato = null;
         this.potencia1 = potencia1;
         this.potencia2 = potencia2;
         this.potencia3 = potencia3;
