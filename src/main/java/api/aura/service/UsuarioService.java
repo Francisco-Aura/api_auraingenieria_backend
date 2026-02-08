@@ -15,27 +15,22 @@ public class UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    // Crear un nuevo usuario
     public Usuario crearUsuario(Usuario usuario) {
         return usuarioRepository.save(usuario);
     }
 
-    // Obtener todos los usuarios
     public List<Usuario> obtenerTodosLosUsuarios() {
         return usuarioRepository.findAll();
     }
 
-    // Obtener usuario por ID
     public Optional<Usuario> obtenerUsuarioPorId(Integer id) {
         return usuarioRepository.findById(id);
     }
 
-    // Buscar usuario por nombre y pass (AUTENTICACION)
     public Optional<Usuario> obtenerUsuarioPorNombreUsuarioPass(String user, String pass) {
-        return Optional.ofNullable(usuarioRepository.findByUser(user,pass));
+        return Optional.ofNullable(usuarioRepository.findByUser(user, pass));
     }
 
-    // Actualizar un usuario existente
     public Usuario actualizarUsuario(Integer id, Usuario usuarioActualizado) {
         return usuarioRepository.findById(id)
                 .map(usuario -> {
@@ -50,7 +45,6 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
     }
 
-    // Eliminar usuario (baja lógica)
     public void eliminarUsuario(Integer id) {
         usuarioRepository.deleteById(id);
     }

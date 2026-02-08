@@ -15,7 +15,6 @@ public class TBComercializadorasService {
     @Autowired
     private TBComercializadorasRepository comercializadorasRepository;
 
-    // Crear un nuevo registro
     public TBComercializadoras crearComercializadora(TBComercializadoras comercializadora) {
         return comercializadorasRepository.save(comercializadora);
     }
@@ -25,12 +24,10 @@ public class TBComercializadorasService {
         return comercializadorasRepository.findAll();
     }
 
-    // Buscar por ID
     public Optional<TBComercializadoras> obtenerComercializadoraPorId(Integer id) {
         return comercializadorasRepository.findById(id);
     }
 
-    // Actualizar un registro existente
     public TBComercializadoras actualizarComercializadora(Integer id, TBComercializadoras comercializadoraActualizada) {
         return comercializadorasRepository.findById(id)
                 .map(comercializadora -> {
@@ -41,7 +38,6 @@ public class TBComercializadorasService {
                 .orElseThrow(() -> new RuntimeException("Comercializadora no encontrada con ID: " + id));
     }
 
-    // Eliminar un registro
     public void eliminarComercializadora(Integer id) {
         comercializadorasRepository.deleteById(id);
     }
