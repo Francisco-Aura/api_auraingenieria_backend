@@ -18,7 +18,8 @@ public class TBComercializadorasController {
     private TBComercializadorasService comercializadorasService;
 
     @PostMapping
-    public ResponseEntity<TBComercializadoras> crearComercializadora(@RequestBody TBComercializadoras comercializadora) {
+    public ResponseEntity<TBComercializadoras> crearComercializadora(
+            @RequestBody TBComercializadoras comercializadora) {
         return ResponseEntity.ok(comercializadorasService.crearComercializadora(comercializadora));
     }
 
@@ -33,7 +34,8 @@ public class TBComercializadorasController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TBComercializadoras> actualizarComercializadora(@PathVariable Integer id, @RequestBody TBComercializadoras comercializadoraActualizada) {
+    public ResponseEntity<TBComercializadoras> actualizarComercializadora(@PathVariable Integer id,
+            @RequestBody TBComercializadoras comercializadoraActualizada) {
         return ResponseEntity.ok(comercializadorasService.actualizarComercializadora(id, comercializadoraActualizada));
     }
 

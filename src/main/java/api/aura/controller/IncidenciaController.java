@@ -32,7 +32,8 @@ public class IncidenciaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Incidencia> actualizarIncidencia(@PathVariable Integer id, @RequestBody Incidencia incidenciaActualizada) {
+    public ResponseEntity<Incidencia> actualizarIncidencia(@PathVariable Integer id,
+            @RequestBody Incidencia incidenciaActualizada) {
         return ResponseEntity.ok(incidenciaService.actualizarIncidencia(id, incidenciaActualizada));
     }
 

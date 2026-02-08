@@ -28,7 +28,7 @@ public class UsuarioService {
     }
 
     public Optional<Usuario> obtenerUsuarioPorNombreUsuarioPass(String user, String pass) {
-        return Optional.ofNullable(usuarioRepository.findByUser(user,pass));
+        return Optional.ofNullable(usuarioRepository.findByUser(user, pass));
     }
 
     public Usuario actualizarUsuario(Integer id, Usuario usuarioActualizado) {

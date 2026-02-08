@@ -74,7 +74,8 @@ public class ClienteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Integer id, @Valid @RequestBody ClienteDTO clienteDTO) {
+    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Integer id,
+            @Valid @RequestBody ClienteDTO clienteDTO) {
         try {
             // Convierte el DTO a la entidad y actualiza
             Cliente clienteActualizado = clienteService.actualizarCliente(id, clienteDTO);
@@ -90,4 +91,3 @@ public class ClienteController {
         return ResponseEntity.noContent().build();
     }
 }
-
