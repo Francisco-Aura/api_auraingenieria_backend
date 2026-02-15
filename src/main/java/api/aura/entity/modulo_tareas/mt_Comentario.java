@@ -35,6 +35,13 @@ public class mt_Comentario {
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column(nullable = true)
+    private LocalDateTime fechaEdicion;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean editado = false;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean fijado = false;

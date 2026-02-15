@@ -63,13 +63,21 @@ public class TareaComentarioService {
                 return toDto(comentario);
         }
 
-        public ComentarioDTO actualizarComentario(Long id, String nuevoComentario) {
+        public ComentarioDTO actualizarComentario(Long id, String nuevoComentario, Integer usuarioIdActual) {
                 if (nuevoComentario == null || nuevoComentario.trim().isEmpty()) {
                         throw new IllegalArgumentException("El comentario no puede estar vacío");
                 }
                 mt_Comentario comentario = comentarioRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException("Comentario no encontrado"));
+                
+                // Validar que el usuario sea el autor
+                if (!comentario.getUsuarioAutor().getId().equals(usuarioIdActual)) {
+                        throw new IllegalArgumentException("No tienes permiso para editar este comentario. Solo el autor puede editarlo.");
+                }
+                
                 comentario.setComentario(nuevoComentario);
+                comentario.setFechaEdicion(java.time.LocalDateTime.now());
+                comentario.setEditado(true);
                 return toDto(comentarioRepository.save(comentario));
         }
 
@@ -80,7 +88,19 @@ public class TareaComentarioService {
                 return toDto(comentarioRepository.save(comentario));
         }
 
-        public void eliminarComentario(Long id) {
+        public void eliminarComentario(Long id, Integer usuarioIdActual) {
+                mt_Comentario comentario = comentarioRepository.findById(id)
+                                .orElseThrow(() -> new IllegalArgumentException("Comentario no encontrado"));
+                
+                // Obtener el usuario actual para verificar su nivel de acceso
+                Usuario usuarioActual = usuarioRepository.findById(usuarioIdActual)
+                                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                
+                // Verificar si es administrador (nivelAcceso = 1)
+                if (usuarioActual.getNivelAcceso() == null || !usuarioActual.getNivelAcceso().equals(1)) {
+                        throw new IllegalArgumentException("No tienes permiso para eliminar comentarios. Solo administradores pueden eliminarlos.");
+                }
+                
                 comentarioRepository.deleteById(id);
         }
 
@@ -146,6 +166,8 @@ public class TareaComentarioService {
                                 .usuarioNombre(comentario.getUsuarioAutor().getNombre())
                                 .comentario(comentario.getComentario())
                                 .fechaCreacion(comentario.getFechaCreacion())
+                                .fechaEdicion(comentario.getFechaEdicion())
+                                .editado(comentario.getEditado())
                                 .fijado(comentario.getFijado())
                                 .adjuntos(adjuntosDTO)
                                 .build();

@@ -38,14 +38,34 @@ public class TareaComentarioController {
     }
 
     @PutMapping("/{id}")
-    public ComentarioDTO actualizar(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        return comentarioService.actualizarComentario(id, body.get("comentario"));
+    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            String comentario = (String) body.get("comentario");
+            Integer usuarioId = (Integer) body.get("usuarioId");
+            
+            if (usuarioId == null) {
+                return ResponseEntity.badRequest().body("El usuarioId es requerido");
+            }
+            
+            ComentarioDTO resultado = comentarioService.actualizarComentario(id, comentario, usuarioId);
+            return ResponseEntity.ok(resultado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error al actualizar comentario");
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        comentarioService.eliminarComentario(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> eliminar(@PathVariable Long id, @RequestParam Integer usuarioId) {
+        try {
+            comentarioService.eliminarComentario(id, usuarioId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error al eliminar comentario");
+        }
     }
 
     @PatchMapping("/{id}/fijado")

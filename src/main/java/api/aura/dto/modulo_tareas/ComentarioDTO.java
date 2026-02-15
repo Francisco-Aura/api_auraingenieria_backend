@@ -18,6 +18,10 @@ public class ComentarioDTO {
     private String usuarioNombre;
     private String comentario;
     private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaEdicion;
+
+    @Builder.Default
+    private Boolean editado = false;
 
     @Builder.Default
     private Boolean fijado = false;
