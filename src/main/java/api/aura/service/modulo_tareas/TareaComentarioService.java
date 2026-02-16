@@ -167,8 +167,8 @@ public class TareaComentarioService {
                                 .comentario(comentario.getComentario())
                                 .fechaCreacion(comentario.getFechaCreacion())
                                 .fechaEdicion(comentario.getFechaEdicion())
-                                .editado(comentario.getEditado())
-                                .fijado(comentario.getFijado())
+                                .editado(comentario.getEditado() != null ? comentario.getEditado() : false)
+                                .fijado(comentario.getFijado() != null ? comentario.getFijado() : false)
                                 .adjuntos(adjuntosDTO)
                                 .build();
         }

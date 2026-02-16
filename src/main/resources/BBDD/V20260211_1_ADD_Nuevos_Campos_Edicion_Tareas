@@ -1,6 +1,0 @@
--- Agregar nuevos campos a la tabla de comentarios
-ALTER TABLE modulotareas_comentarios
-ADD COLUMN fecha_edicion DATETIME NULL;
-
-ALTER TABLE modulotareas_comentarios
-ADD COLUMN editado BIT NOT NULL DEFAULT 0;
