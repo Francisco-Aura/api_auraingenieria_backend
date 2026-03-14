@@ -19,52 +19,52 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
      * Incluye la tarifa del contrato actual (vigente) si existe y las potencias
      * contratadas.
      */
-    @Query(value = """
-            SELECT
-                ps.ID,
-                c.ID AS idCliente,
+    @Query("""
+                    SELECT new api.aura.dto.PuntosSuministrosCarteraDTO(
+                        ps.id,
+                        c.id,
                 c.nombre,
                 ps.direccion,
-                ps.codigo_postal,
+                        ps.codigoPostal,
                 ps.poblacion,
                 ps.provincia,
                 ps.identificacion,
                 ps.CUPSluz,
                 ps.CUPSgas,
-                ps.fecha_baja,
+                        ps.fechaBaja,
                 CASE
                     WHEN ps.CUPSluz IS NOT NULL AND ps.CUPSluz != '' AND tl.nombre IS NOT NULL AND tl.nombre != 'Sin Tarifa' THEN tl.nombre
                     WHEN ps.CUPSgas IS NOT NULL AND ps.CUPSgas != '' AND tg.nombre IS NOT NULL AND tg.nombre != 'Sin Tarifa' THEN tg.nombre
                     ELSE NULL
-                END AS tarifaActual,
-                com.nombre AS comercializadoraActual,
-                con.fecha_fin AS fechaFinUltimoContrato,
+                        END,
+                        com.nombre,
+                        (
+                            SELECT MAX(con3.fechaFin)
+                            FROM Contrato con3
+                            WHERE con3.puntoSuministro.id = ps.id
+                        ),
                 con.potencia1,
                 con.potencia2,
                 con.potencia3,
                 con.potencia4,
                 con.potencia5,
                 con.potencia6
-            FROM punto_suministro ps
-            LEFT JOIN clientes c ON ps.id_cliente = c.ID
-            LEFT JOIN (
-                -- Subquery optimizado: obtiene el contrato vigente más reciente
-                SELECT
-                    id_punto_suministro,
-                    MAX(id) AS max_id
-                FROM contratos
-                WHERE fecha_fin > CURDATE()
-                    AND id_punto_suministro IS NOT NULL
-                GROUP BY id_punto_suministro
-            ) con_vigente ON ps.ID = con_vigente.id_punto_suministro
-            LEFT JOIN contratos con ON con.id_punto_suministro = ps.ID
-                AND con.id = con_vigente.max_id
-            LEFT JOIN tbtarifas_luz tl ON con.id_tarifa_luz = tl.ID
-            LEFT JOIN tbtarifas_gas tg ON con.id_tarifa_gas = tg.ID
-            LEFT JOIN tbcomercializadoras com ON con.id_comercializadora_actual = com.ID
-            WHERE c.ID IS NOT NULL
-            ORDER BY ps.ID
-            """, nativeQuery = true)
+                    )
+                    FROM PuntoSuministro ps
+                    LEFT JOIN Cliente c ON ps.cliente.id = c.id
+                    LEFT JOIN Contrato con ON ps.id = con.puntoSuministro.id
+                        AND con.fechaFin > CURRENT_DATE
+                        AND con.id = (
+                            SELECT MAX(con2.id)
+                            FROM Contrato con2
+                            WHERE con2.puntoSuministro.id = ps.id
+                            AND con2.fechaFin > CURRENT_DATE
+                        )
+                    LEFT JOIN TBTarifasLuz tl ON con.idTarifaLuz = tl.id
+                    LEFT JOIN TBTarifasGas tg ON con.idTarifaGas = tg.id
+                    LEFT JOIN TBComercializadoras com ON con.idComercializadoraActual = com.id
+                    WHERE c.id IS NOT NULL
+            """)
     List<PuntosSuministrosCarteraDTO> findAllPuntosSuministro();
 
     /**
