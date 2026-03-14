@@ -18,6 +18,7 @@ public class PuntosSuministrosCarteraDTO {
     private String cupsluz;
     private String cupsgas;
     private String tarifaActual;
+    private String comercializadoraActual;
     private Double potencia1;
     private Double potencia2;
     private Double potencia3;
@@ -51,6 +52,7 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
         this.tarifaActual = null;
+        this.comercializadoraActual = null;
         this.fechaFinUltimoContrato = null;
         this.potencia1 = null;
         this.potencia2 = null;
@@ -85,6 +87,7 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
         this.tarifaActual = tarifaActual;
+        this.comercializadoraActual = null;
         this.fechaFinUltimoContrato = null;
         this.potencia1 = null;
         this.potencia2 = null;
@@ -125,6 +128,7 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
         this.tarifaActual = tarifaActual;
+        this.comercializadoraActual = null;
         this.fechaFinUltimoContrato = null;
         this.potencia1 = potencia1;
         this.potencia2 = potencia2;
@@ -148,6 +152,7 @@ public class PuntosSuministrosCarteraDTO {
             String cupsgas,
             Date fechaBaja,
             String tarifaActual,
+            String comercializadoraActual,
             Date fechaFinUltimoContrato,
             Double potencia1,
             Double potencia2,
@@ -167,6 +172,7 @@ public class PuntosSuministrosCarteraDTO {
         this.cupsgas = cupsgas;
         this.fechaBaja = fechaBaja;
         this.tarifaActual = tarifaActual;
+        this.comercializadoraActual = comercializadoraActual;
         this.fechaFinUltimoContrato = fechaFinUltimoContrato;
         this.potencia1 = potencia1;
         this.potencia2 = potencia2;

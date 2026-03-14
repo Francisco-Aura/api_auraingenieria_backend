@@ -37,6 +37,7 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                             WHEN ps.CUPSgas IS NOT NULL AND ps.CUPSgas != '' AND tg.nombre IS NOT NULL AND tg.nombre != 'Sin Tarifa' THEN tg.nombre
                             ELSE NULL
                         END,
+                        com.nombre,
                         (
                             SELECT MAX(con3.fechaFin)
                             FROM Contrato con3
@@ -61,6 +62,7 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                         )
                     LEFT JOIN TBTarifasLuz tl ON con.idTarifaLuz = tl.id
                     LEFT JOIN TBTarifasGas tg ON con.idTarifaGas = tg.id
+                    LEFT JOIN TBComercializadoras com ON con.idComercializadoraActual = com.id
                     WHERE c.id IS NOT NULL
             """)
     List<PuntosSuministrosCarteraDTO> findAllPuntosSuministro();
@@ -89,6 +91,7 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                             WHEN ps.CUPSgas IS NOT NULL AND ps.CUPSgas != '' AND tg.nombre IS NOT NULL AND tg.nombre != 'Sin Tarifa' THEN tg.nombre
                             ELSE NULL
                         END,
+                        com.nombre,
                         (
                             SELECT MAX(con3.fechaFin)
                             FROM Contrato con3
@@ -113,6 +116,7 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
                         )
                     LEFT JOIN TBTarifasLuz tl ON con.idTarifaLuz = tl.id
                     LEFT JOIN TBTarifasGas tg ON con.idTarifaGas = tg.id
+                    LEFT JOIN TBComercializadoras com ON con.idComercializadoraActual = com.id
                     WHERE c.id = :clienteId
             """)
     List<PuntosSuministrosCarteraDTO> findAllPuntosSuministroPorCliente(@Param("clienteId") Integer clienteId);
