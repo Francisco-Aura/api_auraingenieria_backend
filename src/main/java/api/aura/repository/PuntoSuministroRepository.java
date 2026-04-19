@@ -14,6 +14,12 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
     // Obtiene los puntos de suministro asociados a un cliente específico
     List<PuntoSuministro> findByClienteId(Integer clienteId);
 
+    // Baja en cascada: puntos activos del cliente
+    List<PuntoSuministro> findByClienteIdAndFechaBajaIsNull(Integer clienteId);
+
+    // Reactivación selectiva: puntos dados de baja del cliente
+    List<PuntoSuministro> findByClienteIdAndFechaBajaIsNotNull(Integer clienteId);
+
     /**
      * Consulta para obtener una lista de puntos de suministro en formato DTO.
      * Incluye la tarifa del contrato actual (vigente) si existe y las potencias

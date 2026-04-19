@@ -125,30 +125,15 @@ public class ContratoService {
     }
 
     public List<Contrato> obtenerPorPuntoSuministroId(Integer puntoSuministroId) {
-        System.out.println("Buscando contratos para punto de suministro ID: " + puntoSuministroId);
         List<Contrato> contratos = contratoRepository.findByPuntoSuministroId(puntoSuministroId);
-        System.out.println("Encontrados " + contratos.size() + " contratos.");
 
         // Cargar la información del cliente para cada contrato
         contratos.forEach(contrato -> {
-            System.out.println("Procesando contrato ID: " + contrato.getId());
             if (contrato.getCliente() != null) {
-                System.out.println("Contrato " + contrato.getId() + " tiene cliente asociado con ID: "
-                        + contrato.getCliente().getId());
-                // Cargar la información completa del cliente
                 clienteRepository.findById(contrato.getCliente().getId())
-                        .ifPresent(cliente -> {
-                            contrato.setCliente(cliente);
-                            System.out.println("  Cliente cargado para contrato " + contrato.getId() + ":");
-                            System.out.println("    Nombre: " + cliente.getNombre());
-                            System.out.println("    DNI Autorizado: " + cliente.getDniAutorizado());
-                            System.out.println("    CIF: " + cliente.getCif());
-                        });
-            } else {
-                System.out.println("Contrato " + contrato.getId() + " NO tiene cliente asociado.");
+                        .ifPresent(contrato::setCliente);
             }
         });
-        System.out.println("Finalizado procesamiento de contratos para PS ID: " + puntoSuministroId);
         return contratos;
     }
 

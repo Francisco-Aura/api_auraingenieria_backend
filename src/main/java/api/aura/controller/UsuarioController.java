@@ -50,13 +50,9 @@ public class UsuarioController {
     public ResponseEntity<Map<String, Object>> Autenticar(
             @RequestParam String user,
             @RequestParam String pass) {
-        System.out.println("===== DEBUG LOGIN =====");
-        System.out.println("Usuario solicitado: " + user);
         Optional<Usuario> usuario = usuarioService.obtenerUsuarioPorNombreUsuarioPass(user, pass);
 
         if (usuario.isPresent()) {
-            System.out.println(
-                    "Usuario encontrado - ID: " + usuario.get().getId() + ", Nombre: " + usuario.get().getNombre());
             // Construimos un mapa con la información necesaria del usuario
             Map<String, Object> respuesta = Map.of(
                     "id", usuario.get().getId(),

@@ -26,16 +26,10 @@ public class ClienteController {
     private ClienteService clienteService;
 
     @PostMapping
-    public ResponseEntity<Cliente> crearCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
+    public ResponseEntity<?> crearCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
         logger.info("Solicitud para crear cliente: {}", clienteDTO);
-        try {
-            // Convierte el DTO a la entidad y guarda
-            Cliente clienteCreado = clienteService.crearCliente(clienteDTO);
-            return ResponseEntity.ok(clienteCreado);
-        } catch (RuntimeException e) {
-            logger.error("Error al crear cliente: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        Cliente clienteCreado = clienteService.crearCliente(clienteDTO);
+        return ResponseEntity.ok(clienteCreado);
     }
 
     @GetMapping
@@ -57,7 +51,7 @@ public class ClienteController {
             return ResponseEntity.ok(clientes);
         } catch (Exception e) {
             logger.error("Error al buscar clientes: {}", e.getMessage());
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(null);
         }
     }
 
@@ -74,15 +68,10 @@ public class ClienteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Integer id,
+    public ResponseEntity<?> actualizarCliente(@PathVariable Integer id,
             @Valid @RequestBody ClienteDTO clienteDTO) {
-        try {
-            // Convierte el DTO a la entidad y actualiza
-            Cliente clienteActualizado = clienteService.actualizarCliente(id, clienteDTO);
-            return ResponseEntity.ok(clienteActualizado);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        Cliente clienteActualizado = clienteService.actualizarCliente(id, clienteDTO);
+        return ResponseEntity.ok(clienteActualizado);
     }
 
     @DeleteMapping("/{id}")

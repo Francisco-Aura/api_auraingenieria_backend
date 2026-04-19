@@ -72,8 +72,7 @@ public class ServiciosPagosService {
                     cuotas.add(cuota);
                 }
             } catch (Exception e) {
-                // Log error and continue
-                System.err.println("Error procesando cuota " + (i + 1) + ": " + e.getMessage());
+                // Skip invalid installment field and continue
             }
         }
 
@@ -233,8 +232,7 @@ public class ServiciosPagosService {
                 // Move to next month
                 calendar.add(Calendar.MONTH, 1);
             } catch (Exception e) {
-                // Log error and continue
-                System.err.println("Error setting installment " + i + ": " + e.getMessage());
+                // Skip invalid installment field and continue
             }
         }
 
@@ -266,7 +264,7 @@ public class ServiciosPagosService {
                     field.set(destino, valor);
                 }
             } catch (Exception e) {
-                System.err.println("Error actualizando campo " + campo + ": " + e.getMessage());
+                // Skip field if not accessible via reflection
             }
         }
     }

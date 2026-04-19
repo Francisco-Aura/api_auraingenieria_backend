@@ -15,7 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/servicios")
@@ -30,7 +32,7 @@ public class ServicioController {
     private ObjectMapper objectMapper;
 
     @PostMapping(consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<Servicio> crearOActualizarServicio(
+    public ResponseEntity<?> crearOActualizarServicio(
             @RequestParam(value = "servicio", required = false) String servicioJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo,
             @RequestBody(required = false) JsonNode servicioBody) {
@@ -58,14 +60,16 @@ public class ServicioController {
 
             if (servicio == null) {
                 logger.error("No se pudo obtener los datos del servicio");
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body(Map.of("error", "No se pudieron parsear los datos del servicio"));
             }
 
             Servicio guardado = servicioService.guardarServicio(servicio);
             return ResponseEntity.ok(guardado);
+        } catch (DataIntegrityViolationException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error al procesar el servicio", e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el servicio"));
         }
     }
 
@@ -95,7 +99,7 @@ public class ServicioController {
     }
 
     @PutMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<Servicio> actualizarServicio(
+    public ResponseEntity<?> actualizarServicio(
             @PathVariable Integer id,
             @RequestParam(value = "servicio", required = false) String servicioJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo,
@@ -124,15 +128,17 @@ public class ServicioController {
 
             if (servicio == null) {
                 logger.error("No se pudo obtener los datos del servicio para actualizar");
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body(Map.of("error", "No se pudieron parsear los datos del servicio"));
             }
 
             servicio.setId(id);
             Servicio actualizado = servicioService.guardarServicio(servicio);
             return ResponseEntity.ok(actualizado);
+        } catch (DataIntegrityViolationException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error al procesar la actualización del servicio", e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar el servicio"));
         }
     }
 
@@ -182,5 +188,21 @@ public class ServicioController {
     public ResponseEntity<Void> eliminarPorId(@PathVariable Integer id) {
         servicioService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Devuelve los IDs de puntos de suministro que tienen al menos un servicio
+     * activo (sin fecha de baja, sin fecha de fin o con fecha de fin futura)
+     * para los productos indicados. Evita cargar todos los servicios al frontend.
+     */
+    @GetMapping("/puntos-con-servicio-activo")
+    public ResponseEntity<java.util.Set<Integer>> obtenerPuntosConServicioActivo(
+            @RequestParam List<Integer> idProductos) {
+        if (idProductos == null || idProductos.isEmpty()) {
+            return ResponseEntity.ok(java.util.Collections.emptySet());
+        }
+        return ResponseEntity.ok(
+            servicioService.obtenerIdsPuntosConServicioActivo(idProductos)
+        );
     }
 }

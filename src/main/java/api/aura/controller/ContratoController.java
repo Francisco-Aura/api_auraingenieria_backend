@@ -14,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contratos")
@@ -29,7 +31,7 @@ public class ContratoController {
     private ObjectMapper objectMapper;
 
     @PostMapping(consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<Contrato> crearOActualizarContrato(
+    public ResponseEntity<?> crearOActualizarContrato(
             @RequestParam(value = "contrato", required = false) String contratoJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo,
             @RequestBody(required = false) JsonNode contratoBody) {
@@ -57,14 +59,16 @@ public class ContratoController {
 
             if (contrato == null) {
                 logger.error("No se pudo obtener los datos del contrato");
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body(Map.of("error", "No se pudieron parsear los datos del contrato"));
             }
 
             Contrato guardado = contratoService.guardarContrato(contrato);
             return ResponseEntity.ok(guardado);
+        } catch (DataIntegrityViolationException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error al procesar el contrato", e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el contrato"));
         }
     }
 
@@ -94,7 +98,7 @@ public class ContratoController {
     }
 
     @PutMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<Contrato> actualizarContrato(
+    public ResponseEntity<?> actualizarContrato(
             @PathVariable Integer id,
             @RequestParam(value = "contrato", required = false) String contratoJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo,
@@ -123,15 +127,17 @@ public class ContratoController {
 
             if (contrato == null) {
                 logger.error("No se pudo obtener los datos del contrato para actualizar");
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body(Map.of("error", "No se pudieron parsear los datos del contrato"));
             }
 
             contrato.setId(id);
             Contrato actualizado = contratoService.guardarContrato(contrato);
             return ResponseEntity.ok(actualizado);
+        } catch (DataIntegrityViolationException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error al procesar la actualización del contrato", e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar el contrato"));
         }
     }
 

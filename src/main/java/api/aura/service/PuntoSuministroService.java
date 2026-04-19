@@ -9,7 +9,9 @@ import api.aura.repository.tablas_maestras.TBIntegracionSistemasFVRepository;
 import api.aura.repository.tablas_maestras.TBPropiedadRepository;
 import api.aura.repository.tablas_maestras.TBTipoComunicacionRepository;
 import api.aura.repository.tablas_maestras.TBTipoContadorRepository;
+import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
+import api.aura.entity.Cliente;
 import api.aura.entity.Contrato;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,12 +40,27 @@ public class PuntoSuministroService {
     private TBIntegracionSistemasFVRepository integracionSistemasFVRepository;
 
     @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
     private ContratoRepository contratoRepository;
 
     @Transactional
     public PuntoSuministro guardarPuntoSuministro(PuntoSuministro puntoSuministro) {
-        try {
-            // Validar campos obligatorios
+        // Validar que no se reactive un PS si el cliente está dado de baja
+        if (puntoSuministro.getId() != null && puntoSuministro.getFechaBaja() == null
+                && puntoSuministro.getCliente() != null && puntoSuministro.getCliente().getId() != null) {
+            Optional<PuntoSuministro> existente = puntoSuministroRepository.findById(puntoSuministro.getId());
+            if (existente.isPresent() && existente.get().getFechaBaja() != null) {
+                Cliente cliente = clienteRepository.findById(puntoSuministro.getCliente().getId()).orElse(null);
+                if (cliente != null && cliente.getFechaBaja() != null) {
+                    throw new IllegalArgumentException(
+                            "No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
+                }
+            }
+        }
+
+        // Validar campos obligatorios
             if (puntoSuministro.getDireccion() == null || puntoSuministro.getDireccion().trim().isEmpty() ||
                     puntoSuministro.getCodigoPostal() == null || puntoSuministro.getCodigoPostal().trim().isEmpty() ||
                     puntoSuministro.getPoblacion() == null || puntoSuministro.getPoblacion().trim().isEmpty() ||
@@ -103,19 +120,11 @@ public class PuntoSuministroService {
             String cupsLuz = puntoSuministro.getCUPSluz();
             String cupsGas = puntoSuministro.getCUPSgas();
 
-            System.out.println("=== DEBUG VALIDACIÓN CUPS EN SERVICIO ===");
-            System.out.println("CUPSluz: '" + cupsLuz + "'");
-            System.out.println("CUPSgas: '" + cupsGas + "'");
-
             // Validar que al menos uno de los CUPS tenga un valor válido
             boolean tieneCupsLuz = cupsLuz != null && !cupsLuz.trim().isEmpty();
             boolean tieneCupsGas = cupsGas != null && !cupsGas.trim().isEmpty();
 
-            System.out.println("Tiene CUPS luz válido: " + tieneCupsLuz);
-            System.out.println("Tiene CUPS gas válido: " + tieneCupsGas);
-
             if (!tieneCupsLuz && !tieneCupsGas) {
-                System.out.println("ERROR al guardar punto suministro: Debe proporcionar al menos un CUPS (luz o gas)");
                 throw new IllegalArgumentException("Debe proporcionar al menos un CUPS (luz o gas)");
             }
 
@@ -153,33 +162,13 @@ public class PuntoSuministroService {
                 puntoSuministro.setIntegracionSistemasFV(null);
             }
 
-            System.out.println("=== ANTES DE GUARDAR ===");
-            System.out.println("Punto Suministro ID: " + puntoSuministro.getId());
-            System.out.println("Datos finales de instalaciones antes del save:");
-            System.out.println("  Batería Condensadores: " + puntoSuministro.getBateriaCondensadores());
-            System.out.println("  Instalación FV: " + puntoSuministro.getInstalacionFV());
-            System.out.println("  Batería Almacenamiento: " + puntoSuministro.getBateriaAlmacenamiento());
-
             PuntoSuministro saved = puntoSuministroRepository.save(puntoSuministro);
-
-            System.out.println("=== DESPUÉS DE GUARDAR ===");
-            System.out.println("Punto Suministro guardado con ID: " + saved.getId());
-            System.out.println("Datos guardados de instalaciones:");
-            System.out.println("  Batería Condensadores: " + saved.getBateriaCondensadores());
-            System.out.println("  Instalación FV: " + saved.getInstalacionFV());
-            System.out.println("  Batería Almacenamiento: " + saved.getBateriaAlmacenamiento());
-            System.out.println("===============================");
 
             // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto
             // de suministro
             sincronizarContratosConPuntoSuministro(saved);
 
             return saved;
-        } catch (Exception e) {
-            System.out.println("ERROR al guardar punto suministro: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Error al guardar el punto de suministro: " + e.getMessage(), e);
-        }
     }
 
     public List<PuntoSuministro> obtenerTodos() {
@@ -208,6 +197,20 @@ public class PuntoSuministroService {
         puntoSuministroRepository.deleteById(id);
     }
 
+    public List<PuntoSuministro> obtenerDadosDeBajaPorClienteId(Integer clienteId) {
+        return puntoSuministroRepository.findByClienteIdAndFechaBajaIsNotNull(clienteId);
+    }
+
+    public void reactivarPuntoSuministro(Integer id) {
+        puntoSuministroRepository.findById(id).ifPresent(ps -> {
+            if (ps.getCliente() != null && ps.getCliente().getFechaBaja() != null) {
+                throw new IllegalArgumentException("No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
+            }
+            ps.setFechaBaja(null);
+            puntoSuministroRepository.save(ps);
+        });
+    }
+
     /**
      * Sincroniza todos los contratos asociados a un punto de suministro
      * con los valores de exención de impuesto eléctrico y autoconsumo del punto.
@@ -216,50 +219,27 @@ public class PuntoSuministroService {
      */
     private void sincronizarContratosConPuntoSuministro(PuntoSuministro puntoSuministro) {
         try {
-            System.out.println("=== SINCRONIZACIÓN CONTRATOS ===");
-            System.out.println("Punto Suministro ID: " + puntoSuministro.getId());
-            System.out.println("Exención Impuesto Eléctrico: " + puntoSuministro.getExencionImpuestoElectrico());
-            System.out.println("Autoconsumo: " + puntoSuministro.getAutoconsumo());
-
             // Buscar todos los contratos asociados a este punto de suministro
             List<Contrato> contratos = contratoRepository.findByPuntoSuministroId(puntoSuministro.getId());
 
-            System.out.println("Contratos encontrados: " + contratos.size());
-
             // Actualizar cada contrato con los valores del punto de suministro
             for (Contrato contrato : contratos) {
-                System.out.println("Actualizando contrato ID: " + contrato.getId() +
-                        " - Contrato: " + contrato.getContrato());
-
                 // Sincronizar exención de impuesto eléctrico (convertir Boolean a Integer)
                 contrato.setExencionImpuestoElectricidad(
                         puntoSuministro.getExencionImpuestoElectrico() != null
                                 && puntoSuministro.getExencionImpuestoElectrico() ? 1 : 0);
 
                 // Sincronizar autoconsumo (convertir String a Integer)
-                // Si el campo tiene cualquier valor de autoconsumo, entonces es autoconsumo
-                // activo
                 boolean tieneAutoconsumo = puntoSuministro.getAutoconsumo() != null &&
                         !puntoSuministro.getAutoconsumo().trim().isEmpty();
                 contrato.setAutoconsumo(tieneAutoconsumo ? 1 : 0);
-
-                System.out.println("  - Exención actualizada a: " + contrato.getExencionImpuestoElectricidad());
-                System.out.println("  - Autoconsumo actualizado a: " + contrato.getAutoconsumo());
             }
 
             // Guardar todos los contratos actualizados
             if (!contratos.isEmpty()) {
                 contratoRepository.saveAll(contratos);
-                System.out.println("Contratos sincronizados exitosamente: " + contratos.size());
-            } else {
-                System.out.println("No hay contratos para sincronizar");
             }
-
-            System.out.println("===============================");
-
         } catch (Exception e) {
-            System.out.println("ERROR al sincronizar contratos: " + e.getMessage());
-            e.printStackTrace();
             // No lanzar excepción para no afectar el guardado del punto de suministro
         }
     }

@@ -37,7 +37,6 @@ public class InformesController {
             ContratoPendienteRenovacionDTO actualizado = servicio.actualizarContratoPendienteRenovacion(id, dto);
             return ResponseEntity.ok(Map.of("success", true, "data", actualizado));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -49,7 +48,6 @@ public class InformesController {
             PuntosSuministroSinContratoDTO actualizado = servicio.actualizarPuntoSuministroSinContrato(id, dto);
             return ResponseEntity.ok(Map.of("success", true, "data", actualizado));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -98,5 +96,10 @@ public class InformesController {
         @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fechaHasta
     ) {
         return servicio.obtenerServiciosVigentes(fechaDesde, fechaHasta);
+    }
+
+    @GetMapping("/contactos-clientes")
+    public List<ContactoClienteDTO> obtenerContactosClientes() {
+        return servicio.obtenerContactosClientes();
     }
 }
