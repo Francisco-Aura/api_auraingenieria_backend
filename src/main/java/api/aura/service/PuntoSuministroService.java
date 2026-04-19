@@ -9,7 +9,9 @@ import api.aura.repository.tablas_maestras.TBIntegracionSistemasFVRepository;
 import api.aura.repository.tablas_maestras.TBPropiedadRepository;
 import api.aura.repository.tablas_maestras.TBTipoComunicacionRepository;
 import api.aura.repository.tablas_maestras.TBTipoContadorRepository;
+import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
+import api.aura.entity.Cliente;
 import api.aura.entity.Contrato;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,10 +40,26 @@ public class PuntoSuministroService {
     private TBIntegracionSistemasFVRepository integracionSistemasFVRepository;
 
     @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
     private ContratoRepository contratoRepository;
 
     @Transactional
     public PuntoSuministro guardarPuntoSuministro(PuntoSuministro puntoSuministro) {
+        // Validar que no se reactive un PS si el cliente está dado de baja
+        if (puntoSuministro.getId() != null && puntoSuministro.getFechaBaja() == null
+                && puntoSuministro.getCliente() != null && puntoSuministro.getCliente().getId() != null) {
+            Optional<PuntoSuministro> existente = puntoSuministroRepository.findById(puntoSuministro.getId());
+            if (existente.isPresent() && existente.get().getFechaBaja() != null) {
+                Cliente cliente = clienteRepository.findById(puntoSuministro.getCliente().getId()).orElse(null);
+                if (cliente != null && cliente.getFechaBaja() != null) {
+                    throw new IllegalArgumentException(
+                            "No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
+                }
+            }
+        }
+
         // Validar campos obligatorios
             if (puntoSuministro.getDireccion() == null || puntoSuministro.getDireccion().trim().isEmpty() ||
                     puntoSuministro.getCodigoPostal() == null || puntoSuministro.getCodigoPostal().trim().isEmpty() ||
@@ -185,6 +203,9 @@ public class PuntoSuministroService {
 
     public void reactivarPuntoSuministro(Integer id) {
         puntoSuministroRepository.findById(id).ifPresent(ps -> {
+            if (ps.getCliente() != null && ps.getCliente().getFechaBaja() != null) {
+                throw new IllegalArgumentException("No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
+            }
             ps.setFechaBaja(null);
             puntoSuministroRepository.save(ps);
         });
