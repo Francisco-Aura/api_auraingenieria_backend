@@ -231,4 +231,8 @@ public class ServicioService {
     public void eliminarPorId(Integer id) {
         servicioRepository.deleteById(id);
     }
+
+    public java.util.Set<Integer> obtenerIdsPuntosConServicioActivo(java.util.List<Integer> idProductos) {
+        return servicioRepository.findIdsPuntosSuministroConServicioActivo(idProductos);
+    }
 }

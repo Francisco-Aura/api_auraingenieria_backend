@@ -59,7 +59,7 @@ public class ServiciosPagosController {
     }
 
     @PostMapping("/generar-plan")
-    public ResponseEntity<ServiciosPagos> generarPlanPagos(@RequestBody Map<String, Object> params) {
+    public ResponseEntity<?> generarPlanPagos(@RequestBody Map<String, Object> params) {
         try {
             Integer idPagoPlazos = (Integer) params.get("idPagoPlazos");
             Double importeTotal = Double.valueOf(params.get("importeTotal").toString());
@@ -90,19 +90,13 @@ public class ServiciosPagosController {
 
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            System.err.println("Error en generarPlanPagos del controller: " + e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al generar el plan de pagos"));
         }
     }
 
     @DeleteMapping("/servicio/{idServicio}")
     public ResponseEntity<Void> eliminarPagosPorServicio(@PathVariable Integer idServicio) {
-        try {
-            serviciosPagosService.eliminarPagosPorServicio(idServicio);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            System.err.println("Error al eliminar pagos del servicio: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
+        serviciosPagosService.eliminarPagosPorServicio(idServicio);
+        return ResponseEntity.noContent().build();
     }
 }

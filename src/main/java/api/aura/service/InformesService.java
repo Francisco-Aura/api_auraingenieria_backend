@@ -2,12 +2,15 @@ package api.aura.service;
 
 import org.springframework.stereotype.Service;
 import api.aura.dto.informes.*;
+import api.aura.entity.Cliente;
 import api.aura.repository.InformesRepository;
+import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.repository.PuntoSuministroRepository;
 import api.aura.dto.ServicioPendientePagoDTO;
 
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,14 +20,16 @@ public class InformesService {
     private final InformesRepository repository;
     private final ContratoRepository contratoRepository;
     private final PuntoSuministroRepository puntoSuministroRepository;
+    private final ClienteRepository clienteRepository;
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     public InformesService(InformesRepository repository, ContratoRepository contratoRepository,
-            PuntoSuministroRepository puntoSuministroRepository) {
+            PuntoSuministroRepository puntoSuministroRepository, ClienteRepository clienteRepository) {
         this.repository = repository;
         this.contratoRepository = contratoRepository;
         this.puntoSuministroRepository = puntoSuministroRepository;
+        this.clienteRepository = clienteRepository;
     }
 
     public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion() {
@@ -230,7 +235,6 @@ public class InformesService {
         try {
             return jdbcTemplate.queryForObject(sql, Integer.class, idServicio);
         } catch (Exception e) {
-            System.out.println("Error calculando siguiente pago para servicio " + idServicio + ": " + e.getMessage());
             return null;
         }
     }
@@ -284,10 +288,12 @@ public class InformesService {
             if (siguientePago != null) {
                 actualizarPagoParcial(idServicio, siguientePago, true);
             } else {
-                throw new RuntimeException("No hay pagos pendientes para este servicio");
+                throw new IllegalArgumentException("No hay pagos pendientes para este servicio");
             }
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Error al marcar el siguiente pago: " + e.getMessage());
+            throw new RuntimeException("No se pudo marcar el pago. Por favor, int\u00e9ntelo de nuevo.", e);
         }
     }
 
@@ -359,4 +365,75 @@ public class InformesService {
         dto.setEstadoPago((String) row[18]);
         return dto;
     }
+
+    public List<ContactoClienteDTO> obtenerContactosClientes() {
+        List<Cliente> clientes = clienteRepository.findAll();
+        List<ContactoClienteDTO> resultado = new ArrayList<>();
+
+        for (Cliente c : clientes) {
+            String nombreCliente = c.getNombre() != null ? c.getNombre() : "";
+            String estadoBaja = c.getFechaBaja() != null ? "SI" : "NO";
+
+            // Fila de datos principales (Autorizado) — siempre se incluye para que
+            // todos los clientes aparezcan en el informe, tengan o no datos de contacto
+            resultado.add(new ContactoClienteDTO(
+                    nombreCliente,
+                    "Datos Principales",
+                    nvl(c.getNombreAutorizado()),
+                    nvl(c.getTelefonoAutorizado()),
+                    nvl(c.getEmailAutorizado()),
+                    estadoBaja));
+
+            // Contacto 1
+            if (tieneContacto(c.getNombreContacto1(), c.getTelefonoContacto1(), c.getEmailContacto1())) {
+                resultado.add(new ContactoClienteDTO(
+                        nombreCliente,
+                        "Contacto 1",
+                        nvl(c.getNombreContacto1()),
+                        nvl(c.getTelefonoContacto1()),
+                        nvl(c.getEmailContacto1()),
+                        estadoBaja));
+            }
+
+            // Contacto 2
+            if (tieneContacto(c.getNombreContacto2(), c.getTelefonoContacto2(), c.getEmailContacto2())) {
+                resultado.add(new ContactoClienteDTO(
+                        nombreCliente,
+                        "Contacto 2",
+                        nvl(c.getNombreContacto2()),
+                        nvl(c.getTelefonoContacto2()),
+                        nvl(c.getEmailContacto2()),
+                        estadoBaja));
+            }
+
+            // Contacto 3
+            if (tieneContacto(c.getNombreContacto3(), c.getTelefonoContacto3(), c.getEmailContacto3())) {
+                resultado.add(new ContactoClienteDTO(
+                        nombreCliente,
+                        "Contacto 3",
+                        nvl(c.getNombreContacto3()),
+                        nvl(c.getTelefonoContacto3()),
+                        nvl(c.getEmailContacto3()),
+                        estadoBaja));
+            }
+        }
+
+        // Ordenar: activos primero (NO baja), luego por nombre de cliente
+        resultado.sort(java.util.Comparator
+                .comparing((ContactoClienteDTO d) -> d.getEstadoBaja())   // "NO" < "SI" lexicográficamente
+                .thenComparing(ContactoClienteDTO::getNombreCliente, String.CASE_INSENSITIVE_ORDER));
+
+        return resultado;
+    }
+
+    private boolean tieneContacto(String nombre, String telefono, String correo) {
+        return (nombre != null && !nombre.trim().isEmpty())
+                || (telefono != null && !telefono.trim().isEmpty())
+                || (correo != null && !correo.trim().isEmpty());
+    }
+
+    private String nvl(String value) {
+        return value != null ? value : "";
+    }
 }
+
