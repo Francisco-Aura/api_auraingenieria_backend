@@ -182,16 +182,6 @@ public class PuntoSuministro {
     @JoinColumn(name = "TBIntegracionSistemasFV_id")
     private TBIntegracionSistemasFV integracionSistemasFV;
 
-    /*
-     * // Relación con servicios
-     * 
-     * @OneToMany(mappedBy = "puntoSuministro", cascade = CascadeType.ALL,
-     * orphanRemoval = true)
-     * 
-     * @JsonIgnore // Evita la serialización de esta propiedad
-     * private List<Servicio> servicios;
-     */
-
     // *** SETTERS PERSONALIZADOS PARA NORMALIZAR CUPS ***
     public void setCUPSluz(String cupsLuz) {
         this.CUPSluz = normalizarCupsEnEntity(cupsLuz);

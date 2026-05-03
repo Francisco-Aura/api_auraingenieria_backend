@@ -19,7 +19,6 @@ public class TBComercializadorasService {
         return comercializadorasRepository.save(comercializadora);
     }
 
-    // Listar todos los registros
     public List<TBComercializadoras> obtenerTodasLasComercializadoras() {
         return comercializadorasRepository.findAll();
     }

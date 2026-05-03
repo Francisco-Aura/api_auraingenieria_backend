@@ -209,6 +209,7 @@ public class TareaService {
     public void eliminar(Long id) {
         // Primero eliminar archivos físicos de todos los adjuntos asociados a la tarea
         List<mt_Adjunto> adjuntos = adjuntoRepository.findByComentario_Tarea_Id(id);
+        adjuntos.addAll(adjuntoRepository.findByTareaIdAndComentarioIsNull(id));
         for (mt_Adjunto adjunto : adjuntos) {
             try {
                 fileStorageService.eliminarArchivo(adjunto.getRutaArchivo());
@@ -218,6 +219,13 @@ public class TareaService {
         }
         // Eliminar la tarea (cascada eliminará comentarios y adjuntos en BD)
         tareaRepository.deleteById(id);
+    }
+
+    public mt_Adjunto agregarAdjuntoDirecto(Long tareaId, org.springframework.web.multipart.MultipartFile file) throws IOException {
+        mt_Tarea tarea = tareaRepository.findById(tareaId)
+                .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
+        mt_Adjunto adjunto = fileStorageService.guardarAdjuntoTarea(file, tarea);
+        return adjuntoRepository.save(adjunto);
     }
 
     public TareaDTO cambiarEstado(Long tareaId, Long estadoId) {
@@ -243,6 +251,10 @@ public class TareaService {
         aplicarCambioEstado(tarea, estado, usuarioAccion, request.getMotivoBloqueo(), request.getComentario());
         mt_Tarea guardada = tareaRepository.save(tarea);
         notificacionService.notificarCambioEstado(guardada, estado.getNombre());
+        // Si el estado es final, notificar a los administradores
+        if (Boolean.TRUE.equals(estado.getEstadoFinal())) {
+            notificacionService.notificarCompletada(guardada, usuarioAccion);
+        }
         return toDto(guardada, true);
     }
 
@@ -487,8 +499,14 @@ public class TareaService {
             Cliente cliente = clienteRepository.findById(dto.getClienteRelacionadoId())
                     .orElseThrow(() -> new IllegalArgumentException("Cliente inexistente"));
             tarea.setClienteRelacionado(cliente);
+            tarea.setClientePotencialNombre(null);
         } else {
             tarea.setClienteRelacionado(null);
+            // Nombre libre para cliente potencial (no registrado en BD)
+            tarea.setClientePotencialNombre(
+                    dto.getClientePotencialNombre() != null && !dto.getClientePotencialNombre().isBlank()
+                            ? dto.getClientePotencialNombre().trim()
+                            : null);
         }
         if (esCreacion) {
             if (dto.getEstadoId() != null) {
@@ -566,6 +584,7 @@ public class TareaService {
                         tarea.getClienteRelacionado() != null ? tarea.getClienteRelacionado().getId() : null)
                 .clienteRelacionadoNombre(
                         tarea.getClienteRelacionado() != null ? tarea.getClienteRelacionado().getNombre() : null)
+                .clientePotencialNombre(tarea.getClientePotencialNombre())
                 .categoriaId(tarea.getCategoria() != null ? tarea.getCategoria().getId() : null)
                 .categoriaNombre(tarea.getCategoria() != null ? tarea.getCategoria().getNombre() : null)
                 .subcategoriaId(tarea.getSubcategoria() != null ? tarea.getSubcategoria().getId() : null)

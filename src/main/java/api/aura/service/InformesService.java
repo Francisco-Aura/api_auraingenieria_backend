@@ -7,11 +7,14 @@ import api.aura.repository.InformesRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.repository.PuntoSuministroRepository;
+import api.aura.repository.tablas_maestras.TBSectoresRepository;
 import api.aura.dto.ServicioPendientePagoDTO;
 
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,15 +24,18 @@ public class InformesService {
     private final ContratoRepository contratoRepository;
     private final PuntoSuministroRepository puntoSuministroRepository;
     private final ClienteRepository clienteRepository;
+    private final TBSectoresRepository sectoresRepository;
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     public InformesService(InformesRepository repository, ContratoRepository contratoRepository,
-            PuntoSuministroRepository puntoSuministroRepository, ClienteRepository clienteRepository) {
+            PuntoSuministroRepository puntoSuministroRepository, ClienteRepository clienteRepository,
+            TBSectoresRepository sectoresRepository) {
         this.repository = repository;
         this.contratoRepository = contratoRepository;
         this.puntoSuministroRepository = puntoSuministroRepository;
         this.clienteRepository = clienteRepository;
+        this.sectoresRepository = sectoresRepository;
     }
 
     public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion() {
@@ -370,9 +376,14 @@ public class InformesService {
         List<Cliente> clientes = clienteRepository.findAll();
         List<ContactoClienteDTO> resultado = new ArrayList<>();
 
+        // Cargar sectores en un mapa para resolución eficiente
+        Map<Integer, String> sectorMap = new HashMap<>();
+        sectoresRepository.findAll().forEach(s -> sectorMap.put(s.getId(), s.getNombre()));
+
         for (Cliente c : clientes) {
             String nombreCliente = c.getNombre() != null ? c.getNombre() : "";
             String estadoBaja = c.getFechaBaja() != null ? "SI" : "NO";
+            String sector = c.getCodigoSector() != null ? sectorMap.getOrDefault(c.getCodigoSector(), "") : "";
 
             // Fila de datos principales (Autorizado) — siempre se incluye para que
             // todos los clientes aparezcan en el informe, tengan o no datos de contacto
@@ -380,8 +391,10 @@ public class InformesService {
                     nombreCliente,
                     "Datos Principales",
                     nvl(c.getNombreAutorizado()),
+                    "",
                     nvl(c.getTelefonoAutorizado()),
                     nvl(c.getEmailAutorizado()),
+                    sector,
                     estadoBaja));
 
             // Contacto 1
@@ -390,8 +403,10 @@ public class InformesService {
                         nombreCliente,
                         "Contacto 1",
                         nvl(c.getNombreContacto1()),
+                        nvl(c.getCargoContacto1()),
                         nvl(c.getTelefonoContacto1()),
                         nvl(c.getEmailContacto1()),
+                        sector,
                         estadoBaja));
             }
 
@@ -401,8 +416,10 @@ public class InformesService {
                         nombreCliente,
                         "Contacto 2",
                         nvl(c.getNombreContacto2()),
+                        nvl(c.getCargoContacto2()),
                         nvl(c.getTelefonoContacto2()),
                         nvl(c.getEmailContacto2()),
+                        sector,
                         estadoBaja));
             }
 
@@ -412,8 +429,10 @@ public class InformesService {
                         nombreCliente,
                         "Contacto 3",
                         nvl(c.getNombreContacto3()),
+                        nvl(c.getCargoContacto3()),
                         nvl(c.getTelefonoContacto3()),
                         nvl(c.getEmailContacto3()),
+                        sector,
                         estadoBaja));
             }
         }

@@ -34,8 +34,12 @@ public class mt_Adjunto {
     private LocalDateTime fechaSubida;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comentario_id", nullable = false)
+    @JoinColumn(name = "comentario_id", nullable = true)
     private mt_Comentario comentario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tarea_id", nullable = true)
+    private mt_Tarea tarea;
 
     @PrePersist
     public void onCreate() {

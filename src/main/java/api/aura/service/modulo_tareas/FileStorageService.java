@@ -28,6 +28,40 @@ public class FileStorageService {
     private String baseUploadDir;
 
     /**
+     * Guarda un archivo adjunto asociado directamente a una tarea (sin comentario).
+     * Usado al crear la tarea con adjuntos desde el formulario principal.
+     */
+    public mt_Adjunto guardarAdjuntoTarea(MultipartFile file, mt_Tarea tarea) throws IOException {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo está vacío");
+        }
+        if (tarea == null) {
+            throw new IllegalArgumentException("La tarea no puede ser nula");
+        }
+
+        Cliente cliente = tarea.getClienteRelacionado();
+        String directorio = construirRutaDirectorio(cliente, tarea);
+        Path dirPath = Paths.get(directorio);
+        Files.createDirectories(dirPath);
+
+        String nombreOriginal = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String nombreArchivo = timestamp + "_" + nombreOriginal;
+        Path rutaCompleta = dirPath.resolve(nombreArchivo);
+        Files.copy(file.getInputStream(), rutaCompleta, StandardCopyOption.REPLACE_EXISTING);
+
+        log.info("Archivo de tarea guardado: {}", rutaCompleta);
+
+        return mt_Adjunto.builder()
+                .nombreArchivo(nombreOriginal)
+                .rutaArchivo(rutaCompleta.toString())
+                .tipoMime(file.getContentType())
+                .tamanio(file.getSize())
+                .tarea(tarea)
+                .build();
+    }
+
+    /**
      * Guarda un archivo adjunto asociado a un comentario de tarea
      * Estructura:
      * uploads/tareas/{clienteNombre}_{dni}/{tareaId}/{timestamp}_{filename}

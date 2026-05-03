@@ -4,6 +4,7 @@ import api.aura.dto.modulo_tareas.NotificacionDTO;
 import api.aura.entity.Usuario;
 import api.aura.entity.modulo_tareas.mt_Notificacion;
 import api.aura.entity.modulo_tareas.mt_Tarea;
+import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.mt_NotificacionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 public class TareaNotificacionService {
 
     private final mt_NotificacionRepository notificacionRepository;
+    private final UsuarioRepository usuarioRepository;
 
     public void notificarAsignacion(mt_Tarea tarea) {
         notificarAsignacion(tarea, null);
@@ -71,6 +73,38 @@ public class TareaNotificacionService {
         }
         crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.COMENTARIO,
                 String.format("%s comentó: %s", autor.getNombre(), comentarioTruncado));
+    }
+
+    /**
+     * Notifica a todos los administradores (nivelAcceso = 1) que una tarea fue completada.
+     * No notifica al propio responsable de la acción si también es admin.
+     */
+    public void notificarCompletada(mt_Tarea tarea, Usuario autor) {
+        String mensaje = autor != null
+                ? String.format("%s completó la tarea '%s'", autor.getNombre(), tarea.getTitulo())
+                : String.format("La tarea '%s' fue completada", tarea.getTitulo());
+
+        usuarioRepository.findByNivelAcceso(1).forEach(admin -> {
+            // No auto-notificar al admin que realizó la acción
+            if (autor != null && autor.getId().equals(admin.getId())) {
+                return;
+            }
+            crearNotificacion(tarea, admin, mt_Notificacion.TipoNotificacion.COMPLETADA, mensaje);
+        });
+    }
+
+    /**
+     * Notifica a un usuario mencionado con @ en un comentario.
+     */
+    public void notificarMencion(mt_Tarea tarea, Usuario mencionado, Usuario autor) {
+        if (mencionado == null || autor == null) {
+            return;
+        }
+        if (mencionado.getId().equals(autor.getId())) {
+            return;
+        }
+        String mensaje = String.format("%s te mencionó en la tarea '%s'", autor.getNombre(), tarea.getTitulo());
+        crearNotificacion(tarea, mencionado, mt_Notificacion.TipoNotificacion.MENCION, mensaje);
     }
 
     public void notificarCambioTarea(mt_Tarea tarea, String detallesCambio) {
