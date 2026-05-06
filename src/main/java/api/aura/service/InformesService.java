@@ -182,31 +182,46 @@ public class InformesService {
         dto.setCliente((String) row[1]);
         dto.setGestora((String) row[2]);
         dto.setCups((String) row[3]);
+        
+        // cupsLuz y cupsGas vienen en row[4] y row[5] respectivamente (tras el cups consolidado)
+        String cupsLuzVal = row[4] != null ? ((String) row[4]).trim() : "";
+        String cupsGasVal = row[5] != null ? ((String) row[5]).trim() : "";
+        dto.setCupsLuz(cupsLuzVal.isEmpty() ? null : cupsLuzVal);
+        dto.setCupsGas(cupsGasVal.isEmpty() ? null : cupsGasVal);
+        
+        // Calcular tipoCups basándose en cuál esté relleno
+        if (!cupsLuzVal.isEmpty()) {
+            dto.setTipoCups("Luz");
+        } else if (!cupsGasVal.isEmpty()) {
+            dto.setTipoCups("Gas");
+        } else {
+            dto.setTipoCups(null);
+        }
 
-        // Mapear fecha del siguiente pago
-        dto.setFechaSiguientePago((java.sql.Date) row[4] != null ? ((java.sql.Date) row[4]).toLocalDate() : null);
+        // Mapear fecha del siguiente pago (row[6] porque se desplazó 2 posiciones)
+        dto.setFechaSiguientePago((java.sql.Date) row[6] != null ? ((java.sql.Date) row[6]).toLocalDate() : null);
 
-        dto.setImporteTotal(row[5] != null ? java.math.BigDecimal.valueOf(((Number) row[5]).doubleValue()) : null);
-        dto.setSiguientePagoNumero(toInt(row[6]));
+        dto.setImporteTotal(row[7] != null ? java.math.BigDecimal.valueOf(((Number) row[7]).doubleValue()) : null);
+        dto.setSiguientePagoNumero(toInt(row[8]));
         dto.setImporteCuotaPendiente(
-                row[7] != null ? java.math.BigDecimal.valueOf(((Number) row[7]).doubleValue()) : null);
+                row[9] != null ? java.math.BigDecimal.valueOf(((Number) row[9]).doubleValue()) : null);
 
-        // Mapear estados de pago (indices 8-19)
-        dto.setPrimerPagoPagado(toInt(row[8]));
-        dto.setSegundoPagoPagado(toInt(row[9]));
-        dto.setTercerPagoPagado(toInt(row[10]));
-        dto.setCuartoPagoPagado(toInt(row[11]));
-        dto.setQuintoPagoPagado(toInt(row[12]));
-        dto.setSextoPagoPagado(toInt(row[13]));
-        dto.setSeptimoPagoPagado(toInt(row[14]));
-        dto.setOctavoPagoPagado(toInt(row[15]));
-        dto.setNovenoPagoPagado(toInt(row[16]));
-        dto.setDecimoPagoPagado(toInt(row[17]));
-        dto.setDecimoprimerPagoPagado(toInt(row[18]));
-        dto.setDecimosegundoPagoPagado(toInt(row[19]));
+        // Mapear estados de pago (indices 10-21, desplazados 2 posiciones)
+        dto.setPrimerPagoPagado(toInt(row[10]));
+        dto.setSegundoPagoPagado(toInt(row[11]));
+        dto.setTercerPagoPagado(toInt(row[12]));
+        dto.setCuartoPagoPagado(toInt(row[13]));
+        dto.setQuintoPagoPagado(toInt(row[14]));
+        dto.setSextoPagoPagado(toInt(row[15]));
+        dto.setSeptimoPagoPagado(toInt(row[16]));
+        dto.setOctavoPagoPagado(toInt(row[17]));
+        dto.setNovenoPagoPagado(toInt(row[18]));
+        dto.setDecimoPagoPagado(toInt(row[19]));
+        dto.setDecimoprimerPagoPagado(toInt(row[20]));
+        dto.setDecimosegundoPagoPagado(toInt(row[21]));
 
-        dto.setEstadoPago((String) row[20]);
-        dto.setNumeroCuotas(toInt(row[21]));
+        dto.setEstadoPago((String) row[22]);
+        dto.setNumeroCuotas(toInt(row[23]));
 
         // Calcular dinámicamente el siguiente pago pendiente si no viene en la consulta
         if (dto.getSiguientePagoNumero() == null) {

@@ -100,7 +100,9 @@ public class TareaComentarioService {
                 comentario.setComentario(nuevoComentario);
                 comentario.setFechaEdicion(java.time.LocalDateTime.now());
                 comentario.setEditado(true);
-                return toDto(comentarioRepository.save(comentario));
+                mt_Comentario actualizado = comentarioRepository.save(comentario);
+                procesarMenciones(nuevoComentario, actualizado.getTarea(), actualizado.getUsuarioAutor());
+                return toDto(actualizado);
         }
 
         public ComentarioDTO toggleFijado(Long id) {

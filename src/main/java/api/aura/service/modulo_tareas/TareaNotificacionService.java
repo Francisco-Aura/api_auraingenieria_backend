@@ -7,6 +7,7 @@ import api.aura.entity.modulo_tareas.mt_Tarea;
 import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.mt_NotificacionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class TareaNotificacionService {
 
     private final mt_NotificacionRepository notificacionRepository;
@@ -178,13 +180,13 @@ public class TareaNotificacionService {
         if (destinatario == null || destinatario.getId() == null) {
             return;
         }
-        mt_Notificacion notificacion = mt_Notificacion.builder()
-                .tarea(tarea)
-                .usuarioDestino(destinatario)
-                .tipo(tipo)
-                .mensaje(mensaje)
-                .build();
-        notificacionRepository.save(notificacion);
+            mt_Notificacion notificacion = mt_Notificacion.builder()
+                    .tarea(tarea)
+                    .usuarioDestino(destinatario)
+                    .tipo(tipo)
+                    .mensaje(mensaje)
+                    .build();
+            notificacionRepository.save(notificacion);
     }
 
     private NotificacionDTO toDto(mt_Notificacion notificacion) {
