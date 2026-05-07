@@ -103,6 +103,8 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 c.nombre AS cliente,
                 tg.nombre AS gestora,
                 COALESCE(s.cups, ps.CUPSluz, ps.CUPSgas) AS cups,
+                TRIM(COALESCE(ps.CUPSluz, '')) AS cupsLuz,
+                TRIM(COALESCE(ps.CUPSgas, '')) AS cupsGas,
                 CASE
                     WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN sp.primer_pago_fecha
                     WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN sp.segundo_pago_fecha
@@ -180,7 +182,12 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                     THEN 'Pendiente'
                     ELSE 'Pagado'
                 END AS estadoPago,
-                tbp.numero_cuotas AS numeroCuotas
+                tbp.numero_cuotas AS numeroCuotas,
+                CASE
+                    WHEN ps.CUPSluz IS NOT NULL AND TRIM(ps.CUPSluz) != '' THEN 'Luz'
+                    WHEN ps.CUPSgas IS NOT NULL AND TRIM(ps.CUPSgas) != '' THEN 'Gas'
+                    ELSE NULL
+                END AS tipoCups
             FROM servicios s
             INNER JOIN clientes c ON s.id_cliente = c.id
             INNER JOIN servicios_pagos sp ON sp.id_servicio = s.id

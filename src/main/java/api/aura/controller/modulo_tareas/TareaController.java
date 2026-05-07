@@ -2,11 +2,18 @@ package api.aura.controller.modulo_tareas;
 
 import api.aura.dto.modulo_tareas.*;
 import api.aura.service.modulo_tareas.TareaService;
+import api.aura.service.modulo_tareas.FileStorageService;
+import api.aura.entity.modulo_tareas.mt_Adjunto;
+import api.aura.repository.modulo_tareas.AdjuntoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tareas")
@@ -14,6 +21,8 @@ import java.util.List;
 public class TareaController {
 
     private final TareaService tareaService;
+    private final FileStorageService fileStorageService;
+    private final AdjuntoRepository adjuntoRepository;
 
     @GetMapping
     public List<TareaDTO> obtenerTodas() {
@@ -126,6 +135,39 @@ public class TareaController {
     @GetMapping("/{id}/historial")
     public List<TareaHistorialDTO> historial(@PathVariable Long id) {
         return tareaService.obtenerHistorial(id);
+    }
+
+    @PostMapping("/{tareaId}/adjuntos")
+    public ResponseEntity<Map<String, Object>> subirAdjunto(
+            @PathVariable Long tareaId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            mt_Adjunto adjunto = tareaService.agregarAdjuntoDirecto(tareaId, file);
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", adjunto.getId());
+            response.put("nombreArchivo", adjunto.getNombreArchivo());
+            response.put("tamanio", adjunto.getTamanio());
+            response.put("tipoMime", adjunto.getTipoMime());
+            response.put("fechaSubida", adjunto.getFechaSubida());
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{tareaId}/adjuntos")
+    public ResponseEntity<List<Map<String, Object>>> obtenerAdjuntos(@PathVariable Long tareaId) {
+        List<mt_Adjunto> adjuntos = adjuntoRepository.findByTareaIdAndComentarioIsNull(tareaId);
+        List<Map<String, Object>> response = adjuntos.stream().map(a -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", a.getId());
+            m.put("nombreArchivo", a.getNombreArchivo());
+            m.put("tamanio", a.getTamanio());
+            m.put("tipoMime", a.getTipoMime());
+            m.put("fechaSubida", a.getFechaSubida());
+            return m;
+        }).toList();
+        return ResponseEntity.ok(response);
     }
 
     private record CountResponse(long count) {

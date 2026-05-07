@@ -16,7 +16,6 @@ public class TBIntegracionSistemasFV {
     @Column(name = "descripcion", length = 255)
     private String descripcion;
 
-    // Constructores
     public TBIntegracionSistemasFV() {
     }
 
@@ -25,7 +24,6 @@ public class TBIntegracionSistemasFV {
         this.descripcion = descripcion;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }

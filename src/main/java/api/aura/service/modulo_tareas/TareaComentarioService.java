@@ -16,6 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,7 +62,27 @@ public class TareaComentarioService {
                 comentarioRepository.save(comentario);
 
                 notificacionService.notificarComentario(tarea, usuario, dto.getComentario());
+                procesarMenciones(dto.getComentario(), tarea, usuario);
                 return toDto(comentario);
+        }
+
+        /**
+         * Extrae menciones @username del texto del comentario y dispara notificaciones
+         * a los usuarios mencionados.
+         */
+        private void procesarMenciones(String texto, mt_Tarea tarea, Usuario autor) {
+                if (texto == null || texto.isBlank()) return;
+                Pattern pattern = Pattern.compile("@([\\w.]+)");
+                Matcher matcher = pattern.matcher(texto);
+                while (matcher.find()) {
+                        String username = matcher.group(1);
+                        // Buscar usuario por nombre (tolerante a mayúsculas)
+                        usuarioRepository.findAll().stream()
+                                .filter(u -> u.getNombre() != null &&
+                                        u.getNombre().toLowerCase().replace(" ", "").equals(username.toLowerCase()))
+                                .findFirst()
+                                .ifPresent(mencionado -> notificacionService.notificarMencion(tarea, mencionado, autor));
+                }
         }
 
         public ComentarioDTO actualizarComentario(Long id, String nuevoComentario, Integer usuarioIdActual) {
@@ -78,7 +100,9 @@ public class TareaComentarioService {
                 comentario.setComentario(nuevoComentario);
                 comentario.setFechaEdicion(java.time.LocalDateTime.now());
                 comentario.setEditado(true);
-                return toDto(comentarioRepository.save(comentario));
+                mt_Comentario actualizado = comentarioRepository.save(comentario);
+                procesarMenciones(nuevoComentario, actualizado.getTarea(), actualizado.getUsuarioAutor());
+                return toDto(actualizado);
         }
 
         public ComentarioDTO toggleFijado(Long id) {

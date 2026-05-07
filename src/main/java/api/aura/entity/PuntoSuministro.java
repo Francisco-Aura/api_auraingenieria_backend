@@ -165,6 +165,15 @@ public class PuntoSuministro {
     @JoinColumn(name = "TBmonitorizacion_id")
     private TBAppMonitorizacion appMonitorizacion;
 
+    @Column(name = "ejecutado_por_aura_fv", columnDefinition = "BIT(1)")
+    private Boolean ejecutadoPorAuraFv;
+
+    @Column(name = "usuario_instalacion_fv", length = 150)
+    private String usuarioInstalacionFv;
+
+    @Column(name = "contrasena_instalacion_fv", length = 150)
+    private String contrasenaInstalacionFv;
+
     // Campos de instalaciones - Almacenamiento Energético
     @Column(length = 10)
     private String bateriaAlmacenamiento; // SI/NO
@@ -181,16 +190,6 @@ public class PuntoSuministro {
     @ManyToOne
     @JoinColumn(name = "TBIntegracionSistemasFV_id")
     private TBIntegracionSistemasFV integracionSistemasFV;
-
-    /*
-     * // Relación con servicios
-     * 
-     * @OneToMany(mappedBy = "puntoSuministro", cascade = CascadeType.ALL,
-     * orphanRemoval = true)
-     * 
-     * @JsonIgnore // Evita la serialización de esta propiedad
-     * private List<Servicio> servicios;
-     */
 
     // *** SETTERS PERSONALIZADOS PARA NORMALIZAR CUPS ***
     public void setCUPSluz(String cupsLuz) {

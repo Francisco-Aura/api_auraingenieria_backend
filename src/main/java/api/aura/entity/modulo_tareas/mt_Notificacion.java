@@ -52,6 +52,8 @@ public class mt_Notificacion {
         ASIGNADA,
         CAMBIO_ESTADO,
         VENCIMIENTO,
-        COMENTARIO
+        COMENTARIO,
+        COMPLETADA,
+        MENCION
     }
 }

@@ -33,4 +33,7 @@ public class ServicioPendientePagoDTO {
     
     private String estadoPago;
     private Integer numeroCuotas;
+    private String cupsLuz;
+    private String cupsGas;
+    private String tipoCups;
 }

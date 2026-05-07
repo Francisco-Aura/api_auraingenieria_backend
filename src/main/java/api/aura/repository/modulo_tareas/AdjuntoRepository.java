@@ -12,4 +12,6 @@ public interface AdjuntoRepository extends JpaRepository<mt_Adjunto, Long> {
     List<mt_Adjunto> findByComentarioId(Long comentarioId);
 
     List<mt_Adjunto> findByComentario_Tarea_Id(Long tareaId);
+
+    List<mt_Adjunto> findByTareaIdAndComentarioIsNull(Long tareaId);
 }

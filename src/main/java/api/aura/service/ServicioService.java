@@ -97,36 +97,6 @@ public class ServicioService {
             throw new IllegalArgumentException("El servicio debe tener un cliente asociado");
         }
 
-        // COMENTADO: Esta lógica automática de cierre de servicios anteriores
-        // causaba que se modificaran las fechas de servicios existentes al crear nuevos
-        // servicios.
-        // Se debe manejar la gestión de fechas de manera explícita desde el frontend
-        // cuando sea necesario.
-        /*
-         * // Si es un nuevo servicio y tiene punto de suministro, cerrar servicios
-         * anteriores
-         * if (servicio.getFechaInicioServicio() != null) {
-         * Integer puntoSuministroId = servicio.getPuntoSuministro().getId();
-         * List<Servicio> serviciosAnteriores =
-         * servicioRepository.findByPuntoSuministroId(puntoSuministroId);
-         * for (Servicio anterior : serviciosAnteriores) {
-         * // Solo cerrar los que estén activos (sin fecha de fin o baja)
-         * if ((anterior.getFechaFinServicio() == null ||
-         * anterior.getFechaFinServicio().after(servicio.getFechaInicioServicio())) &&
-         * (anterior.getFechaBaja() == null)) {
-         * // Cerrar el anterior el día antes del nuevo inicio
-         * Calendar cal = Calendar.getInstance();
-         * cal.setTime(servicio.getFechaInicioServicio());
-         * cal.add(Calendar.DATE, -1);
-         * java.sql.Date diaAnterior = new java.sql.Date(cal.getTimeInMillis());
-         * anterior.setFechaFinServicio(diaAnterior);
-         * anterior.setFechaBaja(diaAnterior);
-         * servicioRepository.save(anterior);
-         * }
-         * }
-         * }
-         */
-
         return servicioRepository.save(servicio);
     }
 

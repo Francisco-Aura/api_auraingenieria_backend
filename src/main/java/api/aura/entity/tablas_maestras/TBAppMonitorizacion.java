@@ -16,7 +16,6 @@ public class TBAppMonitorizacion {
     @Column(name = "descripcion", length = 255)
     private String descripcion;
 
-    // Constructores
     public TBAppMonitorizacion() {
     }
 
@@ -25,7 +24,6 @@ public class TBAppMonitorizacion {
         this.descripcion = descripcion;
     }
 
-    // Getters y Setters
     public Long getId() {
         return id;
     }
