@@ -14,6 +14,9 @@ public interface ServicioRepository extends JpaRepository<Servicio, Integer> {
     List<Servicio> findByClienteId(Integer clienteId);
     List<Servicio> findByPuntoSuministroId(Integer puntoSuministroId);
 
+    @Query("SELECT s FROM Servicio s LEFT JOIN FETCH s.cliente WHERE s.puntoSuministro.id = :id")
+    List<Servicio> findByPuntoSuministroIdWithCliente(@Param("id") Integer id);
+
     // Baja en cascada: servicios activos del cliente
     List<Servicio> findByClienteIdAndFechaBajaIsNull(Integer clienteId);
 

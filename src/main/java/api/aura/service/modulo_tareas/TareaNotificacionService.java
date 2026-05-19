@@ -8,8 +8,11 @@ import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.mt_NotificacionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +25,7 @@ public class TareaNotificacionService {
 
     private final mt_NotificacionRepository notificacionRepository;
     private final UsuarioRepository usuarioRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public void notificarAsignacion(mt_Tarea tarea) {
         notificarAsignacion(tarea, null);
@@ -180,13 +184,26 @@ public class TareaNotificacionService {
         if (destinatario == null || destinatario.getId() == null) {
             return;
         }
-            mt_Notificacion notificacion = mt_Notificacion.builder()
-                    .tarea(tarea)
-                    .usuarioDestino(destinatario)
-                    .tipo(tipo)
-                    .mensaje(mensaje)
-                    .build();
-            notificacionRepository.save(notificacion);
+        mt_Notificacion notificacion = mt_Notificacion.builder()
+                .tarea(tarea)
+                .usuarioDestino(destinatario)
+                .tipo(tipo)
+                .mensaje(mensaje)
+                .build();
+        notificacionRepository.save(notificacion);
+        // Enviar push WebSocket DESPUÉS del commit para garantizar que la BD ya tiene el registro
+        final NotificacionDTO dto = toDto(notificacion);
+        final Integer destinatarioId = destinatario.getId();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    messagingTemplate.convertAndSend("/topic/notificaciones/" + destinatarioId, dto);
+                } catch (Exception e) {
+                    log.warn("No se pudo enviar notificación WebSocket al usuario {}: {}", destinatarioId, e.getMessage());
+                }
+            }
+        });
     }
 
     private NotificacionDTO toDto(mt_Notificacion notificacion) {

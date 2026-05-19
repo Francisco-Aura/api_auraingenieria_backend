@@ -25,6 +25,13 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
     @Query("SELECT t FROM mt_Tarea t WHERE t.estado.estadoFinal = false AND t.usuarioAsignado.id = :usuarioId")
     List<mt_Tarea> findPendientesByUsuario(@Param("usuarioId") Integer usuarioId);
 
+    // Contadores para estadísticas globales (admin)
+    long countByEstado_EstadoFinalFalse();
+    long countByEstado_EstadoFinalFalseAndFechaVencimientoBefore(LocalDateTime fecha);
+    long countByEstado_CuentaTiempoTrueAndEstado_EstadoFinalFalse();
+    long countByEstado_EstadoFinalTrue();
+    long countByUsuarioAsignadoIsNullAndEstado_EstadoFinalFalse();
+
     // Tareas con notificación activa que vencen en la próxima hora y no han sido
     // notificadas aún
     @Query("SELECT t FROM mt_Tarea t WHERE t.notificar = true " +

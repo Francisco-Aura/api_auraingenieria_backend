@@ -2,6 +2,7 @@ package api.aura.service.tablas_maestras;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import api.aura.entity.tablas_maestras.TBSectores;
@@ -20,6 +21,7 @@ public class TBSectoresService {
         return sectoresRepository.save(sector);
     }
 
+    @Cacheable("tablas-maestras")
     public List<TBSectores> obtenerTodosLosSectores() {
         return sectoresRepository.findAll();
     }

@@ -1,6 +1,7 @@
 package api.aura.service.tablas_maestras;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import api.aura.entity.tablas_maestras.TBCargoContacto;
@@ -19,6 +20,7 @@ public class TBCargoContactoService {
         return cargoContactoRepository.save(cargo);
     }
 
+    @Cacheable("tablas-maestras")
     public List<TBCargoContacto> obtenerTodos() {
         return cargoContactoRepository.findAll();
     }
