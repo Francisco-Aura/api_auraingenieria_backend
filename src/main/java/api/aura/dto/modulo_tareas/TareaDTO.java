@@ -36,6 +36,7 @@ public class TareaDTO {
     private Integer clienteRelacionadoId;
     private String clienteRelacionadoNombre;
     private String clientePotencialNombre;
+    private String cups;
     private Long categoriaId;
     private String categoriaNombre;
     private Long subcategoriaId;
