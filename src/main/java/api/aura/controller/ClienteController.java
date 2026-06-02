@@ -27,7 +27,10 @@ public class ClienteController {
 
     @PostMapping
     public ResponseEntity<?> crearCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
-        logger.info("Solicitud para crear cliente: {}", clienteDTO);
+        if (logger.isDebugEnabled()) {
+            String nombre = clienteDTO.getNombre() != null ? clienteDTO.getNombre().trim() : "";
+            logger.debug("Solicitud para crear cliente. nombre='{}', cif='{}'", nombre, clienteDTO.getCif());
+        }
         Cliente clienteCreado = clienteService.crearCliente(clienteDTO);
         return ResponseEntity.ok(clienteCreado);
     }
@@ -45,12 +48,16 @@ public class ClienteController {
             @RequestParam(name = "q") String termino,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        logger.info("Buscando clientes con el término: {}", termino);
+        String terminoNormalizado = termino == null ? "" : termino.trim();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Búsqueda de clientes. longitudTermino={}, page={}, size={}",
+                    terminoNormalizado.length(), page, size);
+        }
         try {
-            Page<ClienteDTO> clientes = clienteService.buscarClientes(termino, PageRequest.of(page, size));
+            Page<ClienteDTO> clientes = clienteService.buscarClientes(terminoNormalizado, PageRequest.of(page, size));
             return ResponseEntity.ok(clientes);
         } catch (Exception e) {
-            logger.error("Error al buscar clientes: {}", e.getMessage());
+            logger.error("Error al buscar clientes", e);
             return ResponseEntity.internalServerError().body(null);
         }
     }

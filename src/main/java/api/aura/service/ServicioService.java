@@ -182,20 +182,8 @@ public class ServicioService {
     }
 
     public List<ServicioDTO> obtenerPorPuntoSuministroId(Integer puntoSuministroId) {
-        List<Servicio> servicios = servicioRepository.findByPuntoSuministroId(puntoSuministroId);
-
-        // Cargar la información del cliente para cada servicio
-        servicios.forEach(servicio -> {
-            if (servicio.getCliente() != null) {
-                // Cargar la información completa del cliente
-                clienteRepository.findById(servicio.getCliente().getId())
-                        .ifPresent(cliente -> {
-                            servicio.setCliente(cliente);
-                        });
-            }
-        });
-
-        return servicios.stream().map(this::toDTO).toList();
+        return servicioRepository.findByPuntoSuministroIdWithCliente(puntoSuministroId)
+                .stream().map(this::toDTO).toList();
     }
 
     public void eliminarPorId(Integer id) {

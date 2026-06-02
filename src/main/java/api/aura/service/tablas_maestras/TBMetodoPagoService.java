@@ -2,6 +2,7 @@ package api.aura.service.tablas_maestras;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import api.aura.entity.tablas_maestras.TBMetodoPago;
@@ -20,6 +21,7 @@ public class TBMetodoPagoService {
         return metodoPagoRepository.save(metodoPago);
     }
 
+    @Cacheable("tablas-maestras")
     public List<TBMetodoPago> obtenerTodosLosMetodosPago() {
         return metodoPagoRepository.findAll();
     }

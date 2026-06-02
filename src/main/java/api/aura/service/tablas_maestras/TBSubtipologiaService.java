@@ -1,6 +1,7 @@
 package api.aura.service.tablas_maestras;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import api.aura.entity.tablas_maestras.TBSubtipologia;
@@ -19,6 +20,7 @@ public class TBSubtipologiaService {
         return subtipologiaRepository.save(subtipologia);
     }
 
+    @Cacheable("tablas-maestras")
     public List<TBSubtipologia> obtenerTodasLasSubtipologias() {
         return subtipologiaRepository.findAll();
     }
