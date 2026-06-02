@@ -53,6 +53,11 @@ public class TareaService {
                 .map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
 
+    public List<TareaDTO> obtenerIncidenciasPorCliente(Integer clienteId) {
+        return tareaRepository.findIncidenciasByClienteId(clienteId).stream()
+                .map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
+    }
+
     public TareaDTO obtenerPorId(Long id) {
         mt_Tarea tarea = tareaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));

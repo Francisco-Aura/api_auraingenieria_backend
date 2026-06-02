@@ -40,4 +40,29 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
             "AND t.notificadoProximoVencimiento = false")
     List<mt_Tarea> findTareasParaNotificarVencimiento(@Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta);
+
+    @Query("""
+            SELECT t
+            FROM mt_Tarea t
+            LEFT JOIN t.subcategoria sc
+            WHERE t.clienteRelacionado.id = :clienteId
+              AND (
+                    UPPER(COALESCE(sc.codigo, '')) = 'INCID'
+                    OR UPPER(COALESCE(sc.nombre, '')) LIKE 'INCIDEN%'
+              )
+            ORDER BY COALESCE(t.fechaVencimiento, t.fechaCreacion) DESC
+            """)
+    List<mt_Tarea> findIncidenciasByClienteId(@Param("clienteId") Integer clienteId);
+
+    @Query("""
+            SELECT t
+            FROM mt_Tarea t
+            WHERE t.clienteRelacionado.id = :clienteId
+              AND t.titulo = :titulo
+              AND ((:cups IS NULL AND t.cups IS NULL) OR t.cups = :cups)
+            ORDER BY t.id DESC
+            """)
+    List<mt_Tarea> findTareasAnclaNotas(@Param("clienteId") Integer clienteId,
+                                        @Param("titulo") String titulo,
+                                        @Param("cups") String cups);
 }
