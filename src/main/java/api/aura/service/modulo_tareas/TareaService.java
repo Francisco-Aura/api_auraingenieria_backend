@@ -273,6 +273,13 @@ public class TareaService {
                 .stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
 
+    public List<TareaDTO> obtenerVencenHoy() {
+        LocalDateTime inicioDia = LocalDate.now().atStartOfDay();
+        LocalDateTime finDia = LocalDate.now().atTime(23, 59, 59);
+        return tareaRepository.findByEstado_EstadoFinalFalseAndFechaVencimientoBetween(inicioDia, finDia)
+                .stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
+    }
+
     public List<TareaDTO> obtenerPorVencer(int dias) {
         LocalDateTime desde = LocalDateTime.now();
         LocalDateTime hasta = LocalDate.now().plusDays(dias).atTime(23, 59, 59);

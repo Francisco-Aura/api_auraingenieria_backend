@@ -16,4 +16,6 @@ public class CrearNotaClienteRequest {
     private String comentario;
 
     private String cups;
+
+    private Boolean fijado;
 }

@@ -64,6 +64,7 @@ public class ClienteTimelineService {
                 .usuarioAutor(usuario)
             .cups(cups)
                 .comentario(request.getComentario().trim())
+                .fijado(Boolean.TRUE.equals(request.getFijado()))
                 .build();
 
         return toNotaDto(clienteNotaRepository.save(nota));
@@ -91,6 +92,16 @@ public class ClienteTimelineService {
                 .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
 
         clienteNotaRepository.delete(nota);
+    }
+
+    public ClienteNotaDTO toggleFijadoNota(Integer clienteId, Long notaId) {
+        validarCliente(clienteId);
+
+        ClienteNota nota = clienteNotaRepository.findByIdAndCliente_Id(notaId, clienteId)
+                .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
+
+        nota.setFijado(!Boolean.TRUE.equals(nota.getFijado()));
+        return toNotaDto(clienteNotaRepository.save(nota));
     }
 
     @Transactional(readOnly = true)
@@ -141,6 +152,7 @@ public class ClienteTimelineService {
                 .cups(evento.getCups())
                 .soloNivelUno(evento.getSoloNivelUno())
                 .fechaEvento(evento.getFechaEvento())
+                .usuarioNombre(evento.getUsuarioNombre())
                 .build();
     }
 
@@ -159,6 +171,7 @@ public class ClienteTimelineService {
                 .fechaCreacion(nota.getFechaCreacion())
             .fechaEdicion(nota.getFechaEdicion())
             .editado(nota.getEditado() != null ? nota.getEditado() : false)
+                .fijado(Boolean.TRUE.equals(nota.getFijado()))
                 .build();
     }
 }

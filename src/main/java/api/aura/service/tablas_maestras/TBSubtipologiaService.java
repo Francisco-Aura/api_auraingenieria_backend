@@ -1,6 +1,7 @@
 package api.aura.service.tablas_maestras;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +17,12 @@ public class TBSubtipologiaService {
     @Autowired
     private TBSubtipologiaRepository subtipologiaRepository;
 
+    @CacheEvict(value = "tablas-maestras", key = "'subtipologias'")
     public TBSubtipologia crearSubtipologia(TBSubtipologia subtipologia) {
         return subtipologiaRepository.save(subtipologia);
     }
 
-    @Cacheable("tablas-maestras")
+    @Cacheable(value = "tablas-maestras", key = "'subtipologias'")
     public List<TBSubtipologia> obtenerTodasLasSubtipologias() {
         return subtipologiaRepository.findAll();
     }
@@ -29,6 +31,7 @@ public class TBSubtipologiaService {
         return subtipologiaRepository.findById(id);
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'subtipologias'")
     public TBSubtipologia actualizarSubtipologia(Integer id, TBSubtipologia subtipologiaActualizada) {
         return subtipologiaRepository.findById(id)
                 .map(subtipologia -> {
@@ -39,6 +42,7 @@ public class TBSubtipologiaService {
                 .orElseThrow(() -> new RuntimeException("Subtipología no encontrada con ID: " + id));
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'subtipologias'")
     public void eliminarSubtipologia(Integer id) {
         subtipologiaRepository.deleteById(id);
     }

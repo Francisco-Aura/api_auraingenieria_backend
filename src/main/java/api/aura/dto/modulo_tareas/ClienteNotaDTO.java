@@ -19,4 +19,5 @@ public class ClienteNotaDTO {
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaEdicion;
     private Boolean editado;
+    private Boolean fijado;
 }

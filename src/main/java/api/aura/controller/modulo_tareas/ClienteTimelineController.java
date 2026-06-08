@@ -84,4 +84,15 @@ public class ClienteTimelineController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PatchMapping("/notas/{notaId}/fijado")
+    public ResponseEntity<?> toggleFijadoNota(@PathVariable Integer clienteId,
+            @PathVariable Long notaId) {
+        try {
+            ClienteNotaDTO nota = clienteTimelineService.toggleFijadoNota(clienteId, notaId);
+            return ResponseEntity.ok(nota);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

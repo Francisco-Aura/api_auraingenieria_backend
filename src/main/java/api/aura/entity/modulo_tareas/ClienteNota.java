@@ -44,11 +44,18 @@ public class ClienteNota {
     @Builder.Default
     private Boolean editado = false;
 
+    @Column(name = "fijado", nullable = false)
+    @Builder.Default
+    private Boolean fijado = false;
+
     @PrePersist
     public void onCreate() {
         this.fechaCreacion = LocalDateTime.now();
         if (this.editado == null) {
             this.editado = false;
+        }
+        if (this.fijado == null) {
+            this.fijado = false;
         }
     }
 }
