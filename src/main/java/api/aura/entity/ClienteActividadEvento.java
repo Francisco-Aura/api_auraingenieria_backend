@@ -49,6 +49,9 @@ public class ClienteActividadEvento {
     @Column(name = "fecha_evento", nullable = false, updatable = false)
     private LocalDateTime fechaEvento;
 
+    @Column(name = "usuario_nombre", length = 100)
+    private String usuarioNombre;
+
     @PrePersist
     public void onCreate() {
         if (this.fechaEvento == null) {

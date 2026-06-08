@@ -97,6 +97,11 @@ public class TareaController {
         return tareaService.obtenerVencidas();
     }
 
+    @GetMapping("/vencen-hoy")
+    public List<TareaDTO> vencenHoy() {
+        return tareaService.obtenerVencenHoy();
+    }
+
     @GetMapping("/por-vencer")
     public List<TareaDTO> porVencer(@RequestParam(defaultValue = "7") int dias) {
         return tareaService.obtenerPorVencer(dias);

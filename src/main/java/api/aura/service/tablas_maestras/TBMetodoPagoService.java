@@ -2,6 +2,7 @@ package api.aura.service.tablas_maestras;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +18,12 @@ public class TBMetodoPagoService {
     @Autowired
     private TBMetodoPagoRepository metodoPagoRepository;
 
+    @CacheEvict(value = "tablas-maestras", key = "'metodos-pago'")
     public TBMetodoPago crearMetodoPago(TBMetodoPago metodoPago) {
         return metodoPagoRepository.save(metodoPago);
     }
 
-    @Cacheable("tablas-maestras")
+    @Cacheable(value = "tablas-maestras", key = "'metodos-pago'")
     public List<TBMetodoPago> obtenerTodosLosMetodosPago() {
         return metodoPagoRepository.findAll();
     }
@@ -30,6 +32,7 @@ public class TBMetodoPagoService {
         return metodoPagoRepository.findById(id);
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'metodos-pago'")
     public TBMetodoPago actualizarMetodoPago(Integer id, TBMetodoPago metodoPagoActualizado) {
         return metodoPagoRepository.findById(id)
                 .map(metodoPago -> {
@@ -39,6 +42,7 @@ public class TBMetodoPagoService {
                 .orElseThrow(() -> new RuntimeException("Método de pago no encontrado con ID: " + id));
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'metodos-pago'")
     public void eliminarMetodoPago(Integer id) {
         metodoPagoRepository.deleteById(id);
     }

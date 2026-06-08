@@ -1,6 +1,7 @@
 package api.aura.service.tablas_maestras;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +17,12 @@ public class TBComercializadorasService {
     @Autowired
     private TBComercializadorasRepository comercializadorasRepository;
 
+    @CacheEvict(value = "tablas-maestras", key = "'comercializadoras'")
     public TBComercializadoras crearComercializadora(TBComercializadoras comercializadora) {
         return comercializadorasRepository.save(comercializadora);
     }
 
-    @Cacheable("tablas-maestras")
+    @Cacheable(value = "tablas-maestras", key = "'comercializadoras'")
     public List<TBComercializadoras> obtenerTodasLasComercializadoras() {
         return comercializadorasRepository.findAll();
     }
@@ -29,6 +31,7 @@ public class TBComercializadorasService {
         return comercializadorasRepository.findById(id);
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'comercializadoras'")
     public TBComercializadoras actualizarComercializadora(Integer id, TBComercializadoras comercializadoraActualizada) {
         return comercializadorasRepository.findById(id)
                 .map(comercializadora -> {
@@ -39,6 +42,7 @@ public class TBComercializadorasService {
                 .orElseThrow(() -> new RuntimeException("Comercializadora no encontrada con ID: " + id));
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'comercializadoras'")
     public void eliminarComercializadora(Integer id) {
         comercializadorasRepository.deleteById(id);
     }

@@ -13,7 +13,8 @@ public class CorsConfig implements WebMvcConfigurer {
         // Permitir CORS desde cualquier origen para todos los endpoints (DESARROLLO)
         registry.addMapping("/**")
                 .allowedOriginPatterns("*") // Cambiar esto a orígenes específicos en producción
-                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // Métodos HTTP permitidos
-                .allowCredentials(true); // Permitir el uso de cookies o autenticación
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .allowedHeaders("*") // Incluye X-Aura-Usuario-Nombre y cualquier otro header custom
+                .allowCredentials(true);
     }
 }

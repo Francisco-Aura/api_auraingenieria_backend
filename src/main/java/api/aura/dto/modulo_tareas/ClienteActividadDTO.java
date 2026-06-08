@@ -17,4 +17,5 @@ public class ClienteActividadDTO {
     private String cups;
     private Boolean soloNivelUno;
     private LocalDateTime fechaEvento;
+    private String usuarioNombre;
 }

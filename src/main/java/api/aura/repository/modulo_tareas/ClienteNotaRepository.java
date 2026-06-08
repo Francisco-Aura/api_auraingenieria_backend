@@ -15,7 +15,7 @@ public interface ClienteNotaRepository extends JpaRepository<ClienteNota, Long> 
             FROM ClienteNota n
             JOIN FETCH n.usuarioAutor u
             WHERE n.cliente.id = :clienteId
-            ORDER BY COALESCE(n.fechaEdicion, n.fechaCreacion) DESC
+            ORDER BY n.fijado DESC, COALESCE(n.fechaEdicion, n.fechaCreacion) DESC
             """)
     List<ClienteNota> findByClienteIdOrderByFechaCreacionDesc(@Param("clienteId") Integer clienteId);
 
