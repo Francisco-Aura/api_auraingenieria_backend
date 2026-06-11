@@ -2,6 +2,8 @@ package api.aura.service.tablas_maestras;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import api.aura.entity.tablas_maestras.TBProductos;
@@ -16,10 +18,12 @@ public class TBProductosService {
     @Autowired
     private TBProductosRepository productosRepository;
 
+    @CacheEvict(value = "tablas-maestras", key = "'productos'")
     public TBProductos crearProducto(TBProductos producto) {
         return productosRepository.save(producto);
     }
 
+    @Cacheable(value = "tablas-maestras", key = "'productos'")
     public List<TBProductos> obtenerTodosLosProductos() {
         return productosRepository.findAll();
     }
@@ -28,6 +32,7 @@ public class TBProductosService {
         return productosRepository.findById(id);
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'productos'")
     public TBProductos actualizarProducto(Integer id, TBProductos productoActualizado) {
         return productosRepository.findById(id)
                 .map(producto -> {
@@ -38,6 +43,7 @@ public class TBProductosService {
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + id));
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'productos'")
     public void eliminarProducto(Integer id) {
         productosRepository.deleteById(id);
     }

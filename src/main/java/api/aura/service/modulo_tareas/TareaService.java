@@ -53,6 +53,11 @@ public class TareaService {
                 .map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
 
+    public List<TareaDTO> obtenerIncidenciasPorCliente(Integer clienteId) {
+        return tareaRepository.findIncidenciasByClienteId(clienteId).stream()
+                .map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
+    }
+
     public TareaDTO obtenerPorId(Long id) {
         mt_Tarea tarea = tareaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
@@ -265,6 +270,13 @@ public class TareaService {
     public List<TareaDTO> obtenerVencidas() {
         LocalDateTime ahora = LocalDateTime.now();
         return tareaRepository.findByEstado_EstadoFinalFalseAndFechaVencimientoBefore(ahora)
+                .stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
+    }
+
+    public List<TareaDTO> obtenerVencenHoy() {
+        LocalDateTime inicioDia = LocalDate.now().atStartOfDay();
+        LocalDateTime finDia = LocalDate.now().atTime(23, 59, 59);
+        return tareaRepository.findByEstado_EstadoFinalFalseAndFechaVencimientoBetween(inicioDia, finDia)
                 .stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
 
@@ -508,6 +520,8 @@ public class TareaService {
                             ? dto.getClientePotencialNombre().trim()
                             : null);
         }
+        // CUPS asociado al punto de suministro (null = GENERAL)
+        tarea.setCups(dto.getCups() != null && !dto.getCups().isBlank() ? dto.getCups().trim() : null);
         if (esCreacion) {
             if (dto.getEstadoId() != null) {
                 mt_TareaEstado estado = estadoRepository.findById(dto.getEstadoId())
@@ -585,6 +599,7 @@ public class TareaService {
                 .clienteRelacionadoNombre(
                         tarea.getClienteRelacionado() != null ? tarea.getClienteRelacionado().getNombre() : null)
                 .clientePotencialNombre(tarea.getClientePotencialNombre())
+                .cups(tarea.getCups())
                 .categoriaId(tarea.getCategoria() != null ? tarea.getCategoria().getId() : null)
                 .categoriaNombre(tarea.getCategoria() != null ? tarea.getCategoria().getNombre() : null)
                 .subcategoriaId(tarea.getSubcategoria() != null ? tarea.getSubcategoria().getId() : null)

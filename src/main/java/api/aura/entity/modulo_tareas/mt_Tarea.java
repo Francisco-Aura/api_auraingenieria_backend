@@ -97,6 +97,9 @@ public class mt_Tarea {
     @Column(name = "cliente_potencial_nombre", length = 200)
     private String clientePotencialNombre;
 
+    @Column(name = "cups", length = 100)
+    private String cups;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "estado_id")
     private mt_TareaEstado estado;

@@ -2,6 +2,8 @@ package api.aura.service.tablas_maestras;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import api.aura.entity.tablas_maestras.TBNivelAcceso;
@@ -20,6 +22,7 @@ public class TBNivelAccesoService {
         return nivelAccesoRepository.save(nivelAcceso);
     }
 
+    @Cacheable(value = "tablas-maestras", key = "'nivel-acceso'")
     public List<TBNivelAcceso> obtenerTodosLosNivelesAcceso() {
         return nivelAccesoRepository.findAll();
     }
@@ -28,6 +31,7 @@ public class TBNivelAccesoService {
         return nivelAccesoRepository.findById(id);
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'nivel-acceso'")
     public TBNivelAcceso actualizarNivelAcceso(Integer id, TBNivelAcceso nivelAccesoActualizado) {
         return nivelAccesoRepository.findById(id)
                 .map(nivelAcceso -> {
@@ -38,6 +42,7 @@ public class TBNivelAccesoService {
                 .orElseThrow(() -> new RuntimeException("Nivel de acceso no encontrado con ID: " + id));
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'nivel-acceso'")
     public void eliminarNivelAcceso(Integer id) {
         nivelAccesoRepository.deleteById(id);
     }

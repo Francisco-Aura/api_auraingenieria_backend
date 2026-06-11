@@ -2,6 +2,8 @@ package api.aura.service.tablas_maestras;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import api.aura.entity.tablas_maestras.TBGestoras;
@@ -16,10 +18,12 @@ public class TBGestorasService {
     @Autowired
     private TBGestorasRepository gestorasRepository;
 
+    @CacheEvict(value = "tablas-maestras", key = "'gestoras'")
     public TBGestoras crearGestora(TBGestoras gestora) {
         return gestorasRepository.save(gestora);
     }
 
+    @Cacheable(value = "tablas-maestras", key = "'gestoras'")
     public List<TBGestoras> obtenerTodasLasGestoras() {
         return gestorasRepository.findAll();
     }
@@ -28,6 +32,7 @@ public class TBGestorasService {
         return gestorasRepository.findById(id);
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'gestoras'")
     public TBGestoras actualizarGestora(Integer id, TBGestoras gestoraActualizada) {
         return gestorasRepository.findById(id)
                 .map(gestora -> {
@@ -38,6 +43,7 @@ public class TBGestorasService {
                 .orElseThrow(() -> new RuntimeException("Gestora no encontrada con ID: " + id));
     }
 
+    @CacheEvict(value = "tablas-maestras", key = "'gestoras'")
     public void eliminarGestora(Integer id) {
         gestorasRepository.deleteById(id);
     }
