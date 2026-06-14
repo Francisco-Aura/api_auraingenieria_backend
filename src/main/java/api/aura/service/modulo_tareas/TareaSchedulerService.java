@@ -3,6 +3,7 @@ package api.aura.service.modulo_tareas;
 import api.aura.entity.modulo_tareas.mt_Tarea;
 import api.aura.entity.modulo_tareas.mt_Notificacion;
 import api.aura.entity.Usuario;
+import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.mt_TareaRepository;
 import api.aura.repository.modulo_tareas.mt_NotificacionRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class TareaSchedulerService {
 
     private final mt_TareaRepository tareaRepository;
     private final mt_NotificacionRepository notificacionRepository;
+    private final UsuarioRepository usuarioRepository;
 
     /**
      * Ejecuta cada 5 minutos para verificar tareas que vencen HOY.
@@ -65,13 +67,6 @@ public class TareaSchedulerService {
     }
 
     private void enviarNotificacionVencimiento(mt_Tarea tarea, DateTimeFormatter formatter, LocalDateTime ahora) {
-        Usuario destinatario = tarea.getUsuarioAsignado();
-
-        if (destinatario == null || destinatario.getId() == null) {
-            log.warn("Tarea {} no tiene usuario asignado, omitiendo notificación", tarea.getId());
-            return;
-        }
-
         String horaVencimiento = tarea.getFechaVencimiento().format(formatter);
         long minutosRestantes = java.time.Duration.between(ahora, tarea.getFechaVencimiento()).toMinutes();
 
@@ -82,13 +77,27 @@ public class TareaSchedulerService {
             mensaje = String.format("📅 La tarea '%s' vence hoy a las %s", tarea.getTitulo(), horaVencimiento);
         }
 
+        Usuario asignado = tarea.getUsuarioAsignado();
+
+        if (asignado != null && asignado.getId() != null) {
+            guardarNotificacion(tarea, asignado, mensaje);
+        }
+
+        usuarioRepository.findByNivelAcceso(1).forEach(admin -> {
+            if (asignado != null && asignado.getId().equals(admin.getId())) {
+                return;
+            }
+            guardarNotificacion(tarea, admin, mensaje);
+        });
+    }
+
+    private void guardarNotificacion(mt_Tarea tarea, Usuario destinatario, String mensaje) {
         mt_Notificacion notificacion = mt_Notificacion.builder()
                 .tarea(tarea)
                 .usuarioDestino(destinatario)
                 .tipo(mt_Notificacion.TipoNotificacion.VENCIMIENTO)
                 .mensaje(mensaje)
                 .build();
-
         notificacionRepository.save(notificacion);
     }
 
