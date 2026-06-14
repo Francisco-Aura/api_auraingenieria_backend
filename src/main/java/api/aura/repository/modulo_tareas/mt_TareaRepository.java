@@ -22,6 +22,8 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
 
     List<mt_Tarea> findByEstado_EstadoFinalFalseAndFechaVencimientoBetween(LocalDateTime desde, LocalDateTime hasta);
 
+    List<mt_Tarea> findByUsuarioAsignado_IdAndEstado_EstadoFinalFalseAndFechaVencimientoBetween(Integer usuarioId, LocalDateTime desde, LocalDateTime hasta);
+
     @Query("SELECT t FROM mt_Tarea t WHERE t.estado.estadoFinal = false AND t.usuarioAsignado.id = :usuarioId")
     List<mt_Tarea> findPendientesByUsuario(@Param("usuarioId") Integer usuarioId);
 
