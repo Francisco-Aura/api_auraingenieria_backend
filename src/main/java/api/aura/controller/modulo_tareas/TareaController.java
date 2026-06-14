@@ -98,8 +98,8 @@ public class TareaController {
     }
 
     @GetMapping("/vencen-hoy")
-    public List<TareaDTO> vencenHoy() {
-        return tareaService.obtenerVencenHoy();
+    public List<TareaDTO> vencenHoy(@RequestParam Integer usuarioId, @RequestParam Integer nivelAcceso) {
+        return tareaService.obtenerVencenHoy(usuarioId, nivelAcceso);
     }
 
     @GetMapping("/por-vencer")

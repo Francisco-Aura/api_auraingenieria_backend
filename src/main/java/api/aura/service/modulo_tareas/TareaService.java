@@ -273,11 +273,18 @@ public class TareaService {
                 .stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
 
-    public List<TareaDTO> obtenerVencenHoy() {
+    public List<TareaDTO> obtenerVencenHoy(Integer usuarioId, Integer nivelAcceso) {
         LocalDateTime inicioDia = LocalDate.now().atStartOfDay();
         LocalDateTime finDia = LocalDate.now().atTime(23, 59, 59);
-        return tareaRepository.findByEstado_EstadoFinalFalseAndFechaVencimientoBetween(inicioDia, finDia)
-                .stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
+
+        List<mt_Tarea> tareas;
+        if (nivelAcceso != null && nivelAcceso == 1) {
+            tareas = tareaRepository.findByEstado_EstadoFinalFalseAndFechaVencimientoBetween(inicioDia, finDia);
+        } else {
+            tareas = tareaRepository.findByUsuarioAsignado_IdAndEstado_EstadoFinalFalseAndFechaVencimientoBetween(usuarioId, inicioDia, finDia);
+        }
+
+        return tareas.stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
 
     public List<TareaDTO> obtenerPorVencer(int dias) {
