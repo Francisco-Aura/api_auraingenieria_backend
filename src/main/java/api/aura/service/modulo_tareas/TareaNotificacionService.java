@@ -60,11 +60,18 @@ public class TareaNotificacionService {
     }
 
     public void notificarVencimiento(mt_Tarea tarea) {
-        if (tarea.getUsuarioAsignado() == null) {
-            return;
+        String mensaje = String.format("La tarea '%s' está vencida", tarea.getTitulo());
+
+        if (tarea.getUsuarioAsignado() != null) {
+            crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.VENCIMIENTO, mensaje);
         }
-        crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.VENCIMIENTO,
-                String.format("La tarea '%s' está vencida", tarea.getTitulo()));
+
+        usuarioRepository.findByNivelAcceso(1).forEach(admin -> {
+            if (tarea.getUsuarioAsignado() != null && tarea.getUsuarioAsignado().getId().equals(admin.getId())) {
+                return;
+            }
+            crearNotificacion(tarea, admin, mt_Notificacion.TipoNotificacion.VENCIMIENTO, mensaje);
+        });
     }
 
     public void notificarComentario(mt_Tarea tarea, Usuario autor, String comentario) {
