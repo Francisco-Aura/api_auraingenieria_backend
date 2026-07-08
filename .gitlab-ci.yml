@@ -43,9 +43,6 @@ deploy_backend_PRE:
     - echo "=== Ejecutando despliegue ==="
     - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "bash /home/babenza/deploy_backend.sh"
 
-    - echo "=== Estado servicio ==="
-    - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "systemctl status aura-backend --no-pager"
-
 # ======================================================
 # DESPLIEGUE BACKEND PRO (rama main)
 # SSH -> 5.34.148.92:22
@@ -85,6 +82,3 @@ deploy_backend_PRO:
 
     - echo "=== Ejecutando despliegue ==="
     - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "bash /home/babenza/deploy_backend.sh"
-
-    - echo "=== Estado servicio ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "systemctl status aura-backend --no-pager"
