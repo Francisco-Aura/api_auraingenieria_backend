@@ -44,7 +44,9 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 TRIM(ACT.nombre) AS comercializadoraActual,
                 id_comercializadora_anterior AS idComercializadoraAnterior,
                 TRIM(ANT.nombre) AS comercializadoraAnterior,
-                TRIM(contratos.observaciones) AS observaciones
+                TRIM(contratos.observaciones) AS observaciones,
+                TRIM(contratos.comentario_renovacion) AS comentarioRenovacion,
+                TRIM(usuarios.nombre) AS usuarioAsignado
             FROM
                 contratos
                 JOIN punto_suministro ON contratos.id_punto_suministro = punto_suministro.ID
@@ -53,6 +55,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 JOIN clientes ON contratos.id_cliente = clientes.ID
                 JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
                 JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
+                LEFT JOIN usuarios ON clientes.idUsuario = usuarios.ID
             WHERE
                 (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
                 AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
@@ -76,6 +79,72 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 fecha_fin ASC
             """, nativeQuery = true)
     List<Object[]> findContratosPendientesRenovacion();
+
+    @Query(value = """
+            SELECT
+                contratos.id AS codigoContrato,
+                contratos.fecha,
+                contratos.fecha_envio,
+                contratos.fecha_inicio,
+                contratos.fecha_fin,
+                contratos.id_cliente AS idCliente,
+                TRIM(clientes.nombre) AS cliente,
+                punto_suministro.ID AS idPuntoSuministro,
+                TRIM(punto_suministro.CUPSluz) AS cupsLuz,
+                TRIM(punto_suministro.CUPSgas) AS cupsGas,
+                TRIM(clientes.user_telemedida) AS userTelemedida,
+                TRIM(clientes.pass_telemedida) AS passTelemedida,
+                TRIM(contrato) AS contrato,
+                tbtarifas_luz.ID AS idTarifaLuz,
+                TRIM(tbtarifas_luz.nombre) AS tarifaLuz,
+                tbtarifas_gas.ID AS idTarifaGas,
+                TRIM(tbtarifas_gas.nombre) AS tarifaGas,
+                potencia1 AS pot1,
+                potencia2 AS pot2,
+                potencia3 AS pot3,
+                potencia4 AS pot4,
+                potencia5 AS pot5,
+                potencia6 AS pot6,
+                consumo_anual AS consumoAnual,
+                exencion_impuesto_electricidad AS exencionIE,
+                contratos.autoconsumo AS autoconsumo,
+                id_comercializadora_actual AS idComercializadoraActual,
+                TRIM(ACT.nombre) AS comercializadoraActual,
+                id_comercializadora_anterior AS idComercializadoraAnterior,
+                TRIM(ANT.nombre) AS comercializadoraAnterior,
+                TRIM(contratos.observaciones) AS observaciones,
+                TRIM(contratos.comentario_renovacion) AS comentarioRenovacion,
+                TRIM(usuarios.nombre) AS usuarioAsignado
+            FROM
+                contratos
+                JOIN punto_suministro ON contratos.id_punto_suministro = punto_suministro.ID
+                JOIN tbtarifas_gas ON contratos.id_tarifa_gas = tbtarifas_gas.ID
+                JOIN tbtarifas_luz ON contratos.id_tarifa_luz = tbtarifas_luz.ID
+                JOIN clientes ON contratos.id_cliente = clientes.ID
+                JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
+                JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
+                LEFT JOIN usuarios ON clientes.idUsuario = usuarios.ID
+            WHERE
+                (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
+                AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
+                AND TRIM(LOWER(COALESCE(usuarios.nombre, ''))) = TRIM(LOWER(:usuarioNombre))
+                AND (
+                    (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
+                    OR
+                    (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AND CURDATE())
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM contratos AS renovacion
+                    WHERE renovacion.id_punto_suministro = contratos.id_punto_suministro
+                        AND renovacion.id != contratos.id
+                        AND renovacion.fecha_inicio >= contratos.fecha_fin
+                        AND (renovacion.fecha_baja = '0001-01-01' OR renovacion.fecha_baja IS NULL)
+                )
+            ORDER BY
+                fecha_fin ASC
+            """, nativeQuery = true)
+    List<Object[]> findContratosPendientesRenovacionByUsuario(@Param("usuarioNombre") String usuarioNombre);
 
     @Query(value = """
             SELECT

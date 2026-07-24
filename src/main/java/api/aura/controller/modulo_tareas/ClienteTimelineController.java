@@ -8,9 +8,15 @@ import api.aura.dto.modulo_tareas.TareaDTO;
 import api.aura.service.modulo_tareas.ClienteTimelineService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
 import java.util.List;
 
 @RestController
@@ -41,23 +47,39 @@ public class ClienteTimelineController {
         }
     }
 
-    @PostMapping("/notas")
+    @PostMapping(value = "/notas", consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> crearNota(@PathVariable Integer clienteId,
-            @Valid @RequestBody CrearNotaClienteRequest request) {
+            @RequestPart(value = "datos", required = false) @Valid CrearNotaClienteRequest request,
+            @RequestBody(required = false) CrearNotaClienteRequest requestBody,
+            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
         try {
-            ClienteNotaDTO nota = clienteTimelineService.crearNotaFijada(clienteId, request);
+            CrearNotaClienteRequest req = request != null ? request : requestBody;
+            ClienteNotaDTO nota;
+            if (archivo != null && !archivo.isEmpty()) {
+                nota = clienteTimelineService.crearNotaFijadaConArchivo(clienteId, req, archivo);
+            } else {
+                nota = clienteTimelineService.crearNotaFijada(clienteId, req);
+            }
             return ResponseEntity.ok(nota);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PutMapping("/notas/{notaId}")
+    @PutMapping(value = "/notas/{notaId}", consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> actualizarNota(@PathVariable Integer clienteId,
             @PathVariable Long notaId,
-            @Valid @RequestBody ActualizarNotaClienteRequest request) {
+            @RequestPart(value = "datos", required = false) @Valid ActualizarNotaClienteRequest request,
+            @RequestBody(required = false) ActualizarNotaClienteRequest requestBody,
+            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
         try {
-            ClienteNotaDTO nota = clienteTimelineService.actualizarNota(clienteId, notaId, request);
+            ActualizarNotaClienteRequest req = request != null ? request : requestBody;
+            ClienteNotaDTO nota;
+            if (archivo != null && !archivo.isEmpty()) {
+                nota = clienteTimelineService.actualizarNotaConArchivo(clienteId, notaId, req, archivo);
+            } else {
+                nota = clienteTimelineService.actualizarNota(clienteId, notaId, req);
+            }
             return ResponseEntity.ok(nota);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -72,6 +94,24 @@ public class ClienteTimelineController {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/notas/{notaId}/descargar")
+    public ResponseEntity<Resource> descargarArchivoNota(@PathVariable Integer clienteId,
+            @PathVariable Long notaId) {
+        try {
+            Path ruta = clienteTimelineService.obtenerRutaArchivoNota(clienteId, notaId);
+            String nombreOriginal = clienteTimelineService.obtenerNombreArchivoNota(clienteId, notaId);
+            Resource resource = new PathResource(ruta);
+            String contentDisposition = "attachment; filename=\"" +
+                    (nombreOriginal != null ? nombreOriginal.replace("\"", "") : "archivo") + "\"";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

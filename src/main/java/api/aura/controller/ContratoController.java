@@ -178,4 +178,36 @@ public class ContratoController {
         contratoService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/renovar/{idContratoOriginal}")
+    public ResponseEntity<?> renovarContrato(
+            @PathVariable Integer idContratoOriginal,
+            @RequestBody JsonNode contratoBody) {
+        try {
+            Contrato nuevoContrato = parseContratoFromJson(contratoBody);
+            Contrato guardado = contratoService.renovarContrato(idContratoOriginal, nuevoContrato);
+            return ResponseEntity.ok(guardado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error al renovar contrato {}", idContratoOriginal, e);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al renovar el contrato"));
+        }
+    }
+
+    @PatchMapping("/{id}/comentario-renovacion")
+    public ResponseEntity<?> actualizarComentarioRenovacion(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> body) {
+        try {
+            String comentario = body.getOrDefault("comentarioRenovacion", "");
+            Contrato actualizado = contratoService.actualizarComentarioRenovacion(id, comentario);
+            return ResponseEntity.ok(Map.of("success", true, "comentarioRenovacion", actualizado.getComentarioRenovacion() != null ? actualizado.getComentarioRenovacion() : ""));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error al actualizar comentario de renovación en contrato {}", id, e);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar comentario"));
+        }
+    }
 }

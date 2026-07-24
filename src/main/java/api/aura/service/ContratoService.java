@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,6 +68,7 @@ public class ContratoService {
                 contratoActual.setObservaciones(contrato.getObservaciones());
                 contratoActual.setUserFO(contrato.getUserFO());
                 contratoActual.setPasswordFO(contrato.getPasswordFO());
+                contratoActual.setComentarioRenovacion(contrato.getComentarioRenovacion());
 
                 logger.info("Campos del contrato actualizados. Guardando en base de datos...");
                 return contratoRepository.save(contratoActual);
@@ -139,5 +142,50 @@ public class ContratoService {
 
     public void eliminarPorId(Integer id) {
         contratoRepository.deleteById(id);
+    }
+
+    /**
+     * Renueva un contrato existente: crea uno nuevo con los datos recibidos y marca el original como vencido (fechaBaja = hoy).
+     */
+    public Contrato renovarContrato(Integer idContratoOriginal, Contrato nuevoContrato) {
+        Contrato original = contratoRepository.findById(idContratoOriginal)
+                .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado con ID: " + idContratoOriginal));
+
+        // Garantizar que el nuevo contrato no tenga ID (se creará nuevo)
+        nuevoContrato.setId(null);
+
+        // Preservar asociaciones del original si no vienen en el nuevo
+        if (nuevoContrato.getCliente() == null && original.getCliente() != null) {
+            nuevoContrato.setCliente(original.getCliente());
+        } else if (nuevoContrato.getCliente() != null && nuevoContrato.getCliente().getId() != null) {
+            clienteRepository.findById(nuevoContrato.getCliente().getId())
+                    .ifPresent(nuevoContrato::setCliente);
+        }
+        if (nuevoContrato.getPuntoSuministro() == null && original.getPuntoSuministro() != null) {
+            nuevoContrato.setPuntoSuministro(original.getPuntoSuministro());
+        } else if (nuevoContrato.getPuntoSuministro() != null && nuevoContrato.getPuntoSuministro().getId() != null) {
+            puntoSuministroRepository.findById(nuevoContrato.getPuntoSuministro().getId())
+                    .ifPresent(nuevoContrato::setPuntoSuministro);
+        }
+
+        // Guardar nuevo contrato
+        Contrato guardado = contratoRepository.save(nuevoContrato);
+
+        // Marcar original como vencido
+        original.setFechaBaja(Date.valueOf(LocalDate.now()));
+        contratoRepository.save(original);
+
+        logger.info("Contrato {} renovado. Nuevo contrato ID: {}. Original marcado como vencido.", idContratoOriginal, guardado.getId());
+        return guardado;
+    }
+
+    /**
+     * Actualiza solo el campo comentarioRenovacion de un contrato.
+     */
+    public Contrato actualizarComentarioRenovacion(Integer id, String comentario) {
+        Contrato contrato = contratoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado con ID: " + id));
+        contrato.setComentarioRenovacion(comentario);
+        return contratoRepository.save(contrato);
     }
 }

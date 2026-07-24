@@ -48,6 +48,15 @@ public class ClienteNota {
     @Builder.Default
     private Boolean fijado = false;
 
+    @Column(name = "nombre_archivo", length = 255)
+    private String nombreArchivo;
+
+    @Column(name = "ruta_archivo", length = 500)
+    private String rutaArchivo;
+
+    @Column(name = "tipo_mime", length = 100)
+    private String tipoMime;
+
     @PrePersist
     public void onCreate() {
         this.fechaCreacion = LocalDateTime.now();

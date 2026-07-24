@@ -14,12 +14,19 @@ import api.aura.repository.ClienteRepository;
 import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.ClienteNotaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +38,9 @@ public class ClienteTimelineService {
     private final UsuarioRepository usuarioRepository;
     private final ClienteNotaRepository clienteNotaRepository;
     private final TareaService tareaService;
+
+    @Value("${aura.uploads.notas-path:uploads/notas}")
+    private String notasUploadPath;
 
     @Transactional(readOnly = true)
     public List<ClienteActividadDTO> obtenerActividad(Integer clienteId, Integer nivelAcceso) {
@@ -70,6 +80,31 @@ public class ClienteTimelineService {
         return toNotaDto(clienteNotaRepository.save(nota));
     }
 
+    public ClienteNotaDTO crearNotaFijadaConArchivo(Integer clienteId, CrearNotaClienteRequest request, MultipartFile archivo) {
+        validarRequestNota(request);
+
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
+
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        String cups = normalizarCups(request.getCups());
+        ClienteNota nota = ClienteNota.builder()
+            .cliente(cliente)
+            .usuarioAutor(usuario)
+            .cups(cups)
+            .comentario(request.getComentario().trim())
+            .fijado(Boolean.TRUE.equals(request.getFijado()))
+            .build();
+
+        if (archivo != null && !archivo.isEmpty()) {
+            guardarArchivoEnNota(nota, archivo, clienteId);
+        }
+
+        return toNotaDto(clienteNotaRepository.save(nota));
+    }
+
     public ClienteNotaDTO actualizarNota(Integer clienteId, Long notaId, ActualizarNotaClienteRequest request) {
         validarCliente(clienteId);
         validarRequestActualizacionNota(request);
@@ -85,13 +120,84 @@ public class ClienteTimelineService {
         return toNotaDto(clienteNotaRepository.save(nota));
     }
 
+    public ClienteNotaDTO actualizarNotaConArchivo(Integer clienteId, Long notaId, ActualizarNotaClienteRequest request, MultipartFile archivo) {
+        validarCliente(clienteId);
+        validarRequestActualizacionNota(request);
+
+        ClienteNota nota = clienteNotaRepository.findByIdAndCliente_Id(notaId, clienteId)
+                .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
+
+        nota.setComentario(request.getComentario().trim());
+        nota.setCups(normalizarCups(request.getCups()));
+        nota.setEditado(true);
+        nota.setFechaEdicion(LocalDateTime.now());
+
+        if (archivo != null && !archivo.isEmpty()) {
+            // Eliminar archivo anterior si existe
+            eliminarArchivoFisico(nota.getRutaArchivo());
+            guardarArchivoEnNota(nota, archivo, clienteId);
+        }
+
+        return toNotaDto(clienteNotaRepository.save(nota));
+    }
+
     public void eliminarNota(Integer clienteId, Long notaId) {
         validarCliente(clienteId);
 
         ClienteNota nota = clienteNotaRepository.findByIdAndCliente_Id(notaId, clienteId)
                 .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
 
+        // Eliminar archivo físico si existe
+        eliminarArchivoFisico(nota.getRutaArchivo());
+
         clienteNotaRepository.delete(nota);
+    }
+
+    public Path obtenerRutaArchivoNota(Integer clienteId, Long notaId) {
+        validarCliente(clienteId);
+        ClienteNota nota = clienteNotaRepository.findByIdAndCliente_Id(notaId, clienteId)
+                .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
+        if (nota.getRutaArchivo() == null) {
+            throw new IllegalArgumentException("Esta nota no tiene archivo adjunto");
+        }
+        Path path = Paths.get(nota.getRutaArchivo());
+        if (!Files.exists(path)) {
+            throw new IllegalArgumentException("El archivo adjunto no se encontró en el servidor");
+        }
+        return path;
+    }
+
+    public String obtenerNombreArchivoNota(Integer clienteId, Long notaId) {
+        ClienteNota nota = clienteNotaRepository.findByIdAndCliente_Id(notaId, clienteId)
+                .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
+        return nota.getNombreArchivo();
+    }
+
+    private void guardarArchivoEnNota(ClienteNota nota, MultipartFile archivo, Integer clienteId) {
+        try {
+            Path dirPath = Paths.get(notasUploadPath, "cliente_" + clienteId);
+            Files.createDirectories(dirPath);
+            String nombreOriginal = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename() : "archivo";
+            String extension = nombreOriginal.contains(".") ? nombreOriginal.substring(nombreOriginal.lastIndexOf('.')) : "";
+            String nombreFisico = UUID.randomUUID().toString() + extension;
+            Path destino = dirPath.resolve(nombreFisico);
+            Files.copy(archivo.getInputStream(), destino);
+            nota.setNombreArchivo(nombreOriginal);
+            nota.setRutaArchivo(destino.toString());
+            nota.setTipoMime(archivo.getContentType());
+        } catch (IOException e) {
+            throw new RuntimeException("Error al guardar el archivo adjunto: " + e.getMessage(), e);
+        }
+    }
+
+    private void eliminarArchivoFisico(String ruta) {
+        if (ruta == null) return;
+        try {
+            Path path = Paths.get(ruta);
+            Files.deleteIfExists(path);
+        } catch (IOException ignored) {
+            // No crítico si falla la eliminación física
+        }
     }
 
     public ClienteNotaDTO toggleFijadoNota(Integer clienteId, Long notaId) {
@@ -172,6 +278,8 @@ public class ClienteTimelineService {
             .fechaEdicion(nota.getFechaEdicion())
             .editado(nota.getEditado() != null ? nota.getEditado() : false)
                 .fijado(Boolean.TRUE.equals(nota.getFijado()))
+                .nombreArchivo(nota.getNombreArchivo())
+                .tipoMime(nota.getTipoMime())
                 .build();
     }
 }

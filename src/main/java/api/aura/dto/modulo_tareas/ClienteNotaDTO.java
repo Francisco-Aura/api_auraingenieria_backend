@@ -20,4 +20,6 @@ public class ClienteNotaDTO {
     private LocalDateTime fechaEdicion;
     private Boolean editado;
     private Boolean fijado;
+    private String nombreArchivo;
+    private String tipoMime;
 }

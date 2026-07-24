@@ -36,5 +36,7 @@ public class ContratoPendienteRenovacionDTO {
     private String comercializadoraActual;
     private Integer idComercializadoraAnterior;
     private String comercializadoraAnterior;
-    private String observaciones; 
+    private String observaciones;
+    private String comentarioRenovacion;
+    private String usuarioAsignado;
 }

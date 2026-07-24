@@ -38,8 +38,14 @@ public class InformesService {
         this.sectoresRepository = sectoresRepository;
     }
 
-    public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion() {
-        List<Object[]> resultados = repository.findContratosPendientesRenovacion();
+    public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion(Integer nivelAcceso, String usuarioNombre) {
+        List<Object[]> resultados;
+        if (nivelAcceso != null && nivelAcceso == 1) {
+            resultados = repository.findContratosPendientesRenovacion();
+        } else {
+            resultados = repository.findContratosPendientesRenovacionByUsuario(
+                usuarioNombre != null ? usuarioNombre : "");
+        }
         return resultados.stream().map(this::mapToContratoPendienteRenovacionDTO).collect(Collectors.toList());
     }
 
@@ -76,6 +82,8 @@ public class InformesService {
         dto.setIdComercializadoraAnterior((Integer) row[28]);
         dto.setComercializadoraAnterior((String) row[29]);
         dto.setObservaciones((String) row[30]);
+        dto.setComentarioRenovacion((String) row[31]);
+        dto.setUsuarioAsignado((String) row[32]);
         return dto;
     }
 

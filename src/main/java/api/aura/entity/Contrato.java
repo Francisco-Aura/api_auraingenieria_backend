@@ -97,4 +97,7 @@ public class Contrato {
     //Contraseña para facturación online
     @Column(length = 200)
     private String passwordFO;
+
+    @Column(length = 10000)
+    private String comentarioRenovacion;
 }

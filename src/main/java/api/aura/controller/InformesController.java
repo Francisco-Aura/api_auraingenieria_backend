@@ -22,8 +22,10 @@ public class InformesController {
     }
 
     @GetMapping("/contratos-pendientes-renovacion")
-    public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion() {
-        return servicio.obtenerContratosPendientesRenovacion();
+    public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion(
+            @RequestParam(required = false) Integer nivelAcceso,
+            @RequestHeader(value = "X-Aura-Usuario-Nombre", required = false) String usuarioNombre) {
+        return servicio.obtenerContratosPendientesRenovacion(nivelAcceso, usuarioNombre);
     }
 
     @GetMapping("/puntos-suministro-sin-contrato")
