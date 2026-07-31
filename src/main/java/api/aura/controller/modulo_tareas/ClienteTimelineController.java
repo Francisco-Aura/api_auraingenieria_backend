@@ -105,7 +105,7 @@ public class ClienteTimelineController {
             String nombreOriginal = clienteTimelineService.obtenerNombreArchivoNota(clienteId, notaId);
             Resource resource = new PathResource(ruta);
             String contentDisposition = "attachment; filename=\"" +
-                    (nombreOriginal != null ? nombreOriginal.replace("\"", "") : "archivo") + "\"";
+                    (nombreOriginal != null ? nombreOriginal.replace("\"", "").replaceAll("[\\r\\n]", "") : "archivo") + "\"";
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)

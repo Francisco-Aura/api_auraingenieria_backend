@@ -178,9 +178,16 @@ public class ClienteTimelineService {
             Path dirPath = Paths.get(notasUploadPath, "cliente_" + clienteId);
             Files.createDirectories(dirPath);
             String nombreOriginal = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename() : "archivo";
-            String extension = nombreOriginal.contains(".") ? nombreOriginal.substring(nombreOriginal.lastIndexOf('.')) : "";
+            // Extraer y sanitizar la extensión para prevenir path traversal
+            String rawExtension = nombreOriginal.contains(".") ? nombreOriginal.substring(nombreOriginal.lastIndexOf('.')) : "";
+            String extension = rawExtension.replaceAll("[^a-zA-Z0-9.]", "");
+            if (extension.length() > 10) extension = "";
             String nombreFisico = UUID.randomUUID().toString() + extension;
-            Path destino = dirPath.resolve(nombreFisico);
+            Path destino = dirPath.resolve(nombreFisico).normalize();
+            // Verificar que el destino sigue dentro del directorio permitido
+            if (!destino.startsWith(dirPath.normalize())) {
+                throw new SecurityException("Ruta de archivo no permitida");
+            }
             Files.copy(archivo.getInputStream(), destino);
             nota.setNombreArchivo(nombreOriginal);
             nota.setRutaArchivo(destino.toString());

@@ -7,6 +7,7 @@ import api.aura.repository.ContratoRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.PuntoSuministroRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,6 +148,7 @@ public class ContratoService {
     /**
      * Renueva un contrato existente: crea uno nuevo con los datos recibidos y marca el original como vencido (fechaBaja = hoy).
      */
+    @Transactional
     public Contrato renovarContrato(Integer idContratoOriginal, Contrato nuevoContrato) {
         Contrato original = contratoRepository.findById(idContratoOriginal)
                 .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado con ID: " + idContratoOriginal));
@@ -182,6 +184,7 @@ public class ContratoService {
     /**
      * Actualiza solo el campo comentarioRenovacion de un contrato.
      */
+    @Transactional
     public Contrato actualizarComentarioRenovacion(Integer id, String comentario) {
         Contrato contrato = contratoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado con ID: " + id));
