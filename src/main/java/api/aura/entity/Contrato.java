@@ -98,6 +98,7 @@ public class Contrato {
     @Column(length = 200)
     private String passwordFO;
 
-    @Column(length = 10000)
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String comentarioRenovacion;
 }

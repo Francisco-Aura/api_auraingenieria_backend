@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import api.aura.dto.ClienteCarteraDTO;
 import api.aura.dto.ClienteDTO;
@@ -101,6 +102,7 @@ public class ClienteService {
         return clienteRepository.findById(id);
     }
 
+    @Transactional
     public Cliente actualizarCliente(Integer id, ClienteDTO clienteDTO) {
         return clienteRepository.findById(id)
                 .map(cliente -> {
@@ -177,6 +179,7 @@ public class ClienteService {
                 .orElseThrow(() -> new IllegalArgumentException("El cliente que intenta actualizar no existe."));
     }
 
+    @Transactional
     public void eliminarCliente(Integer id) {
         clienteRepository.findById(id).ifPresent(cliente -> {
             cliente.setFechaBaja(new java.util.Date());

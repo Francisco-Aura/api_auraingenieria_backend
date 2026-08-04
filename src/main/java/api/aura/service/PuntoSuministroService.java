@@ -13,6 +13,8 @@ import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.entity.Cliente;
 import api.aura.entity.Contrato;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ import java.util.Optional;
 
 @Service
 public class PuntoSuministroService {
+
+    private static final Logger log = LoggerFactory.getLogger(PuntoSuministroService.class);
 
     @Autowired
     private PuntoSuministroRepository puntoSuministroRepository;
@@ -240,7 +244,8 @@ public class PuntoSuministroService {
                 contratoRepository.saveAll(contratos);
             }
         } catch (Exception e) {
-            // No lanzar excepción para no afectar el guardado del punto de suministro
+            log.error("Error al sincronizar contratos con punto de suministro id={}: {}",
+                    puntoSuministro.getId(), e.getMessage(), e);
         }
     }
 }

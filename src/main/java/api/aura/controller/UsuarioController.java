@@ -36,18 +36,15 @@ public class UsuarioController {
 
     // Endpoint para obtener un usuario por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Optional<Usuario>> obtenerUsuarioPorId(@PathVariable Integer id) {
-        Optional<Usuario> usuario = usuarioService.obtenerUsuarioPorId(id);
-        if (usuario.isPresent()) {
-            return ResponseEntity.ok(usuario);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Usuario> obtenerUsuarioPorId(@PathVariable Integer id) {
+        return usuarioService.obtenerUsuarioPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Endpoint para verificar usuario y contraseña (login)
     @GetMapping("/login")
-    public ResponseEntity<Map<String, Object>> Autenticar(
+    public ResponseEntity<Map<String, Object>> autenticar(
             @RequestParam String user,
             @RequestParam String pass) {
         Optional<Usuario> usuario = usuarioService.obtenerUsuarioPorNombreUsuarioPass(user, pass);

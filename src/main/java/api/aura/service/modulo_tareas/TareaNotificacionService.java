@@ -175,11 +175,7 @@ public class TareaNotificacionService {
     }
 
     public void marcarTodasComoLeidas(Integer usuarioId) {
-        notificacionRepository.findByUsuarioDestino_IdAndLeidaFalseOrderByFechaCreacionDesc(usuarioId)
-                .forEach(notificacion -> {
-                    notificacion.setLeida(Boolean.TRUE);
-                    notificacionRepository.save(notificacion);
-                });
+        notificacionRepository.marcarTodasComoLeidasByUsuarioId(usuarioId);
     }
 
     public void eliminar(Long id) {

@@ -55,7 +55,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 JOIN clientes ON contratos.id_cliente = clientes.ID
                 JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
                 JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
-                LEFT JOIN usuarios ON clientes.idUsuario = usuarios.ID
+                LEFT JOIN usuarios ON clientes.id_usuario = usuarios.ID
             WHERE
                 (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
                 AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
@@ -123,7 +123,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 JOIN clientes ON contratos.id_cliente = clientes.ID
                 JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
                 JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
-                LEFT JOIN usuarios ON clientes.idUsuario = usuarios.ID
+                LEFT JOIN usuarios ON clientes.id_usuario = usuarios.ID
             WHERE
                 (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
                 AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
