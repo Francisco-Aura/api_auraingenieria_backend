@@ -14,7 +14,10 @@ import org.slf4j.LoggerFactory;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ContratoService {
@@ -24,13 +27,16 @@ public class ContratoService {
     private final ContratoRepository contratoRepository;
     private final ClienteRepository clienteRepository;
     private final PuntoSuministroRepository puntoSuministroRepository;
+    private final ContratoFileStorageService contratoFileStorageService;
 
     public ContratoService(ContratoRepository contratoRepository,
             ClienteRepository clienteRepository,
-            PuntoSuministroRepository puntoSuministroRepository) {
+            PuntoSuministroRepository puntoSuministroRepository,
+            ContratoFileStorageService contratoFileStorageService) {
         this.contratoRepository = contratoRepository;
         this.clienteRepository = clienteRepository;
         this.puntoSuministroRepository = puntoSuministroRepository;
+        this.contratoFileStorageService = contratoFileStorageService;
     }
 
     public Contrato guardarContrato(Contrato contrato) {
@@ -112,6 +118,13 @@ public class ContratoService {
         return contratoRepository.save(contrato);
     }
 
+    @Transactional
+    public Contrato guardarContratoConPdf(Contrato contrato, org.springframework.web.multipart.MultipartFile archivo) {
+        Contrato guardado = guardarContrato(contrato);
+        contratoFileStorageService.guardarPdf(guardado, archivo);
+        return contratoRepository.save(guardado);
+    }
+
     public List<Contrato> obtenerTodos() {
         return contratoRepository.findAll();
     }
@@ -131,13 +144,28 @@ public class ContratoService {
     public List<Contrato> obtenerPorPuntoSuministroId(Integer puntoSuministroId) {
         List<Contrato> contratos = contratoRepository.findByPuntoSuministroId(puntoSuministroId);
 
-        // Cargar la información del cliente para cada contrato
-        contratos.forEach(contrato -> {
-            if (contrato.getCliente() != null) {
-                clienteRepository.findById(contrato.getCliente().getId())
-                        .ifPresent(contrato::setCliente);
-            }
-        });
+        // Cargar la información del cliente para cada contrato en una sola consulta
+        // (antes se hacía un findById por contrato dentro del forEach: N consultas).
+        List<Integer> clienteIds = contratos.stream()
+                .map(c -> c.getCliente() != null ? c.getCliente().getId() : null)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (!clienteIds.isEmpty()) {
+            Map<Integer, Cliente> clientesPorId = clienteRepository.findAllById(clienteIds).stream()
+                    .collect(Collectors.toMap(Cliente::getId, c -> c));
+
+            contratos.forEach(contrato -> {
+                if (contrato.getCliente() != null) {
+                    Cliente cliente = clientesPorId.get(contrato.getCliente().getId());
+                    if (cliente != null) {
+                        contrato.setCliente(cliente);
+                    }
+                }
+            });
+        }
+
         return contratos;
     }
 
@@ -181,6 +209,20 @@ public class ContratoService {
         return guardado;
     }
 
+    @Transactional
+    public Contrato renovarContratoConPdf(Integer idContratoOriginal, Contrato nuevoContrato,
+            org.springframework.web.multipart.MultipartFile archivo) {
+        Contrato guardado = renovarContrato(idContratoOriginal, nuevoContrato);
+        contratoFileStorageService.guardarPdf(guardado, archivo);
+        return contratoRepository.save(guardado);
+    }
+
+    public java.nio.file.Path obtenerRutaPdf(Integer id) {
+        Contrato contrato = contratoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado con ID: " + id));
+        return contratoFileStorageService.obtenerPdf(contrato);
+    }
+
     /**
      * Actualiza solo el campo comentarioRenovacion de un contrato.
      */
@@ -188,7 +230,9 @@ public class ContratoService {
     public Contrato actualizarComentarioRenovacion(Integer id, String comentario) {
         Contrato contrato = contratoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado con ID: " + id));
-        contrato.setComentarioRenovacion(comentario);
+        // Trim: espacios o saltos de línea solos no cuentan como comentario
+        String limpio = comentario != null ? comentario.trim() : null;
+        contrato.setComentarioRenovacion(limpio == null || limpio.isEmpty() ? null : limpio);
         return contratoRepository.save(contrato);
     }
 }

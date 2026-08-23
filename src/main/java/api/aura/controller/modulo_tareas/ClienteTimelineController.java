@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -47,40 +48,111 @@ public class ClienteTimelineController {
         }
     }
 
-    @PostMapping(value = "/notas", consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<?> crearNota(@PathVariable Integer clienteId,
-            @RequestPart(value = "datos", required = false) @Valid CrearNotaClienteRequest request,
-            @RequestBody(required = false) CrearNotaClienteRequest requestBody,
-            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
+    @PostMapping(value = "/notas", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> crearNotaJson(@PathVariable Integer clienteId,
+            @RequestBody @Valid CrearNotaClienteRequest request) {
         try {
-            CrearNotaClienteRequest req = request != null ? request : requestBody;
-            ClienteNotaDTO nota;
-            if (archivo != null && !archivo.isEmpty()) {
-                nota = clienteTimelineService.crearNotaFijadaConArchivo(clienteId, req, archivo);
-            } else {
-                nota = clienteTimelineService.crearNotaFijada(clienteId, req);
-            }
-            return ResponseEntity.ok(nota);
+            return ResponseEntity.ok(clienteTimelineService.crearNotaFijada(clienteId, request));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PutMapping(value = "/notas/{notaId}", consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<?> actualizarNota(@PathVariable Integer clienteId,
-            @PathVariable Long notaId,
-            @RequestPart(value = "datos", required = false) @Valid ActualizarNotaClienteRequest request,
-            @RequestBody(required = false) ActualizarNotaClienteRequest requestBody,
+    @PostMapping(value = "/notas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> crearNotaMultipart(@PathVariable Integer clienteId,
+            @RequestPart(value = "datos") @Valid CrearNotaClienteRequest request,
+            @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
             @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
         try {
-            ActualizarNotaClienteRequest req = request != null ? request : requestBody;
-            ClienteNotaDTO nota;
-            if (archivo != null && !archivo.isEmpty()) {
-                nota = clienteTimelineService.actualizarNotaConArchivo(clienteId, notaId, req, archivo);
-            } else {
-                nota = clienteTimelineService.actualizarNota(clienteId, notaId, req);
+            List<MultipartFile> todos = combinarArchivos(archivos, archivo);
+            if (!todos.isEmpty()) {
+                return ResponseEntity.ok(clienteTimelineService.crearNotaFijadaConArchivos(clienteId, request, todos));
             }
-            return ResponseEntity.ok(nota);
+            return ResponseEntity.ok(clienteTimelineService.crearNotaFijada(clienteId, request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/notas/{notaId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> actualizarNotaJson(@PathVariable Integer clienteId,
+            @PathVariable Long notaId,
+            @RequestBody @Valid ActualizarNotaClienteRequest request) {
+        try {
+            return ResponseEntity.ok(clienteTimelineService.actualizarNota(clienteId, notaId, request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/notas/{notaId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> actualizarNotaMultipart(@PathVariable Integer clienteId,
+            @PathVariable Long notaId,
+            @RequestPart(value = "datos") @Valid ActualizarNotaClienteRequest request,
+            @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
+            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
+        try {
+            List<MultipartFile> todos = combinarArchivos(archivos, archivo);
+            if (!todos.isEmpty()) {
+                return ResponseEntity.ok(clienteTimelineService.actualizarNotaConArchivos(clienteId, notaId, request, todos));
+            }
+            return ResponseEntity.ok(clienteTimelineService.actualizarNota(clienteId, notaId, request));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Combina la lista nueva de archivos con el parámetro individual antiguo
+     * (compatibilidad hacia atrás).
+     */
+    private List<MultipartFile> combinarArchivos(List<MultipartFile> archivos, MultipartFile archivo) {
+        List<MultipartFile> todos = new ArrayList<>();
+        if (archivos != null) {
+            archivos.stream().filter(a -> a != null && !a.isEmpty()).forEach(todos::add);
+        }
+        if (archivo != null && !archivo.isEmpty()) {
+            todos.add(archivo);
+        }
+        return todos;
+    }
+
+    @GetMapping("/notas/{notaId}/adjuntos/{adjuntoId}/descargar")
+    public ResponseEntity<Resource> descargarAdjuntoNota(@PathVariable Integer clienteId,
+            @PathVariable Long notaId,
+            @PathVariable Long adjuntoId) {
+        try {
+            ClienteTimelineService.ClienteNotaAdjuntoInfo info =
+                    clienteTimelineService.obtenerAdjuntoParaDescargaInfo(clienteId, notaId, adjuntoId);
+            Resource resource = new PathResource(info.ruta());
+            String contentDisposition = "attachment; filename=\"" +
+                    (info.nombreArchivo() != null ? info.nombreArchivo().replace("\"", "").replaceAll("[\\r\\n]", "") : "archivo") + "\"";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/notas/{notaId}/adjuntos/{adjuntoId}")
+    public ResponseEntity<?> eliminarAdjuntoDeNota(@PathVariable Integer clienteId,
+            @PathVariable Long notaId,
+            @PathVariable Long adjuntoId) {
+        try {
+            return ResponseEntity.ok(clienteTimelineService.eliminarAdjuntoNota(clienteId, notaId, adjuntoId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/notas/{notaId}/archivo")
+    public ResponseEntity<?> eliminarArchivoDeNota(@PathVariable Integer clienteId,
+            @PathVariable Long notaId) {
+        try {
+            clienteTimelineService.eliminarArchivoNota(clienteId, notaId);
+            return ResponseEntity.ok(clienteTimelineService.obtenerNotaDto(clienteId, notaId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

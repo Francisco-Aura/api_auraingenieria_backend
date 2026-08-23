@@ -14,11 +14,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -46,9 +46,9 @@ public class FileStorageService {
 
         String nombreOriginal = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String nombreArchivo = timestamp + "_" + nombreOriginal;
+        String nombreArchivo = timestamp + "_" + UUID.randomUUID() + "_" + nombreOriginal;
         Path rutaCompleta = dirPath.resolve(nombreArchivo);
-        Files.copy(file.getInputStream(), rutaCompleta, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(file.getInputStream(), rutaCompleta);
 
         log.info("Archivo de tarea guardado: {}", rutaCompleta);
 
@@ -64,7 +64,7 @@ public class FileStorageService {
     /**
      * Guarda un archivo adjunto asociado a un comentario de tarea
      * Estructura:
-     * uploads/tareas/{clienteNombre}_{dni}/{tareaId}/{timestamp}_{filename}
+     * uploads/tareas/{clienteNombre}_{dni}/{tareaId}/{timestamp}_{uuid}_{filename}
      */
     public mt_Adjunto guardarAdjunto(MultipartFile file, mt_Comentario comentario) throws IOException {
         if (file.isEmpty()) {
@@ -88,13 +88,13 @@ public class FileStorageService {
         // Limpiar y generar nombre de archivo único
         String nombreOriginal = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String nombreArchivo = timestamp + "_" + nombreOriginal;
+        String nombreArchivo = timestamp + "_" + UUID.randomUUID() + "_" + nombreOriginal;
 
         // Ruta completa del archivo
         Path rutaCompleta = dirPath.resolve(nombreArchivo);
 
         // Guardar el archivo
-        Files.copy(file.getInputStream(), rutaCompleta, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(file.getInputStream(), rutaCompleta);
 
         log.info("Archivo guardado: {}", rutaCompleta.toString());
 

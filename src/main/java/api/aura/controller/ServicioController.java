@@ -4,7 +4,9 @@ import api.aura.entity.Servicio;
 import api.aura.entity.Cliente;
 import api.aura.entity.PuntoSuministro;
 import api.aura.service.ServicioService;
+import api.aura.service.ServicioConPagosService;
 import api.aura.dto.ServicioDTO;
+import api.aura.dto.GuardarServicioConPagosRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -27,6 +29,9 @@ public class ServicioController {
 
     @Autowired
     private ServicioService servicioService;
+
+    @Autowired
+    private ServicioConPagosService servicioConPagosService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -70,6 +75,26 @@ public class ServicioController {
         } catch (Exception e) {
             logger.error("Error al procesar el servicio", e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el servicio"));
+        }
+    }
+
+    /**
+     * Persiste el servicio y sus pagos como una unica operacion atomica. Se
+     * mantiene el resto de endpoints para no romper consumidores existentes.
+     */
+    @PostMapping(path = "/guardar-con-pagos", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> guardarConPagos(@RequestBody GuardarServicioConPagosRequest request) {
+        try {
+            if (request == null || request.servicio() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Los datos del servicio son obligatorios"));
+            }
+            return ResponseEntity.ok(servicioConPagosService.guardar(request.servicio(), request.pagos()));
+        } catch (DataIntegrityViolationException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al guardar servicio y pagos", e);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", e.getMessage() != null ? e.getMessage() : "Error al guardar el servicio y sus pagos"));
         }
     }
 
@@ -151,12 +176,12 @@ public class ServicioController {
         return ResponseEntity.notFound().build();
     }
 
-    // Descargar PDF de un servicio (dummy, implementa lógica real si tienes PDF
-    // guardado)
+    // Descarga de PDF de un servicio: no implementado todavía y sin consumidor
+    // en el frontend actual. Se devuelve 501 (no 404) para no confundirlo con
+    // "servicio inexistente" si en el futuro se invoca desde algún cliente.
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> descargarPDF(@PathVariable Integer id) {
-        // Implementar lógica real de descarga de PDF
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_IMPLEMENTED).build();
     }
 
     @GetMapping
@@ -204,5 +229,14 @@ public class ServicioController {
         return ResponseEntity.ok(
             servicioService.obtenerIdsPuntosConServicioActivo(idProductos)
         );
+    }
+
+    /**
+     * Total real de servicios activos hoy (fechaInicioServicio <= hoy && fechaFinServicio > hoy),
+     * calculado en base de datos con un COUNT en lugar de estimarlo en el frontend.
+     */
+    @GetMapping("/estadisticas/activos")
+    public ResponseEntity<Map<String, Long>> obtenerTotalServiciosActivos() {
+        return ResponseEntity.ok(Map.of("total", servicioService.contarServiciosActivos()));
     }
 }

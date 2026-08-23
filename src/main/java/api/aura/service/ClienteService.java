@@ -18,6 +18,7 @@ import api.aura.repository.UsuarioRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Calendar;
 
 @Service
 public class ClienteService {
@@ -134,7 +135,8 @@ public class ClienteService {
                     cliente.setFechaAlta(clienteDTO.getFechaAlta());
 
                     // Detectar transición de baja ANTES de sobreescribir
-                    boolean esPrimeraBaja = cliente.getFechaBaja() == null && clienteDTO.getFechaBaja() != null;
+                    boolean esPrimeraBaja = !esFechaBajaEfectiva(cliente.getFechaBaja())
+                            && esFechaBajaEfectiva(clienteDTO.getFechaBaja());
                     java.util.Date nuevaFechaBaja = clienteDTO.getFechaBaja() != null
                         ? new java.sql.Date(clienteDTO.getFechaBaja().getTime())
                         : null;
@@ -190,22 +192,33 @@ public class ClienteService {
 
     /**
      * Propaga la baja a todos los PuntosSuministro, Servicios y Contratos activos del cliente.
-     * Solo afecta entidades con fechaBaja == null (no toca bajas propias anteriores).
+     * Solo afecta entidades sin baja efectiva. Los valores historicos de los anos
+     * 1 y 1900 se consideran equivalentes a NULL.
      */
     private void darBajaEnCascada(Integer clienteId, java.util.Date fechaBaja) {
         java.sql.Date fechaSql = new java.sql.Date(fechaBaja.getTime());
 
-        var puntos = puntoSuministroRepository.findByClienteIdAndFechaBajaIsNull(clienteId);
+        var puntos = puntoSuministroRepository.findActivosPorClienteId(clienteId);
         puntos.forEach(ps -> ps.setFechaBaja(fechaSql));
         puntoSuministroRepository.saveAll(puntos);
 
-        var servicios = servicioRepository.findByClienteIdAndFechaBajaIsNull(clienteId);
+        var servicios = servicioRepository.findActivosPorClienteId(clienteId);
         servicios.forEach(s -> s.setFechaBaja(fechaSql));
         servicioRepository.saveAll(servicios);
 
-        var contratos = contratoRepository.findByClienteIdAndFechaBajaIsNull(clienteId);
+        var contratos = contratoRepository.findActivosPorClienteId(clienteId);
         contratos.forEach(c -> c.setFechaBaja(fechaSql));
         contratoRepository.saveAll(contratos);
+    }
+
+    private boolean esFechaBajaEfectiva(java.util.Date fechaBaja) {
+        if (fechaBaja == null) {
+            return false;
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(fechaBaja);
+        int year = calendar.get(Calendar.YEAR);
+        return year != 1 && year != 1900;
     }
 
     public Page<Cliente> obtenerTodosLosClientes(PageRequest pageRequest) {

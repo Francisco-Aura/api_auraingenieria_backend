@@ -3,6 +3,8 @@ package api.aura.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,8 @@ import api.aura.service.InformesService;
 @RestController
 @RequestMapping("/api/informes")
 public class InformesController {
+    private static final Logger logger = LoggerFactory.getLogger(InformesController.class);
+
     private final InformesService servicio;
 
     public InformesController(InformesService servicio) {
@@ -39,8 +43,9 @@ public class InformesController {
             ContratoPendienteRenovacionDTO actualizado = servicio.actualizarContratoPendienteRenovacion(id, dto);
             return ResponseEntity.ok(Map.of("success", true, "data", actualizado));
         } catch (Exception e) {
+            logger.error("Error al actualizar el contrato pendiente de renovación con id {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "message", e.getMessage()));
+                .body(Map.of("success", false, "message", "No se pudo actualizar el contrato pendiente de renovación"));
         }
     }
 
@@ -50,8 +55,9 @@ public class InformesController {
             PuntosSuministroSinContratoDTO actualizado = servicio.actualizarPuntoSuministroSinContrato(id, dto);
             return ResponseEntity.ok(Map.of("success", true, "data", actualizado));
         } catch (Exception e) {
+            logger.error("Error al actualizar el punto de suministro sin contrato con id {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "message", e.getMessage()));
+                .body(Map.of("success", false, "message", "No se pudo actualizar el punto de suministro sin contrato"));
         }
     }
 
@@ -73,7 +79,8 @@ public class InformesController {
             servicio.actualizarPagoParcial(idServicio, numeroPago, pagado);
             return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Pago actualizado correctamente"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+            logger.error("Error al actualizar el pago {} del servicio {}", numeroPago, idServicio, e);
+            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", "No se pudo actualizar el pago"));
         }
     }
 
@@ -83,7 +90,8 @@ public class InformesController {
             servicio.marcarSiguientePagoPendiente(idServicio);
             return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Siguiente pago marcado como pagado correctamente"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", e.getMessage()));
+            logger.error("Error al marcar el siguiente pago pendiente del servicio {}", idServicio, e);
+            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", "No se pudo marcar el siguiente pago como pagado"));
         }
     }
 
@@ -103,5 +111,10 @@ public class InformesController {
     @GetMapping("/contactos-clientes")
     public List<ContactoClienteDTO> obtenerContactosClientes() {
         return servicio.obtenerContactosClientes();
+    }
+
+    @GetMapping("/contratos-historico")
+    public List<ContratoHistoricoDTO> obtenerContratosHistorico() {
+        return servicio.obtenerContratosHistorico();
     }
 }

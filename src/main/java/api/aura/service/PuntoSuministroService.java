@@ -12,9 +12,6 @@ import api.aura.repository.tablas_maestras.TBTipoContadorRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.entity.Cliente;
-import api.aura.entity.Contrato;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +21,6 @@ import java.util.Optional;
 
 @Service
 public class PuntoSuministroService {
-
-    private static final Logger log = LoggerFactory.getLogger(PuntoSuministroService.class);
 
     @Autowired
     private PuntoSuministroRepository puntoSuministroRepository;
@@ -222,30 +217,16 @@ public class PuntoSuministroService {
      * @param puntoSuministro El punto de suministro actualizado
      */
     private void sincronizarContratosConPuntoSuministro(PuntoSuministro puntoSuministro) {
-        try {
-            // Buscar todos los contratos asociados a este punto de suministro
-            List<Contrato> contratos = contratoRepository.findByPuntoSuministroId(puntoSuministro.getId());
+        int exencionImpuestoElectricidad = puntoSuministro.getExencionImpuestoElectrico() != null
+                && puntoSuministro.getExencionImpuestoElectrico() ? 1 : 0;
 
-            // Actualizar cada contrato con los valores del punto de suministro
-            for (Contrato contrato : contratos) {
-                // Sincronizar exención de impuesto eléctrico (convertir Boolean a Integer)
-                contrato.setExencionImpuestoElectricidad(
-                        puntoSuministro.getExencionImpuestoElectrico() != null
-                                && puntoSuministro.getExencionImpuestoElectrico() ? 1 : 0);
+        boolean tieneAutoconsumo = puntoSuministro.getAutoconsumo() != null &&
+                !puntoSuministro.getAutoconsumo().trim().isEmpty();
+        int autoconsumo = tieneAutoconsumo ? 1 : 0;
 
-                // Sincronizar autoconsumo (convertir String a Integer)
-                boolean tieneAutoconsumo = puntoSuministro.getAutoconsumo() != null &&
-                        !puntoSuministro.getAutoconsumo().trim().isEmpty();
-                contrato.setAutoconsumo(tieneAutoconsumo ? 1 : 0);
-            }
-
-            // Guardar todos los contratos actualizados
-            if (!contratos.isEmpty()) {
-                contratoRepository.saveAll(contratos);
-            }
-        } catch (Exception e) {
-            log.error("Error al sincronizar contratos con punto de suministro id={}: {}",
-                    puntoSuministro.getId(), e.getMessage(), e);
-        }
+        // La excepcion debe salir del metodo @Transactional para revertir tambien
+        // el guardado del punto de suministro.
+        contratoRepository.actualizarExencionYAutoconsumoPorPuntoSuministro(
+                puntoSuministro.getId(), exencionImpuestoElectricidad, autoconsumo);
     }
 }

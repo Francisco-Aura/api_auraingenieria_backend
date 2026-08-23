@@ -392,6 +392,39 @@ public class InformesService {
         dto.setObservaciones((String) row[16]);
         dto.setEstadoVencimiento((String) row[17]);
         dto.setEstadoPago((String) row[18]);
+        dto.setTarifa((String) row[19]);
+        return dto;
+    }
+
+    public List<ContratoHistoricoDTO> obtenerContratosHistorico() {
+        List<Object[]> resultados = repository.findContratosHistorico();
+        return resultados.stream().map(this::mapToContratoHistoricoDTO).collect(Collectors.toList());
+    }
+
+    private ContratoHistoricoDTO mapToContratoHistoricoDTO(Object[] row) {
+        ContratoHistoricoDTO dto = new ContratoHistoricoDTO();
+        dto.setCodigoContrato((Integer) row[0]);
+        dto.setFecha((Date) row[1]);
+        dto.setFechaEnvio((Date) row[2]);
+        dto.setFechaInicio((Date) row[3]);
+        dto.setFechaFin((Date) row[4]);
+        dto.setIdCliente((Integer) row[5]);
+        dto.setCliente((String) row[6]);
+        dto.setIdPuntoSuministro((Integer) row[7]);
+        dto.setCupsLuz((String) row[8]);
+        dto.setCupsGas((String) row[9]);
+        dto.setContrato((String) row[10]);
+        dto.setIdTarifaLuz((Integer) row[11]);
+        dto.setTarifaLuz((String) row[12]);
+        dto.setIdTarifaGas((Integer) row[13]);
+        dto.setTarifaGas((String) row[14]);
+        dto.setConsumoAnual((Double) row[15]);
+        dto.setIdComercializadoraActual((Integer) row[16]);
+        dto.setComercializadoraActual((String) row[17]);
+        dto.setIdComercializadoraAnterior((Integer) row[18]);
+        dto.setComercializadoraAnterior((String) row[19]);
+        dto.setEstado((String) row[20]);
+        dto.setIdContratoRenovacion((Integer) row[21]);
         return dto;
     }
 
