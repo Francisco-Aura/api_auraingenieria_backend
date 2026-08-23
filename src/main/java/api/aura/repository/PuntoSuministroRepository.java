@@ -14,8 +14,10 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
     // Obtiene los puntos de suministro asociados a un cliente específico
     List<PuntoSuministro> findByClienteId(Integer clienteId);
 
-    // Baja en cascada: puntos activos del cliente
-    List<PuntoSuministro> findByClienteIdAndFechaBajaIsNull(Integer clienteId);
+    // Compatibilidad historica: NULL, ano 1 y ano 1900 representan "sin baja".
+    @Query("SELECT ps FROM PuntoSuministro ps WHERE ps.cliente.id = :clienteId "
+         + "AND (ps.fechaBaja IS NULL OR YEAR(ps.fechaBaja) = 1 OR YEAR(ps.fechaBaja) = 1900)")
+    List<PuntoSuministro> findActivosPorClienteId(@Param("clienteId") Integer clienteId);
 
     // Reactivación selectiva: puntos dados de baja del cliente
     List<PuntoSuministro> findByClienteIdAndFechaBajaIsNotNull(Integer clienteId);

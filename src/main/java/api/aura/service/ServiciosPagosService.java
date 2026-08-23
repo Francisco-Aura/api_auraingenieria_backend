@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 @Service
@@ -196,9 +198,14 @@ public class ServiciosPagosService {
         // Reset existing installments
         resetearCuotas(serviciosPagos);
 
-        // Calculate amount per installment (divide evenly for now, could be modified
-        // for specific cases)
-        Double importePorCuota = Math.round((importeTotal / numeroCuotas) * 100.0) / 100.0;
+        int numeroCuotasUsadas = Math.min(numeroCuotas, 12);
+        long importeTotalCentimos = BigDecimal.valueOf(importeTotal)
+                .movePointRight(2)
+                .setScale(0, RoundingMode.HALF_UP)
+                .longValue();
+        long importeBaseCentimos = importeTotalCentimos / numeroCuotasUsadas;
+        long importeUltimaCuotaCentimos = importeTotalCentimos
+                - importeBaseCentimos * (numeroCuotasUsadas - 1L);
 
         // Set start date (default to current date if not provided)
         Date fechaInicio = new Date();
@@ -210,7 +217,7 @@ public class ServiciosPagosService {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(fechaInicio);
 
-        for (int i = 1; i <= Math.min(numeroCuotas, 12); i++) {
+        for (int i = 1; i <= numeroCuotasUsadas; i++) {
             String sufijo = obtenerSufijoCuota(i);
 
             try {
@@ -222,7 +229,10 @@ public class ServiciosPagosService {
                 // Set amount
                 Field importeField = ServiciosPagos.class.getDeclaredField(sufijo + "PagoImporte");
                 importeField.setAccessible(true);
-                importeField.set(serviciosPagos, importePorCuota);
+                long importeCuotaCentimos = i == numeroCuotasUsadas
+                        ? importeUltimaCuotaCentimos
+                        : importeBaseCentimos;
+                importeField.set(serviciosPagos, BigDecimal.valueOf(importeCuotaCentimos, 2).doubleValue());
 
                 // Initialize as unpaid
                 Field pagadoField = ServiciosPagos.class.getDeclaredField(sufijo + "PagoPagado");

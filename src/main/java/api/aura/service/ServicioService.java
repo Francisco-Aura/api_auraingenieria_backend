@@ -53,7 +53,8 @@ public class ServicioService {
                 servicioActual.setCups(servicio.getCups());
                 servicioActual.setImporte(servicio.getImporte());
                 servicioActual.setDescuento(servicio.getDescuento());
-                servicioActual.setImporteFinal(servicio.getImporteFinal());
+                servicioActual.setImporteFinal(
+                        resolverImporteFinal(servicio.getImporte(), servicio.getDescuento(), servicio.getImporteFinal()));
                 servicioActual.setIdPagoPlazos(servicio.getIdPagoPlazos());
 
                 logger.info("Actualizando modalidad de pago: {} -> {}",
@@ -97,7 +98,26 @@ public class ServicioService {
             throw new IllegalArgumentException("El servicio debe tener un cliente asociado");
         }
 
+        servicio.setImporteFinal(
+                resolverImporteFinal(servicio.getImporte(), servicio.getDescuento(), servicio.getImporteFinal()));
+
         return servicioRepository.save(servicio);
+    }
+
+    /**
+     * Garantiza que importeFinal quede siempre informado cuando importe (y
+     * opcionalmente descuento) tienen valor, en lugar de confiar ciegamente en
+     * lo que envíe el cliente. Evita que servicios queden con importeFinal en
+     * blanco en los informes aunque importe/descuento sí estén indicados.
+     */
+    private Double resolverImporteFinal(Double importe, Double descuento, Double importeFinal) {
+        if (importeFinal != null) {
+            return importeFinal;
+        }
+        if (importe != null) {
+            return importe - (descuento != null ? descuento : 0d);
+        }
+        return null;
     }
 
     public Servicio renovarServicio(Integer id) {
@@ -118,7 +138,8 @@ public class ServicioService {
         nuevo.setCups(original.getCups());
         nuevo.setImporte(original.getImporte());
         nuevo.setDescuento(original.getDescuento());
-        nuevo.setImporteFinal(original.getImporteFinal());
+        nuevo.setImporteFinal(
+                resolverImporteFinal(original.getImporte(), original.getDescuento(), original.getImporteFinal()));
         nuevo.setIdPagoPlazos(original.getIdPagoPlazos());
 
         // Fechas: inicio hoy, fin +1 año
@@ -192,5 +213,9 @@ public class ServicioService {
 
     public java.util.Set<Integer> obtenerIdsPuntosConServicioActivo(java.util.List<Integer> idProductos) {
         return servicioRepository.findIdsPuntosSuministroConServicioActivo(idProductos);
+    }
+
+    public long contarServiciosActivos() {
+        return servicioRepository.countServiciosActivos();
     }
 }

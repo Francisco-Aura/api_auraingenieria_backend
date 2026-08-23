@@ -74,10 +74,15 @@ public class TareaComentarioService {
                 if (texto == null || texto.isBlank()) return;
                 Pattern pattern = Pattern.compile("@([\\w.]+)");
                 Matcher matcher = pattern.matcher(texto);
+                java.util.List<Usuario> todosLosUsuarios = null;
                 while (matcher.find()) {
                         String username = matcher.group(1);
+                        // Cargar el listado de usuarios una sola vez por comentario, no por mención
+                        if (todosLosUsuarios == null) {
+                                todosLosUsuarios = usuarioRepository.findAll();
+                        }
                         // Buscar usuario por nombre (tolerante a mayúsculas)
-                        usuarioRepository.findAll().stream()
+                        todosLosUsuarios.stream()
                                 .filter(u -> u.getNombre() != null &&
                                         u.getNombre().toLowerCase().replace(" ", "").equals(username.toLowerCase()))
                                 .findFirst()

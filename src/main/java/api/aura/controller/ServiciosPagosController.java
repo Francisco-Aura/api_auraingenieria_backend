@@ -3,6 +3,8 @@ package api.aura.controller;
 import api.aura.dto.CuotaServicioDTO;
 import api.aura.entity.ServiciosPagos;
 import api.aura.service.ServiciosPagosService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/servicios-pagos")
 public class ServiciosPagosController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ServiciosPagosController.class);
 
     @Autowired
     private ServiciosPagosService serviciosPagosService;
@@ -90,7 +94,8 @@ public class ServiciosPagosController {
 
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al generar el plan de pagos"));
+            logger.error("Error al generar el plan de pagos", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error al generar el plan de pagos"));
         }
     }
 

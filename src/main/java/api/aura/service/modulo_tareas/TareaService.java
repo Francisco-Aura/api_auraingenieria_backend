@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 @Slf4j
 public class TareaService {
 
@@ -64,6 +64,7 @@ public class TareaService {
         return toDto(tarea, true);
     }
 
+    @Transactional
     public void actualizarFijada(Long id, Boolean fijada) {
         mt_Tarea tarea = tareaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
@@ -71,7 +72,14 @@ public class TareaService {
         tareaRepository.save(tarea);
     }
 
+    @Transactional
     public TareaDTO crear(TareaDTO dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Los datos de la tarea son obligatorios");
+        }
+        if (dto.getTitulo() == null || dto.getTitulo().isBlank()) {
+            throw new IllegalArgumentException("El título de la tarea es obligatorio");
+        }
         mt_Tarea tarea = mapearDesdeDto(new mt_Tarea(), dto, true);
         if (tarea.getEstado() == null) {
             estadoRepository.findByEstadoFinalFalseOrderByOrdenAsc().stream().findFirst()
@@ -89,7 +97,11 @@ public class TareaService {
         return toDto(guardada, true);
     }
 
+    @Transactional
     public TareaDTO actualizar(Long id, TareaDTO dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Los datos de la tarea son obligatorios");
+        }
         mt_Tarea tarea = tareaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
 
@@ -188,29 +200,14 @@ public class TareaService {
     }
 
     private String obtenerNombrePrioridad(Integer prioridad) {
-        if (prioridad == null)
-            return "Media";
-        return switch (prioridad) {
-            case 0 -> "Urgente";
-            case 1 -> "Alta";
-            case 2 -> "Media";
-            case 3 -> "Baja";
-            default -> "Media";
-        };
+        return TareaCalculos.obtenerNombrePrioridad(prioridad);
     }
 
     private boolean sonFechasIguales(LocalDateTime fecha1, LocalDateTime fecha2) {
-        // Comparar solo la fecha y hora (ignorar segundos y milisegundos)
-        if (fecha1 == null && fecha2 == null)
-            return true;
-        if (fecha1 == null || fecha2 == null)
-            return false;
-
-        // Permitir hasta 1 minuto de diferencia para considerar iguales
-        long diferenciaMinutos = java.time.temporal.ChronoUnit.MINUTES.between(fecha2, fecha1);
-        return Math.abs(diferenciaMinutos) <= 1;
+        return TareaCalculos.sonFechasIguales(fecha1, fecha2);
     }
 
+    @Transactional
     public void eliminar(Long id) {
         // Primero eliminar archivos físicos de todos los adjuntos asociados a la tarea
         List<mt_Adjunto> adjuntos = adjuntoRepository.findByComentario_Tarea_Id(id);
@@ -226,6 +223,7 @@ public class TareaService {
         tareaRepository.deleteById(id);
     }
 
+    @Transactional
     public mt_Adjunto agregarAdjuntoDirecto(Long tareaId, org.springframework.web.multipart.MultipartFile file) throws IOException {
         mt_Tarea tarea = tareaRepository.findById(tareaId)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
@@ -233,12 +231,14 @@ public class TareaService {
         return adjuntoRepository.save(adjunto);
     }
 
+    @Transactional
     public TareaDTO cambiarEstado(Long tareaId, Long estadoId) {
         CambioEstadoRequest request = new CambioEstadoRequest();
         request.setEstadoId(estadoId);
         return cambiarEstado(tareaId, request);
     }
 
+    @Transactional
     public TareaDTO cambiarEstado(Long tareaId, CambioEstadoRequest request) {
         if (request == null || request.getEstadoId() == null) {
             throw new IllegalArgumentException("El estado destino es obligatorio");
@@ -772,10 +772,7 @@ public class TareaService {
     }
 
     private long segundosEntre(LocalDateTime inicio, LocalDateTime fin) {
-        if (inicio == null || fin == null) {
-            return 0L;
-        }
-        return Math.max(Duration.between(inicio, fin).getSeconds(), 0);
+        return TareaCalculos.segundosEntre(inicio, fin);
     }
 
     private TareaHistorialDTO toDtoHistorial(mt_TareaHistorial historial) {

@@ -17,10 +17,21 @@ public interface ServicioRepository extends JpaRepository<Servicio, Integer> {
     @Query("SELECT s FROM Servicio s LEFT JOIN FETCH s.cliente WHERE s.puntoSuministro.id = :id")
     List<Servicio> findByPuntoSuministroIdWithCliente(@Param("id") Integer id);
 
-    // Baja en cascada: servicios activos del cliente
-    List<Servicio> findByClienteIdAndFechaBajaIsNull(Integer clienteId);
+    // Compatibilidad historica: NULL, ano 1 y ano 1900 representan "sin baja".
+    @Query("SELECT s FROM Servicio s WHERE s.cliente.id = :clienteId "
+         + "AND (s.fechaBaja IS NULL OR YEAR(s.fechaBaja) = 1 OR YEAR(s.fechaBaja) = 1900)")
+    List<Servicio> findActivosPorClienteId(@Param("clienteId") Integer clienteId);
 
     @Query("SELECT DISTINCT s.puntoSuministro.id FROM Servicio s "
-         + "WHERE s.idProducto IN :idProductos")
+         + "WHERE s.idProducto IN :idProductos "
+         + "AND s.fechaInicioServicio <= CURRENT_DATE AND s.fechaFinServicio > CURRENT_DATE "
+         + "AND (s.fechaBaja IS NULL OR YEAR(s.fechaBaja) = 1 OR YEAR(s.fechaBaja) = 1900)")
     Set<Integer> findIdsPuntosSuministroConServicioActivo(@Param("idProductos") List<Integer> idProductos);
+
+    // Cuenta servicios vigentes hoy (misma regla que esServicioVigente en el frontend:
+    // fechaInicioServicio <= hoy && fechaFinServicio > hoy). Evita cargar todas las filas.
+    @Query("SELECT COUNT(s) FROM Servicio s "
+         + "WHERE s.fechaInicioServicio <= CURRENT_DATE AND s.fechaFinServicio > CURRENT_DATE "
+         + "AND (s.fechaBaja IS NULL OR YEAR(s.fechaBaja) = 1 OR YEAR(s.fechaBaja) = 1900)")
+    long countServiciosActivos();
 }

@@ -3,6 +3,7 @@ package api.aura.controller;
 import api.aura.dto.PuntosSuministrosCarteraDTO;
 import api.aura.entity.PuntoSuministro;
 import api.aura.service.PuntoSuministroService;
+import api.aura.util.CupsNormalizer;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,30 +21,12 @@ public class PuntoSuministroController {
     @PostMapping
     public ResponseEntity<?> crearOActualizarPuntoSuministro(@Valid @RequestBody PuntoSuministro puntoSuministro) {
         // Normalizar CUPS antes de enviar al servicio
-        puntoSuministro.setCUPSluz(normalizarCupsEnControlador(puntoSuministro.getCUPSluz()));
-        puntoSuministro.setCUPSgas(normalizarCupsEnControlador(puntoSuministro.getCUPSgas()));
+        puntoSuministro.setCUPSluz(CupsNormalizer.normalizar(puntoSuministro.getCUPSluz()));
+        puntoSuministro.setCUPSgas(CupsNormalizer.normalizar(puntoSuministro.getCUPSgas()));
         PuntoSuministro guardado = puntoSuministroService.guardarPuntoSuministro(puntoSuministro);
         return ResponseEntity.ok(guardado);
     }
 
-    /**
-     * Normaliza valores CUPS en el controlador para manejar strings "null", vacíos,
-     * etc.
-     */
-    private String normalizarCupsEnControlador(String cups) {
-        if (cups == null) {
-            return null;
-        }
-
-        String trimmed = cups.trim();
-
-        // Si es string vacío, literalmente "null", o "undefined", devolver null
-        if (trimmed.isEmpty() || "null".equals(trimmed) || "undefined".equals(trimmed)) {
-            return null;
-        }
-
-        return trimmed;
-    }
 
     @GetMapping
     public ResponseEntity<List<PuntoSuministro>> obtenerTodos() {

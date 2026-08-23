@@ -109,13 +109,8 @@ public class TareaSchedulerService {
     @Transactional
     public void reiniciarFlagsNotificacionDiarios() {
         log.info("Reiniciando flags de notificación de vencimiento para el nuevo día...");
-        List<mt_Tarea> tareasConFlag = tareaRepository.findAll().stream()
-                .filter(t -> Boolean.TRUE.equals(t.getNotificadoProximoVencimiento())
-                        && Boolean.FALSE.equals(t.getEstado() != null ? t.getEstado().getEstadoFinal() : false))
-                .toList();
-        tareasConFlag.forEach(t -> t.setNotificadoProximoVencimiento(false));
-        tareaRepository.saveAll(tareasConFlag);
-        log.info("Reiniciados {} flags de notificación", tareasConFlag.size());
+        int actualizadas = tareaRepository.reiniciarFlagsNotificacionVencimiento();
+        log.info("Reiniciados {} flags de notificación", actualizadas);
     }
 
     /**

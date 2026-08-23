@@ -3,6 +3,7 @@ package api.aura.dto.modulo_tareas;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,4 +21,7 @@ public class ClienteNotaDTO {
     private LocalDateTime fechaEdicion;
     private Boolean editado;
     private Boolean fijado;
+    private String nombreArchivo;
+    private String tipoMime;
+    private List<ClienteNotaAdjuntoDTO> adjuntos;
 }

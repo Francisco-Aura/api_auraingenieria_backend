@@ -1,5 +1,6 @@
 package api.aura.dto.informes;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.sql.Date;
@@ -16,7 +17,11 @@ public class ContratoPendienteRenovacionDTO {
     private Integer idPuntoSuministro;
     private String cupsLuz;
     private String cupsGas;
+    // No se serializan al frontend: este informe no las muestra ni las usa,
+    // y viajarían credenciales de telemedida en claro en la respuesta.
+    @JsonIgnore
     private String userTelemedida;
+    @JsonIgnore
     private String passTelemedida;
     private String contrato;
     private Integer idTarifaLuz;
@@ -36,5 +41,7 @@ public class ContratoPendienteRenovacionDTO {
     private String comercializadoraActual;
     private Integer idComercializadoraAnterior;
     private String comercializadoraAnterior;
-    private String observaciones; 
+    private String observaciones;
+    private String comentarioRenovacion;
+    private String usuarioAsignado;
 }

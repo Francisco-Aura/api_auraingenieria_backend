@@ -20,4 +20,6 @@ public interface ClienteNotaRepository extends JpaRepository<ClienteNota, Long> 
     List<ClienteNota> findByClienteIdOrderByFechaCreacionDesc(@Param("clienteId") Integer clienteId);
 
     Optional<ClienteNota> findByIdAndCliente_Id(Long id, Integer clienteId);
+
+    boolean existsByIdAndCliente_Id(Long id, Integer clienteId);
 }

@@ -2,6 +2,7 @@ package api.aura.repository.modulo_tareas;
 
 import api.aura.entity.modulo_tareas.mt_Tarea;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -67,4 +68,14 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
     List<mt_Tarea> findTareasAnclaNotas(@Param("clienteId") Integer clienteId,
                                         @Param("titulo") String titulo,
                                         @Param("cups") String cups);
+
+    // Reinicio diario de flags de notificación de vencimiento: mismo criterio que el
+    // filtrado en Java que sustituye (notificadoProximoVencimiento = true y tarea no
+    // finalizada, tratando estado nulo como "no finalizada"), pero como UPDATE directo
+    // en lugar de cargar todas las tareas a memoria.
+    @Modifying
+    @Query("UPDATE mt_Tarea t SET t.notificadoProximoVencimiento = false " +
+            "WHERE t.notificadoProximoVencimiento = true " +
+            "AND (t.estado IS NULL OR t.estado.estadoFinal = false)")
+    int reiniciarFlagsNotificacionVencimiento();
 }

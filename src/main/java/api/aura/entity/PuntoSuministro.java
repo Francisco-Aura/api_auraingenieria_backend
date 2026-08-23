@@ -1,5 +1,6 @@
 package api.aura.entity;
 
+import api.aura.util.CupsNormalizer;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 
@@ -193,29 +194,11 @@ public class PuntoSuministro {
 
     // *** SETTERS PERSONALIZADOS PARA NORMALIZAR CUPS ***
     public void setCUPSluz(String cupsLuz) {
-        this.CUPSluz = normalizarCupsEnEntity(cupsLuz);
+        this.CUPSluz = CupsNormalizer.normalizar(cupsLuz);
     }
 
     public void setCUPSgas(String cupsGas) {
-        this.CUPSgas = normalizarCupsEnEntity(cupsGas);
-    }
-
-    /**
-     * Normaliza valores CUPS a nivel de entidad
-     */
-    private String normalizarCupsEnEntity(String cups) {
-        if (cups == null) {
-            return null;
-        }
-
-        String trimmed = cups.trim();
-
-        // Si es string vacío, literalmente "null", o "undefined", devolver null
-        if (trimmed.isEmpty() || "null".equals(trimmed) || "undefined".equals(trimmed)) {
-            return null;
-        }
-
-        return trimmed;
+        this.CUPSgas = CupsNormalizer.normalizar(cupsGas);
     }
 
 }

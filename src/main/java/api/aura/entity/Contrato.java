@@ -97,4 +97,19 @@ public class Contrato {
     //Contraseña para facturación online
     @Column(length = 200)
     private String passwordFO;
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String comentarioRenovacion;
+
+    @Column(length = 255)
+    private String nombreArchivo;
+
+    @Column(length = 500)
+    private String rutaArchivoContrato;
+
+    @Column(length = 100)
+    private String tipoMimeArchivo;
+
+    private Long tamanioArchivo;
 }
