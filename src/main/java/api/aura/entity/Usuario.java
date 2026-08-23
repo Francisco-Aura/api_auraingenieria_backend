@@ -28,7 +28,6 @@ public class Usuario {
     private String user;
 
     @Column(length = 100)
-    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private String pass;
 
     private Integer nivelAcceso;
