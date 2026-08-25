@@ -73,7 +73,7 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
     // filtrado en Java que sustituye (notificadoProximoVencimiento = true y tarea no
     // finalizada, tratando estado nulo como "no finalizada"), pero como UPDATE directo
     // en lugar de cargar todas las tareas a memoria.
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE mt_Tarea t SET t.notificadoProximoVencimiento = false " +
             "WHERE t.notificadoProximoVencimiento = true " +
             "AND (t.estado IS NULL OR t.estado.estadoFinal = false)")

@@ -15,7 +15,7 @@ public interface mt_NotificacionRepository extends JpaRepository<mt_Notificacion
 
     long countByUsuarioDestino_IdAndLeidaFalse(Integer usuarioId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE mt_Notificacion n SET n.leida = true WHERE n.usuarioDestino.id = :usuarioId AND n.leida = false")
     void marcarTodasComoLeidasByUsuarioId(@Param("usuarioId") Integer usuarioId);
 }

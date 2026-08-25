@@ -46,128 +46,197 @@ public class PuntoSuministroService {
 
     @Transactional
     public PuntoSuministro guardarPuntoSuministro(PuntoSuministro puntoSuministro) {
+        // Si es una actualización, cargamos la entidad gestionada desde BD para
+        // mergear sobre ella solo los campos editables. Guardar directamente el
+        // objeto "detached" que llega del @RequestBody sobrescribiría con null en
+        // BD cualquier campo que el frontend no incluyera en el payload.
+        PuntoSuministro existente = null;
+        if (puntoSuministro.getId() != null) {
+            existente = puntoSuministroRepository.findById(puntoSuministro.getId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "No se encontró el punto de suministro con ID: " + puntoSuministro.getId()));
+        }
+
         // Validar que no se reactive un PS si el cliente está dado de baja
-        if (puntoSuministro.getId() != null && puntoSuministro.getFechaBaja() == null
-                && puntoSuministro.getCliente() != null && puntoSuministro.getCliente().getId() != null) {
-            Optional<PuntoSuministro> existente = puntoSuministroRepository.findById(puntoSuministro.getId());
-            if (existente.isPresent() && existente.get().getFechaBaja() != null) {
-                Cliente cliente = clienteRepository.findById(puntoSuministro.getCliente().getId()).orElse(null);
-                if (cliente != null && cliente.getFechaBaja() != null) {
-                    throw new IllegalArgumentException(
-                            "No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
-                }
+        if (existente != null && puntoSuministro.getFechaBaja() == null
+                && puntoSuministro.getCliente() != null && puntoSuministro.getCliente().getId() != null
+                && existente.getFechaBaja() != null) {
+            Cliente cliente = clienteRepository.findById(puntoSuministro.getCliente().getId()).orElse(null);
+            if (cliente != null && cliente.getFechaBaja() != null) {
+                throw new IllegalArgumentException(
+                        "No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
             }
         }
 
         // Validar campos obligatorios
-            if (puntoSuministro.getDireccion() == null || puntoSuministro.getDireccion().trim().isEmpty() ||
-                    puntoSuministro.getCodigoPostal() == null || puntoSuministro.getCodigoPostal().trim().isEmpty() ||
-                    puntoSuministro.getPoblacion() == null || puntoSuministro.getPoblacion().trim().isEmpty() ||
-                    puntoSuministro.getProvincia() == null || puntoSuministro.getProvincia().trim().isEmpty() ||
-                    puntoSuministro.getCliente() == null || puntoSuministro.getCliente().getId() == null) {
-                throw new IllegalArgumentException(
-                        "Los campos dirección, código postal, población, provincia y cliente son obligatorios");
-            }
+        if (puntoSuministro.getDireccion() == null || puntoSuministro.getDireccion().trim().isEmpty() ||
+                puntoSuministro.getCodigoPostal() == null || puntoSuministro.getCodigoPostal().trim().isEmpty() ||
+                puntoSuministro.getPoblacion() == null || puntoSuministro.getPoblacion().trim().isEmpty() ||
+                puntoSuministro.getProvincia() == null || puntoSuministro.getProvincia().trim().isEmpty() ||
+                puntoSuministro.getCliente() == null || puntoSuministro.getCliente().getId() == null) {
+            throw new IllegalArgumentException(
+                    "Los campos dirección, código postal, población, provincia y cliente son obligatorios");
+        }
 
-            // Manejar las relaciones con las tablas maestras
-            if (puntoSuministro.getDistribuidora() != null && puntoSuministro.getDistribuidora().getId() != null) {
-                distribuidoraRepository.findById(puntoSuministro.getDistribuidora().getId())
-                        .ifPresentOrElse(
-                                puntoSuministro::setDistribuidora,
-                                () -> {
-                                    throw new IllegalArgumentException("Distribuidora no encontrada");
-                                });
-            } else {
-                puntoSuministro.setDistribuidora(null);
-            }
+        // Validar CUPS (ya normalizados en el controlador)
+        String cupsLuz = puntoSuministro.getCUPSluz();
+        String cupsGas = puntoSuministro.getCUPSgas();
 
-            if (puntoSuministro.getTipoContador() != null && puntoSuministro.getTipoContador().getId() != null) {
-                tipoContadorRepository.findById(puntoSuministro.getTipoContador().getId())
-                        .ifPresentOrElse(
-                                puntoSuministro::setTipoContador,
-                                () -> {
-                                    throw new IllegalArgumentException("Tipo de contador no encontrado");
-                                });
-            } else {
-                puntoSuministro.setTipoContador(null);
-            }
+        // Validar que al menos uno de los CUPS tenga un valor válido
+        boolean tieneCupsLuz = cupsLuz != null && !cupsLuz.trim().isEmpty();
+        boolean tieneCupsGas = cupsGas != null && !cupsGas.trim().isEmpty();
 
-            if (puntoSuministro.getTipoComunicacion() != null
-                    && puntoSuministro.getTipoComunicacion().getId() != null) {
-                tipoComunicacionRepository.findById(puntoSuministro.getTipoComunicacion().getId())
-                        .ifPresentOrElse(
-                                puntoSuministro::setTipoComunicacion,
-                                () -> {
-                                    throw new IllegalArgumentException("Tipo de comunicación no encontrado");
-                                });
-            } else {
-                puntoSuministro.setTipoComunicacion(null);
-            }
+        if (!tieneCupsLuz && !tieneCupsGas) {
+            throw new IllegalArgumentException("Debe proporcionar al menos un CUPS (luz o gas)");
+        }
 
-            if (puntoSuministro.getPropiedad() != null && puntoSuministro.getPropiedad().getId() != null) {
-                propiedadRepository.findById(puntoSuministro.getPropiedad().getId())
-                        .ifPresentOrElse(
-                                puntoSuministro::setPropiedad,
-                                () -> {
-                                    throw new IllegalArgumentException("Propiedad no encontrada");
-                                });
-            } else {
-                puntoSuministro.setPropiedad(null);
-            }
+        // Validar que la fecha de activación de vertido sea obligatoria si autoconsumo
+        // está presente
+        if (puntoSuministro.getAutoconsumo() != null && !puntoSuministro.getAutoconsumo().trim().isEmpty()
+                && puntoSuministro.getFechaActivacionVertido() == null) {
+            throw new IllegalArgumentException(
+                    "La Fecha de Activación de Vertido es obligatoria si el Autoconsumo está seleccionado.");
+        }
 
-            // Validar CUPS (ya normalizados en el controlador)
-            String cupsLuz = puntoSuministro.getCUPSluz();
-            String cupsGas = puntoSuministro.getCUPSgas();
+        // Entidad sobre la que se van a persistir los cambios: la gestionada por
+        // JPA (findById) en una actualización, o la propia entidad nueva al crear.
+        PuntoSuministro target = existente != null ? existente : puntoSuministro;
+        if (existente != null) {
+            aplicarCamposEditables(puntoSuministro, target);
+        }
 
-            // Validar que al menos uno de los CUPS tenga un valor válido
-            boolean tieneCupsLuz = cupsLuz != null && !cupsLuz.trim().isEmpty();
-            boolean tieneCupsGas = cupsGas != null && !cupsGas.trim().isEmpty();
+        // Manejar las relaciones con las tablas maestras (sobre la entidad destino)
+        if (puntoSuministro.getDistribuidora() != null && puntoSuministro.getDistribuidora().getId() != null) {
+            distribuidoraRepository.findById(puntoSuministro.getDistribuidora().getId())
+                    .ifPresentOrElse(
+                            target::setDistribuidora,
+                            () -> {
+                                throw new IllegalArgumentException("Distribuidora no encontrada");
+                            });
+        } else {
+            target.setDistribuidora(null);
+        }
 
-            if (!tieneCupsLuz && !tieneCupsGas) {
-                throw new IllegalArgumentException("Debe proporcionar al menos un CUPS (luz o gas)");
-            }
+        if (puntoSuministro.getTipoContador() != null && puntoSuministro.getTipoContador().getId() != null) {
+            tipoContadorRepository.findById(puntoSuministro.getTipoContador().getId())
+                    .ifPresentOrElse(
+                            target::setTipoContador,
+                            () -> {
+                                throw new IllegalArgumentException("Tipo de contador no encontrado");
+                            });
+        } else {
+            target.setTipoContador(null);
+        }
 
-            // Validar que la fecha de activación de vertido sea obligatoria si autoconsumo
-            // está presente
-            if (puntoSuministro.getAutoconsumo() != null && !puntoSuministro.getAutoconsumo().trim().isEmpty()
-                    && puntoSuministro.getFechaActivacionVertido() == null) {
-                throw new IllegalArgumentException(
-                        "La Fecha de Activación de Vertido es obligatoria si el Autoconsumo está seleccionado.");
-            }
+        if (puntoSuministro.getTipoComunicacion() != null
+                && puntoSuministro.getTipoComunicacion().getId() != null) {
+            tipoComunicacionRepository.findById(puntoSuministro.getTipoComunicacion().getId())
+                    .ifPresentOrElse(
+                            target::setTipoComunicacion,
+                            () -> {
+                                throw new IllegalArgumentException("Tipo de comunicación no encontrado");
+                            });
+        } else {
+            target.setTipoComunicacion(null);
+        }
 
-            // Manejar relaciones de instalaciones - AppMonitorizacion
-            if (puntoSuministro.getAppMonitorizacion() != null
-                    && puntoSuministro.getAppMonitorizacion().getId() != null) {
-                appMonitorizacionRepository.findById(puntoSuministro.getAppMonitorizacion().getId())
-                        .ifPresentOrElse(
-                                puntoSuministro::setAppMonitorizacion,
-                                () -> {
-                                    throw new IllegalArgumentException("APP Monitorización no encontrada");
-                                });
-            } else {
-                puntoSuministro.setAppMonitorizacion(null);
-            }
+        if (puntoSuministro.getPropiedad() != null && puntoSuministro.getPropiedad().getId() != null) {
+            propiedadRepository.findById(puntoSuministro.getPropiedad().getId())
+                    .ifPresentOrElse(
+                            target::setPropiedad,
+                            () -> {
+                                throw new IllegalArgumentException("Propiedad no encontrada");
+                            });
+        } else {
+            target.setPropiedad(null);
+        }
 
-            // Manejar relaciones de instalaciones - IntegracionSistemasFV
-            if (puntoSuministro.getIntegracionSistemasFV() != null
-                    && puntoSuministro.getIntegracionSistemasFV().getId() != null) {
-                integracionSistemasFVRepository.findById(puntoSuministro.getIntegracionSistemasFV().getId())
-                        .ifPresentOrElse(
-                                puntoSuministro::setIntegracionSistemasFV,
-                                () -> {
-                                    throw new IllegalArgumentException("Integración Sistemas FV no encontrada");
-                                });
-            } else {
-                puntoSuministro.setIntegracionSistemasFV(null);
-            }
+        // Manejar relaciones de instalaciones - AppMonitorizacion
+        if (puntoSuministro.getAppMonitorizacion() != null
+                && puntoSuministro.getAppMonitorizacion().getId() != null) {
+            appMonitorizacionRepository.findById(puntoSuministro.getAppMonitorizacion().getId())
+                    .ifPresentOrElse(
+                            target::setAppMonitorizacion,
+                            () -> {
+                                throw new IllegalArgumentException("APP Monitorización no encontrada");
+                            });
+        } else {
+            target.setAppMonitorizacion(null);
+        }
 
-            PuntoSuministro saved = puntoSuministroRepository.save(puntoSuministro);
+        // Manejar relaciones de instalaciones - IntegracionSistemasFV
+        if (puntoSuministro.getIntegracionSistemasFV() != null
+                && puntoSuministro.getIntegracionSistemasFV().getId() != null) {
+            integracionSistemasFVRepository.findById(puntoSuministro.getIntegracionSistemasFV().getId())
+                    .ifPresentOrElse(
+                            target::setIntegracionSistemasFV,
+                            () -> {
+                                throw new IllegalArgumentException("Integración Sistemas FV no encontrada");
+                            });
+        } else {
+            target.setIntegracionSistemasFV(null);
+        }
 
-            // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto
-            // de suministro
-            sincronizarContratosConPuntoSuministro(saved);
+        PuntoSuministro saved = puntoSuministroRepository.save(target);
 
-            return saved;
+        // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto
+        // de suministro
+        sincronizarContratosConPuntoSuministro(saved);
+
+        return saved;
+    }
+
+    /**
+     * Copia sobre {@code destino} (entidad gestionada por JPA) los campos
+     * editables recibidos en {@code origen} (entidad "detached" deserializada
+     * del @RequestBody). Las relaciones @ManyToOne se resuelven aparte contra
+     * las tablas maestras, y el {@code id} nunca se sobrescribe.
+     */
+    private void aplicarCamposEditables(PuntoSuministro origen, PuntoSuministro destino) {
+        destino.setCliente(origen.getCliente());
+        destino.setDireccion(origen.getDireccion());
+        destino.setCodigoPostal(origen.getCodigoPostal());
+        destino.setPoblacion(origen.getPoblacion());
+        destino.setProvincia(origen.getProvincia());
+        destino.setIdentificacion(origen.getIdentificacion());
+        destino.setUbicacion(origen.getUbicacion());
+        destino.setCUPSluz(origen.getCUPSluz());
+        destino.setCUPSgas(origen.getCUPSgas());
+        destino.setFechaBaja(origen.getFechaBaja());
+        destino.setFechaInstalacion(origen.getFechaInstalacion());
+        destino.setModem(origen.getModem());
+        destino.setPropiedadModem(origen.getPropiedadModem());
+        destino.setContador(origen.getContador());
+        destino.setPropiedadContador(origen.getPropiedadContador());
+        destino.setObservaciones(origen.getObservaciones());
+        destino.setPotenciaBIE(origen.getPotenciaBIE());
+        destino.setPotenciaTecnicaRed(origen.getPotenciaTecnicaRed());
+        destino.setApmCentroTransformacion(origen.getApmCentroTransformacion());
+        destino.setNumeroContador(origen.getNumeroContador());
+        destino.setNumeroTelefono(origen.getNumeroTelefono());
+        destino.setDireccionEnlace(origen.getDireccionEnlace());
+        destino.setPuntoMedida(origen.getPuntoMedida());
+        destino.setClave(origen.getClave());
+        destino.setExencionImpuestoElectrico(origen.getExencionImpuestoElectrico());
+        destino.setPorcentajeConcesion(origen.getPorcentajeConcesion());
+        destino.setFechaConcesion(origen.getFechaConcesion());
+        destino.setAutoconsumo(origen.getAutoconsumo());
+        destino.setFechaActivacionVertido(origen.getFechaActivacionVertido());
+        destino.setUsuarioMonitorizacion(origen.getUsuarioMonitorizacion());
+        destino.setPassMonitorizacion(origen.getPassMonitorizacion());
+        destino.setBateriaCondensadores(origen.getBateriaCondensadores());
+        destino.setPotenciaBateria(origen.getPotenciaBateria());
+        destino.setModeloBateria(origen.getModeloBateria());
+        destino.setInstalacionFV(origen.getInstalacionFV());
+        destino.setKwInversor(origen.getKwInversor());
+        destino.setKwPanelesSolares(origen.getKwPanelesSolares());
+        destino.setEjecutadoPorAuraFv(origen.getEjecutadoPorAuraFv());
+        destino.setUsuarioInstalacionFv(origen.getUsuarioInstalacionFv());
+        destino.setContrasenaInstalacionFv(origen.getContrasenaInstalacionFv());
+        destino.setBateriaAlmacenamiento(origen.getBateriaAlmacenamiento());
+        destino.setPotenciaBateriaAlmacenamiento(origen.getPotenciaBateriaAlmacenamiento());
+        destino.setBackup(origen.getBackup());
+        destino.setPeaksaving(origen.getPeaksaving());
     }
 
     public List<PuntoSuministro> obtenerTodos() {
