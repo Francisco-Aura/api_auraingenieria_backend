@@ -27,7 +27,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Integer> {
     // Sincroniza exención de impuesto eléctrico y autoconsumo de todos los contratos de un
     // punto de suministro en una sola sentencia, en vez de cargar cada Contrato completo
     // (con su Cliente y PuntoSuministro EAGER) solo para modificar estos dos campos.
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Contrato c SET c.exencionImpuestoElectricidad = :exencionImpuestoElectricidad, " +
             "c.autoconsumo = :autoconsumo WHERE c.puntoSuministro.id = :puntoSuministroId")
     int actualizarExencionYAutoconsumoPorPuntoSuministro(

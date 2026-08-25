@@ -17,6 +17,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -47,6 +49,7 @@ class PuntoSuministroServiceAtomicityTest {
                 .provincia("Madrid")
                 .build();
         punto.setCUPSluz("ES1234567890");
+        when(puntoSuministroRepository.findById(12)).thenReturn(Optional.of(punto));
         when(puntoSuministroRepository.save(any(PuntoSuministro.class))).thenReturn(punto);
         when(contratoRepository.actualizarExencionYAutoconsumoPorPuntoSuministro(12, 0, 0))
                 .thenThrow(new IllegalStateException("fallo de sincronizacion"));
