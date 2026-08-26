@@ -118,6 +118,21 @@ public class ContratoService {
         return contratoRepository.save(contrato);
     }
 
+    /**
+     * Igual que {@link #guardarContrato(Contrato)}, pero permite además eliminar
+     * el PDF actualmente adjunto (usado cuando el usuario pulsa "Quitar" sobre
+     * el documento ya guardado, sin subir uno nuevo).
+     */
+    @Transactional
+    public Contrato guardarContrato(Contrato contrato, boolean eliminarArchivoExistente) {
+        Contrato guardado = guardarContrato(contrato);
+        if (eliminarArchivoExistente) {
+            contratoFileStorageService.eliminarPdfSiExiste(guardado);
+            guardado = contratoRepository.save(guardado);
+        }
+        return guardado;
+    }
+
     @Transactional
     public Contrato guardarContratoConPdf(Contrato contrato, org.springframework.web.multipart.MultipartFile archivo) {
         Contrato guardado = guardarContrato(contrato);
