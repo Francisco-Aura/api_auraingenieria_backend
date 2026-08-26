@@ -57,6 +57,18 @@ public class ContratoFileStorageService {
         }
     }
 
+    /**
+     * Elimina el PDF asociado al contrato (si existe) y limpia los metadatos
+     * del archivo en la entidad. No hace nada si el contrato no tiene archivo.
+     */
+    public void eliminarPdfSiExiste(Contrato contrato) {
+        eliminarArchivoAnterior(contrato.getRutaArchivoContrato());
+        contrato.setNombreArchivo(null);
+        contrato.setRutaArchivoContrato(null);
+        contrato.setTipoMimeArchivo(null);
+        contrato.setTamanioArchivo(null);
+    }
+
     public Path obtenerPdf(Contrato contrato) {
         if (contrato.getRutaArchivoContrato() == null || contrato.getRutaArchivoContrato().isBlank()) {
             throw new IllegalArgumentException("El contrato no tiene un PDF adjunto");

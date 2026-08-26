@@ -46,13 +46,33 @@ public class ContratoController {
         this.objectMapper = objectMapper;
     }
 
-    @PostMapping(consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<?> crearOActualizarContrato(
-            @RequestParam(value = "contrato", required = false) String contratoJson,
-            @RequestParam(value = "archivo", required = false) MultipartFile archivo,
-            @RequestBody(required = false) JsonNode contratoBody) {
+    // ------------------------------------------------------------------
+    // Crear contrato (JSON)
+    // ------------------------------------------------------------------
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> crearContratoJson(@RequestBody JsonNode contratoBody) {
         try {
-            Contrato contrato = obtenerContrato(contratoJson, contratoBody);
+            Contrato contrato = parseContratoFromJson(contratoBody);
+            Contrato guardado = contratoService.guardarContrato(contrato);
+            return ResponseEntity.ok(guardado);
+        } catch (DataIntegrityViolationException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al procesar el contrato (json)", e);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el contrato"));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Crear contrato (multipart, con o sin archivo PDF)
+    // ------------------------------------------------------------------
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> crearContratoMultipart(
+            @RequestParam("contrato") String contratoJson,
+            @RequestParam(value = "archivo", required = false) MultipartFile archivo) {
+        try {
+            Contrato contrato = parseContratoFromJson(objectMapper.readTree(contratoJson));
             Contrato guardado = archivo != null && !archivo.isEmpty()
                     ? contratoService.guardarContratoConPdf(contrato, archivo)
                     : contratoService.guardarContrato(contrato);
@@ -60,20 +80,43 @@ public class ContratoController {
         } catch (DataIntegrityViolationException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("Error al procesar el contrato", e);
+            logger.error("Error al procesar el contrato (multipart)", e);
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el contrato"));
         }
     }
 
-    @PutMapping(path = "/{id}", consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<?> actualizarContrato(
+    // ------------------------------------------------------------------
+    // Actualizar contrato (JSON)
+    // ------------------------------------------------------------------
+    @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> actualizarContratoJson(
             @PathVariable Integer id,
-            @RequestParam(value = "contrato", required = false) String contratoJson,
-            @RequestParam(value = "archivo", required = false) MultipartFile archivo,
-            @RequestBody(required = false) JsonNode contratoBody) {
+            @RequestBody JsonNode contratoBody) {
         try {
-            Contrato contrato = obtenerContrato(contratoJson, contratoBody);
+            Contrato contrato = parseContratoFromJson(contratoBody);
+            contrato.setId(id);
+            Contrato actualizado = contratoService.guardarContrato(contrato);
+            return ResponseEntity.ok(actualizado);
+        } catch (DataIntegrityViolationException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error al procesar la actualización del contrato (json)", e);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar el contrato"));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Actualizar contrato (multipart, con o sin archivo PDF)
+    // ------------------------------------------------------------------
+    @PutMapping(path = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> actualizarContratoMultipart(
+            @PathVariable Integer id,
+            @RequestParam("contrato") String contratoJson,
+            @RequestParam(value = "archivo", required = false) MultipartFile archivo) {
+        try {
+            Contrato contrato = parseContratoFromJson(objectMapper.readTree(contratoJson));
             contrato.setId(id);
             Contrato actualizado = archivo != null && !archivo.isEmpty()
                     ? contratoService.guardarContratoConPdf(contrato, archivo)
@@ -82,7 +125,7 @@ public class ContratoController {
         } catch (DataIntegrityViolationException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("Error al procesar la actualización del contrato", e);
+            logger.error("Error al procesar la actualización del contrato (multipart)", e);
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar el contrato"));
         }
@@ -138,15 +181,36 @@ public class ContratoController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/renovar/{idContratoOriginal}", consumes = { MediaType.APPLICATION_JSON_VALUE,
-            MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<?> renovarContrato(
+    // ------------------------------------------------------------------
+    // Renovar contrato (JSON)
+    // ------------------------------------------------------------------
+    @PostMapping(path = "/renovar/{idContratoOriginal}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> renovarContratoJson(
             @PathVariable Integer idContratoOriginal,
-            @RequestParam(value = "contrato", required = false) String contratoJson,
-            @RequestParam(value = "archivo", required = false) MultipartFile archivo,
-            @RequestBody(required = false) JsonNode contratoBody) {
+            @RequestBody JsonNode contratoBody) {
         try {
-            Contrato nuevoContrato = obtenerContrato(contratoJson, contratoBody);
+            Contrato nuevoContrato = parseContratoFromJson(contratoBody);
+            Contrato guardado = contratoService.renovarContrato(idContratoOriginal, nuevoContrato);
+            return ResponseEntity.ok(guardado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error al renovar contrato {} (json)", idContratoOriginal, e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al renovar el contrato"));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Renovar contrato (multipart, con o sin archivo PDF)
+    // ------------------------------------------------------------------
+    @PostMapping(path = "/renovar/{idContratoOriginal}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> renovarContratoMultipart(
+            @PathVariable Integer idContratoOriginal,
+            @RequestParam("contrato") String contratoJson,
+            @RequestParam(value = "archivo", required = false) MultipartFile archivo) {
+        try {
+            Contrato nuevoContrato = parseContratoFromJson(objectMapper.readTree(contratoJson));
             Contrato guardado = archivo != null && !archivo.isEmpty()
                     ? contratoService.renovarContratoConPdf(idContratoOriginal, nuevoContrato, archivo)
                     : contratoService.renovarContrato(idContratoOriginal, nuevoContrato);
@@ -154,7 +218,7 @@ public class ContratoController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Error al renovar contrato {}", idContratoOriginal, e);
+            logger.error("Error al renovar contrato {} (multipart)", idContratoOriginal, e);
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al renovar el contrato"));
         }
@@ -176,16 +240,6 @@ public class ContratoController {
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar comentario"));
         }
-    }
-
-    private Contrato obtenerContrato(String contratoJson, JsonNode contratoBody) throws Exception {
-        if (contratoBody != null) {
-            return parseContratoFromJson(contratoBody);
-        }
-        if (contratoJson != null && !contratoJson.isBlank()) {
-            return parseContratoFromJson(objectMapper.readTree(contratoJson));
-        }
-        throw new IllegalArgumentException("No se pudieron parsear los datos del contrato");
     }
 
     private Contrato parseContratoFromJson(JsonNode jsonNode) throws Exception {
