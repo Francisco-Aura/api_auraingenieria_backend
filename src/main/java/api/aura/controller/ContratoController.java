@@ -53,7 +53,10 @@ public class ContratoController {
     public ResponseEntity<?> crearContratoJson(@RequestBody JsonNode contratoBody) {
         try {
             Contrato contrato = parseContratoFromJson(contratoBody);
-            Contrato guardado = contratoService.guardarContrato(contrato);
+            boolean eliminarArchivo = leerFlagEliminarArchivo(contratoBody);
+            Contrato guardado = eliminarArchivo
+                    ? contratoService.guardarContrato(contrato, true)
+                    : contratoService.guardarContrato(contrato);
             return ResponseEntity.ok(guardado);
         } catch (DataIntegrityViolationException e) {
             throw e;
@@ -72,10 +75,9 @@ public class ContratoController {
             @RequestParam("contrato") String contratoJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo) {
         try {
-            Contrato contrato = parseContratoFromJson(objectMapper.readTree(contratoJson));
-            Contrato guardado = archivo != null && !archivo.isEmpty()
-                    ? contratoService.guardarContratoConPdf(contrato, archivo)
-                    : contratoService.guardarContrato(contrato);
+            JsonNode node = objectMapper.readTree(contratoJson);
+            Contrato contrato = parseContratoFromJson(node);
+            Contrato guardado = guardarSegunArchivo(contrato, archivo, leerFlagEliminarArchivo(node));
             return ResponseEntity.ok(guardado);
         } catch (DataIntegrityViolationException e) {
             throw e;
@@ -96,7 +98,10 @@ public class ContratoController {
         try {
             Contrato contrato = parseContratoFromJson(contratoBody);
             contrato.setId(id);
-            Contrato actualizado = contratoService.guardarContrato(contrato);
+            boolean eliminarArchivo = leerFlagEliminarArchivo(contratoBody);
+            Contrato actualizado = eliminarArchivo
+                    ? contratoService.guardarContrato(contrato, true)
+                    : contratoService.guardarContrato(contrato);
             return ResponseEntity.ok(actualizado);
         } catch (DataIntegrityViolationException e) {
             throw e;
@@ -116,11 +121,10 @@ public class ContratoController {
             @RequestParam("contrato") String contratoJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo) {
         try {
-            Contrato contrato = parseContratoFromJson(objectMapper.readTree(contratoJson));
+            JsonNode node = objectMapper.readTree(contratoJson);
+            Contrato contrato = parseContratoFromJson(node);
             contrato.setId(id);
-            Contrato actualizado = archivo != null && !archivo.isEmpty()
-                    ? contratoService.guardarContratoConPdf(contrato, archivo)
-                    : contratoService.guardarContrato(contrato);
+            Contrato actualizado = guardarSegunArchivo(contrato, archivo, leerFlagEliminarArchivo(node));
             return ResponseEntity.ok(actualizado);
         } catch (DataIntegrityViolationException e) {
             throw e;
@@ -240,6 +244,25 @@ public class ContratoController {
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar comentario"));
         }
+    }
+
+    /**
+     * Guarda el contrato decidiendo la ruta correcta según venga o no un archivo nuevo,
+     * o si se ha solicitado eliminar el archivo existente sin sustituirlo.
+     */
+    private Contrato guardarSegunArchivo(Contrato contrato, MultipartFile archivo, boolean eliminarArchivo) {
+        if (archivo != null && !archivo.isEmpty()) {
+            // Un archivo nuevo siempre sustituye (y borra) el anterior.
+            return contratoService.guardarContratoConPdf(contrato, archivo);
+        }
+        if (eliminarArchivo) {
+            return contratoService.guardarContrato(contrato, true);
+        }
+        return contratoService.guardarContrato(contrato);
+    }
+
+    private boolean leerFlagEliminarArchivo(JsonNode node) {
+        return node.has("eliminarArchivoContrato") && node.get("eliminarArchivoContrato").asBoolean(false);
     }
 
     private Contrato parseContratoFromJson(JsonNode jsonNode) throws Exception {
