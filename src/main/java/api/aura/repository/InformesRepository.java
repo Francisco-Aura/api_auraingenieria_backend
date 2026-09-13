@@ -277,6 +277,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                  (COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0) OR
                  (COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0))
                 AND (s.fecha_baja IS NULL OR s.fecha_baja = '0001-01-01')
+                AND (c.fecha_baja IS NULL OR c.fecha_baja = '0001-01-01')
                 AND (ps.fecha_baja IS NULL OR ps.fecha_baja = '0001-01-01')
                 AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
                 AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
@@ -345,10 +346,10 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 tg.nombre AS gestora,
                 tp.nombre AS producto,
                 tc.nombre AS comercializadora,
-                s.cups,
+                COALESCE(NULLIF(TRIM(s.cups), ''), TRIM(ps.CUPSluz), TRIM(ps.CUPSgas)) AS cups,
                 s.importe,
                 s.descuento,
-                COALESCE(s.importe_final, s.importe - s.descuento, s.importe) AS importeFinal,
+                COALESCE(s.importe_final, s.importe - s.descuento, s.importe, 0) AS importeFinal,
                 tmp.nombre AS metodoPago,
                 tpp.nombre AS pagoPlazos,
                 tpp.numero_cuotas AS numeroCuotas,
@@ -384,6 +385,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 ) AS tarifaSuministro
             FROM servicios s
             INNER JOIN clientes c ON s.id_cliente = c.id
+            LEFT JOIN punto_suministro ps ON ps.ID = s.id_punto_suministro
             LEFT JOIN servicios_pagos sp ON sp.id_servicio = s.id
             LEFT JOIN tbgestoras tg ON s.id_gestora = tg.id
             LEFT JOIN tbproductos tp ON s.id_producto = tp.id
@@ -392,6 +394,8 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             LEFT JOIN tbpago_plazos tpp ON sp.id_pago_plazos = tpp.id
             WHERE
                 (s.fecha_baja IS NULL OR s.fecha_baja = '0001-01-01')
+                AND (c.fecha_baja IS NULL OR c.fecha_baja = '0001-01-01')
+                AND (ps.fecha_baja IS NULL OR ps.fecha_baja = '0001-01-01')
                 AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
                 AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
             ORDER BY s.fecha_fin_servicio ASC
