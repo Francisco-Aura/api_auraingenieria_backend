@@ -349,7 +349,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 COALESCE(NULLIF(TRIM(s.cups), ''), TRIM(ps.CUPSluz), TRIM(ps.CUPSgas)) AS cups,
                 s.importe,
                 s.descuento,
-                COALESCE(s.importe_final, s.importe - s.descuento, s.importe, 0) AS importeFinal,
+                COALESCE(s.importe_final, s.importe - s.descuento, s.importe, sp.importe_final, sp.importe, 0) AS importeFinal,
                 tmp.nombre AS metodoPago,
                 tpp.nombre AS pagoPlazos,
                 tpp.numero_cuotas AS numeroCuotas,
