@@ -393,6 +393,7 @@ public class InformesService {
         dto.setEstadoVencimiento((String) row[17]);
         dto.setEstadoPago((String) row[18]);
         dto.setTarifa((String) row[19]);
+        dto.setGrupo((String) row[20]);
         return dto;
     }
 

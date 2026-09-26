@@ -26,4 +26,5 @@ public class ServicioVigenteDTO {
     private String estadoVencimiento;
     private String estadoPago;
     private String tarifa;
+    private String grupo;
 }
