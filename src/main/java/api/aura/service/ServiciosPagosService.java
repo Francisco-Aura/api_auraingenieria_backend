@@ -8,6 +8,7 @@ import api.aura.repository.tablas_maestras.TBPagoPlazosRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -16,6 +17,14 @@ import java.util.*;
 
 @Service
 public class ServiciosPagosService {
+
+    /**
+     * Prefijo del campo de cada cuota en {@code ServiciosPagos} (primerPagoFecha,
+     * segundoPagoImporte...). Estaba copiado en cuatro métodos: basta con que una
+     * copia se quede corta o cambie de orden para perder cuotas sin ningún aviso.
+     */
+    private static final String[] PREFIJOS_CUOTA = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
+            "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
     @Autowired
     private ServiciosPagosRepository serviciosPagosRepository;
@@ -44,12 +53,10 @@ public class ServiciosPagosService {
         }
 
         // Crear cuotas solo hasta el número definido en la modalidad
-        String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
-        for (int i = 0; i < numeroCuotas && i < prefijos.length; i++) {
+        for (int i = 0; i < numeroCuotas && i < PREFIJOS_CUOTA.length; i++) {
             try {
-                String prefijo = prefijos[i];
+                String prefijo = PREFIJOS_CUOTA[i];
                 Field fechaField = ServiciosPagos.class.getDeclaredField(prefijo + "PagoFecha");
                 Field importeField = ServiciosPagos.class.getDeclaredField(prefijo + "PagoImporte");
                 Field pagadoField = ServiciosPagos.class.getDeclaredField(prefijo + "PagoPagado");
@@ -81,6 +88,7 @@ public class ServiciosPagosService {
         return cuotas;
     }
 
+    @Transactional
     public ServiciosPagos actualizarPagosServicio(Integer idServicio, ServiciosPagos pagos) {
         Optional<ServiciosPagos> existente = serviciosPagosRepository.findByServicioId(idServicio);
 
@@ -93,6 +101,7 @@ public class ServiciosPagosService {
         }
     }
 
+    @Transactional
     public CuotaServicioDTO actualizarCuota(Integer idCuota, CuotaServicioDTO cuotaActualizada) {
         Optional<ServiciosPagos> pagosOpt = serviciosPagosRepository.findByServicioId(cuotaActualizada.getIdServicio());
 
@@ -133,6 +142,7 @@ public class ServiciosPagosService {
         }
     }
 
+    @Transactional
     public ServiciosPagos guardar(ServiciosPagos serviciosPagos) {
         // Validate required fields
         if (serviciosPagos.getServicio() == null || serviciosPagos.getServicio().getId() == null) {
@@ -176,6 +186,7 @@ public class ServiciosPagosService {
         }
     }
 
+    @Transactional
     public ServiciosPagos generarCuotasSegunModalidad(ServiciosPagos serviciosPagos, Integer idPagoPlazos,
             Double importeTotal) {
         if (idPagoPlazos == null || importeTotal == null) {
@@ -255,10 +266,8 @@ public class ServiciosPagosService {
     // Helper method to update payment installments
     private void actualizarCuotas(ServiciosPagos destino, ServiciosPagos origen) {
         // Update all 12 possible installments
-        String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
-        for (String prefijo : prefijos) {
+        for (String prefijo : PREFIJOS_CUOTA) {
             actualizarCamposSiNoSonNulos(destino, origen, prefijo + "PagoFecha", prefijo + "PagoImporte",
                     prefijo + "PagoPagado");
         }
@@ -317,11 +326,9 @@ public class ServiciosPagosService {
     }
 
     private String obtenerSufijoCuota(int numero) {
-        String[] sufijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
         if (numero >= 1 && numero <= 12) {
-            return sufijos[numero - 1];
+            return PREFIJOS_CUOTA[numero - 1];
         }
 
         throw new IllegalArgumentException("Número de cuota inválido: " + numero);
@@ -329,11 +336,9 @@ public class ServiciosPagosService {
 
     // Helper para inicializar cuotas no usadas como pagadas
     private void inicializarCuotasNoUsadasComoPagadas(ServiciosPagos serviciosPagos, int numeroCuotas) {
-        String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
         for (int i = numeroCuotas; i < 12; i++) {
             try {
-                Field pagadoField = ServiciosPagos.class.getDeclaredField(prefijos[i] + "PagoPagado");
+                Field pagadoField = ServiciosPagos.class.getDeclaredField(PREFIJOS_CUOTA[i] + "PagoPagado");
                 pagadoField.setAccessible(true);
                 pagadoField.set(serviciosPagos, true); // Marcar como pagado
             } catch (Exception e) {
@@ -342,6 +347,7 @@ public class ServiciosPagosService {
         }
     }
 
+    @Transactional
     public void eliminarPagosPorServicio(Integer idServicio) {
         Optional<ServiciosPagos> pagosOpt = serviciosPagosRepository.findByServicioId(idServicio);
         if (pagosOpt.isPresent()) {

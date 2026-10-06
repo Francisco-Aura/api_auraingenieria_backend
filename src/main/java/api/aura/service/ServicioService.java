@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
 import java.util.List;
@@ -28,6 +29,7 @@ public class ServicioService {
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Transactional
     public Servicio guardarServicio(Servicio servicio) {
         logger.info("Guardando servicio para cliente ID: {}",
                 servicio.getCliente() != null ? servicio.getCliente().getId() : "null");
@@ -120,6 +122,7 @@ public class ServicioService {
         return null;
     }
 
+    @Transactional
     public Servicio renovarServicio(Integer id) {
         Optional<Servicio> originalOpt = servicioRepository.findById(id);
         if (originalOpt.isEmpty())
@@ -207,6 +210,7 @@ public class ServicioService {
                 .stream().map(this::toDTO).toList();
     }
 
+    @Transactional
     public void eliminarPorId(Integer id) {
         servicioRepository.deleteById(id);
     }

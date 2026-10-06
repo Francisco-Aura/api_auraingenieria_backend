@@ -309,21 +309,24 @@ public class InformesService {
                 LIMIT 1
                 """;
 
+        Integer siguientePago;
         try {
-            Integer siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio, idServicio, idServicio,
+            siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio, idServicio, idServicio,
                     idServicio, idServicio, idServicio, idServicio, idServicio, idServicio, idServicio, idServicio,
                     idServicio);
-
-            if (siguientePago != null) {
-                actualizarPagoParcial(idServicio, siguientePago, true);
-            } else {
-                throw new IllegalArgumentException("No hay pagos pendientes para este servicio");
-            }
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("No se pudo marcar el pago. Por favor, int\u00e9ntelo de nuevo.", e);
+        } catch (org.springframework.dao.EmptyResultDataAccessException sinFilas) {
+            // Sin cuotas vencidas la consulta no devuelve ninguna fila: no es un fallo
+            // tecnico, es que no hay nada que marcar. Antes lo atrapaba el catch general
+            // y el usuario veia siempre «No se pudo marcar el pago».
+            siguientePago = null;
+        } catch (RuntimeException e) {
+            throw new RuntimeException("No se pudo marcar el pago. Por favor, inténtelo de nuevo.", e);
         }
+
+        if (siguientePago == null) {
+            throw new IllegalArgumentException("No hay pagos pendientes para este servicio");
+        }
+        actualizarPagoParcial(idServicio, siguientePago, true);
     }
 
     public List<ContratoVigenteDTO> obtenerContratosVigentes() {

@@ -12,6 +12,7 @@ import api.aura.repository.tablas_maestras.TBTipoContadorRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.entity.Cliente;
+import api.aura.util.BajaEfectiva;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,11 +59,11 @@ public class PuntoSuministroService {
         }
 
         // Validar que no se reactive un PS si el cliente está dado de baja
-        if (existente != null && puntoSuministro.getFechaBaja() == null
+        if (existente != null && BajaEfectiva.estaActivo(puntoSuministro.getFechaBaja())
                 && puntoSuministro.getCliente() != null && puntoSuministro.getCliente().getId() != null
-                && existente.getFechaBaja() != null) {
+                && BajaEfectiva.tieneBaja(existente.getFechaBaja())) {
             Cliente cliente = clienteRepository.findById(puntoSuministro.getCliente().getId()).orElse(null);
-            if (cliente != null && cliente.getFechaBaja() != null) {
+            if (cliente != null && BajaEfectiva.tieneBaja(cliente.getFechaBaja())) {
                 throw new IllegalArgumentException(
                         "No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
             }
@@ -269,9 +270,10 @@ public class PuntoSuministroService {
         return puntoSuministroRepository.findByClienteIdAndFechaBajaIsNotNull(clienteId);
     }
 
+    @Transactional
     public void reactivarPuntoSuministro(Integer id) {
         puntoSuministroRepository.findById(id).ifPresent(ps -> {
-            if (ps.getCliente() != null && ps.getCliente().getFechaBaja() != null) {
+            if (ps.getCliente() != null && BajaEfectiva.tieneBaja(ps.getCliente().getFechaBaja())) {
                 throw new IllegalArgumentException("No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
             }
             ps.setFechaBaja(null);

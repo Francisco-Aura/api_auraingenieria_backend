@@ -9,6 +9,11 @@ import api.aura.entity.Incidencia;
 
 import java.util.List;
 
+/**
+ * Consultas de los informes. Todas son SQL nativo sobre varias tablas, así que la
+ * entidad del {@code JpaRepository} solo sirve para satisfacer la firma: se usa
+ * {@link Incidencia} por herencia histórica, no porque los informes lean esa tabla.
+ */
 @Repository
 public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
 
@@ -53,12 +58,12 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 JOIN tbtarifas_gas ON contratos.id_tarifa_gas = tbtarifas_gas.ID
                 JOIN tbtarifas_luz ON contratos.id_tarifa_luz = tbtarifas_luz.ID
                 JOIN clientes ON contratos.id_cliente = clientes.ID
-                JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
-                JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
+                LEFT JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
+                LEFT JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
                 LEFT JOIN usuarios ON clientes.id_usuario = usuarios.ID
             WHERE
-                (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
-                AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
+                (YEAR(contratos.fecha_baja) IN (1, 1900) OR contratos.fecha_baja IS NULL)
+                AND (YEAR(punto_suministro.fecha_baja) IN (1, 1900) OR punto_suministro.fecha_baja IS NULL)
                 AND (
                     -- Contratos próximos a vencer (30 días antes hasta 90 días después)
                     (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
@@ -73,7 +78,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                     WHERE renovacion.id_punto_suministro = contratos.id_punto_suministro
                         AND renovacion.id != contratos.id
                         AND renovacion.fecha_inicio >= contratos.fecha_fin
-                        AND (renovacion.fecha_baja = '0001-01-01' OR renovacion.fecha_baja IS NULL)
+                        AND (YEAR(renovacion.fecha_baja) IN (1, 1900) OR renovacion.fecha_baja IS NULL)
                 )
             ORDER BY
                 fecha_fin ASC
@@ -121,12 +126,12 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 JOIN tbtarifas_gas ON contratos.id_tarifa_gas = tbtarifas_gas.ID
                 JOIN tbtarifas_luz ON contratos.id_tarifa_luz = tbtarifas_luz.ID
                 JOIN clientes ON contratos.id_cliente = clientes.ID
-                JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
-                JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
+                LEFT JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
+                LEFT JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
                 LEFT JOIN usuarios ON clientes.id_usuario = usuarios.ID
             WHERE
-                (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
-                AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
+                (YEAR(contratos.fecha_baja) IN (1, 1900) OR contratos.fecha_baja IS NULL)
+                AND (YEAR(punto_suministro.fecha_baja) IN (1, 1900) OR punto_suministro.fecha_baja IS NULL)
                 AND TRIM(LOWER(COALESCE(usuarios.nombre, ''))) = TRIM(LOWER(:usuarioNombre))
                 AND (
                     (contratos.fecha_fin BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND DATE_ADD(CURDATE(), INTERVAL 90 DAY))
@@ -139,7 +144,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                     WHERE renovacion.id_punto_suministro = contratos.id_punto_suministro
                         AND renovacion.id != contratos.id
                         AND renovacion.fecha_inicio >= contratos.fecha_fin
-                        AND (renovacion.fecha_baja = '0001-01-01' OR renovacion.fecha_baja IS NULL)
+                        AND (YEAR(renovacion.fecha_baja) IN (1, 1900) OR renovacion.fecha_baja IS NULL)
                 )
             ORDER BY
                 fecha_fin ASC
@@ -161,7 +166,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 punto_suministro
                 LEFT JOIN clientes ON punto_suministro.id_cliente = clientes.id
             WHERE
-                (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
+                (YEAR(punto_suministro.fecha_baja) IN (1, 1900) OR punto_suministro.fecha_baja IS NULL)
                 AND NOT EXISTS (SELECT id_punto_suministro FROM contratos WHERE contratos.id_punto_suministro = punto_suministro.id)
             """, nativeQuery = true)
     List<Object[]> findPuntosSuministroSinContrato();
@@ -276,9 +281,9 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                  (COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0) OR
                  (COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0) OR
                  (COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0))
-                AND (s.fecha_baja IS NULL OR s.fecha_baja = '0001-01-01')
-                AND (c.fecha_baja IS NULL OR c.fecha_baja = '0001-01-01')
-                AND (ps.fecha_baja IS NULL OR ps.fecha_baja = '0001-01-01')
+                AND (s.fecha_baja IS NULL OR YEAR(s.fecha_baja) IN (1, 1900))
+                AND (c.fecha_baja IS NULL OR YEAR(c.fecha_baja) IN (1, 1900))
+                AND (ps.fecha_baja IS NULL OR YEAR(ps.fecha_baja) IN (1, 1900))
                 AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
                 AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
             ORDER BY fechaSiguientePago ASC
@@ -327,8 +332,8 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 LEFT JOIN tbcomercializadoras AS ACT ON contratos.id_comercializadora_actual = ACT.ID
                 LEFT JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID
             WHERE
-                (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL)
-                AND (punto_suministro.fecha_baja = '0001-01-01' OR punto_suministro.fecha_baja IS NULL)
+                (YEAR(contratos.fecha_baja) IN (1, 1900) OR contratos.fecha_baja IS NULL)
+                AND (YEAR(punto_suministro.fecha_baja) IN (1, 1900) OR punto_suministro.fecha_baja IS NULL)
                 AND contratos.fecha_fin > CURDATE()
             ORDER BY
                 fecha_fin ASC
@@ -379,7 +384,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                     LEFT JOIN tbtarifas_luz tl2 ON tl2.ID = ct2.id_tarifa_luz
                     LEFT JOIN tbtarifas_gas tg3 ON tg3.ID = ct2.id_tarifa_gas
                     WHERE ct2.id_punto_suministro = s.id_punto_suministro
-                        AND (ct2.fecha_baja = '0001-01-01' OR ct2.fecha_baja IS NULL)
+                        AND (YEAR(ct2.fecha_baja) IN (1, 1900) OR ct2.fecha_baja IS NULL)
                     ORDER BY ct2.fecha_fin DESC
                     LIMIT 1
                 ) AS tarifaSuministro
@@ -393,9 +398,9 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
             LEFT JOIN tbmetodo_pago tmp ON sp.id_metodo_pago = tmp.id
             LEFT JOIN tbpago_plazos tpp ON sp.id_pago_plazos = tpp.id
             WHERE
-                (s.fecha_baja IS NULL OR s.fecha_baja = '0001-01-01')
-                AND (c.fecha_baja IS NULL OR c.fecha_baja = '0001-01-01')
-                AND (ps.fecha_baja IS NULL OR ps.fecha_baja = '0001-01-01')
+                (s.fecha_baja IS NULL OR YEAR(s.fecha_baja) IN (1, 1900))
+                AND (c.fecha_baja IS NULL OR YEAR(c.fecha_baja) IN (1, 1900))
+                AND (ps.fecha_baja IS NULL OR YEAR(ps.fecha_baja) IN (1, 1900))
                 AND (:fechaDesde IS NULL OR s.fecha_fin_servicio >= :fechaDesde)
                 AND (:fechaHasta IS NULL OR s.fecha_fin_servicio <= :fechaHasta)
             ORDER BY s.fecha_fin_servicio ASC
@@ -427,14 +432,14 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                 id_comercializadora_anterior AS idComercializadoraAnterior,
                 TRIM(ANT.nombre) AS comercializadoraAnterior,
                 CASE
-                    WHEN NOT (contratos.fecha_baja = '0001-01-01' OR contratos.fecha_baja IS NULL) THEN 'Baja'
+                    WHEN NOT (YEAR(contratos.fecha_baja) IN (1, 1900) OR contratos.fecha_baja IS NULL) THEN 'Baja'
                     WHEN contratos.fecha_fin > CURDATE() THEN 'Vigente'
                     WHEN EXISTS (
                         SELECT 1 FROM contratos AS renovacion
                         WHERE renovacion.id_punto_suministro = contratos.id_punto_suministro
                             AND renovacion.id != contratos.id
                             AND renovacion.fecha_inicio >= contratos.fecha_fin
-                            AND (renovacion.fecha_baja = '0001-01-01' OR renovacion.fecha_baja IS NULL)
+                            AND (YEAR(renovacion.fecha_baja) IN (1, 1900) OR renovacion.fecha_baja IS NULL)
                     ) THEN 'Renovado'
                     ELSE 'Vencido'
                 END AS estado,
@@ -444,7 +449,7 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                     WHERE renovacion.id_punto_suministro = contratos.id_punto_suministro
                         AND renovacion.id != contratos.id
                         AND renovacion.fecha_inicio >= contratos.fecha_fin
-                        AND (renovacion.fecha_baja = '0001-01-01' OR renovacion.fecha_baja IS NULL)
+                        AND (YEAR(renovacion.fecha_baja) IN (1, 1900) OR renovacion.fecha_baja IS NULL)
                     ORDER BY renovacion.fecha_inicio ASC
                     LIMIT 1
                 ) AS idContratoRenovacion

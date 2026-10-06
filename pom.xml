@@ -107,6 +107,12 @@
 			<scope>test</scope> <!-- Exclusivo para pruebas -->
 		</dependency>
 
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- OpenAPI (Swagger) para documentar y probar la API -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
@@ -129,6 +135,17 @@
 
 	<!-- Configuración de compilación y plugins -->
 	<build>
+		<resources>
+			<!-- Los scripts de BBDD/ son migraciones que se aplican a mano (ddl-auto=none):
+			     se quedan en el repositorio, en la ruta documentada, pero no viajan dentro
+			     del jar. Solo la copia de seguridad ya ocupaba 3,7 MB del paquete. -->
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>BBDD/**</exclude>
+				</excludes>
+			</resource>
+		</resources>
 		<plugins>
 			<!-- Configuración del compilador de Maven -->
 			<plugin>

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/configuracion-modulos")
@@ -14,6 +15,11 @@ import java.util.Map;
 public class ConfiguracionModulosController {
 
     private final ModuloConfiguracionService moduloConfiguracionService;
+
+    @GetMapping("/mcas")
+    public ResponseEntity<List<ModuloConfiguracion>> listarMcas() {
+        return ResponseEntity.ok(moduloConfiguracionService.listarPorPrefijo("MCAS_"));
+    }
 
     @GetMapping("/{codigo}/activo")
     public ResponseEntity<Map<String, Boolean>> estaActivo(@PathVariable String codigo) {

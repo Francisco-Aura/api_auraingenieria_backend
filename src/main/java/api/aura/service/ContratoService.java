@@ -6,6 +6,10 @@ import api.aura.entity.PuntoSuministro;
 import api.aura.repository.ContratoRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.PuntoSuministroRepository;
+import api.aura.service.mcas.McasProposalService;
+import api.aura.util.BajaEfectiva;
+import api.aura.service.mcas.McasContratoGuardadoEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -14,10 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class ContratoService {
@@ -28,17 +29,24 @@ public class ContratoService {
     private final ClienteRepository clienteRepository;
     private final PuntoSuministroRepository puntoSuministroRepository;
     private final ContratoFileStorageService contratoFileStorageService;
+    private final McasProposalService mcasProposalService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ContratoService(ContratoRepository contratoRepository,
             ClienteRepository clienteRepository,
             PuntoSuministroRepository puntoSuministroRepository,
-            ContratoFileStorageService contratoFileStorageService) {
+            ContratoFileStorageService contratoFileStorageService,
+            McasProposalService mcasProposalService,
+            ApplicationEventPublisher eventPublisher) {
         this.contratoRepository = contratoRepository;
         this.clienteRepository = clienteRepository;
         this.puntoSuministroRepository = puntoSuministroRepository;
         this.contratoFileStorageService = contratoFileStorageService;
+        this.mcasProposalService = mcasProposalService;
+        this.eventPublisher = eventPublisher;
     }
 
+    @Transactional
     public Contrato guardarContrato(Contrato contrato) {
         logger.info("Guardando contrato para cliente ID: {}",
                 contrato.getCliente() != null ? contrato.getCliente().getId() : "null");
@@ -47,7 +55,7 @@ public class ContratoService {
         if (contrato.getId() != null) {
             logger.info("Actualizando contrato existente con ID: {}", contrato.getId());
 
-            Optional<Contrato> contratoExistente = contratoRepository.findById(contrato.getId());
+            Optional<Contrato> contratoExistente = contratoRepository.findByIdForUpdate(contrato.getId());
             if (contratoExistente.isPresent()) {
                 Contrato contratoActual = contratoExistente.get();
 
@@ -77,8 +85,12 @@ public class ContratoService {
                 contratoActual.setPasswordFO(contrato.getPasswordFO());
                 contratoActual.setComentarioRenovacion(contrato.getComentarioRenovacion());
 
+                copiarCamposMcas(contrato, contratoActual);
+
                 logger.info("Campos del contrato actualizados. Guardando en base de datos...");
-                return contratoRepository.save(contratoActual);
+                Contrato guardado = contratoRepository.save(contratoActual);
+                dispararMcasSiProcede(guardado);
+                return guardado;
             } else {
                 logger.error("No se encontró el contrato con ID: {}", contrato.getId());
                 throw new IllegalArgumentException("No se encontró el contrato con ID: " + contrato.getId());
@@ -115,7 +127,66 @@ public class ContratoService {
             throw new IllegalArgumentException("El contrato debe tener un cliente asociado");
         }
 
-        return contratoRepository.save(contrato);
+        Contrato guardado = contratoRepository.save(contrato);
+        dispararMcasSiProcede(guardado);
+        return guardado;
+    }
+
+    private void copiarCamposMcas(Contrato origen, Contrato destino) {
+        destino.setMcasFeeEurMwh(origen.getMcasFeeEurMwh());
+        destino.setMcasFeeUnidad(origen.getMcasFeeUnidad());
+        destino.setMcasTipoPrecio(origen.getMcasTipoPrecio());
+        destino.setMcasTipoSuministro(origen.getMcasTipoSuministro());
+        destino.setMcasSegmento(origen.getMcasSegmento());
+        destino.setMcasEsRenovacion(origen.getMcasEsRenovacion());
+        destino.setMcasTipoRenovacion(origen.getMcasTipoRenovacion());
+        destino.setMcasAmbito(origen.getMcasAmbito());
+        destino.setMcasIdGestora(origen.getMcasIdGestora());
+        destino.setMcasIdProductoComercial(origen.getMcasIdProductoComercial());
+        destino.setMcasZonaComision(origen.getMcasZonaComision());
+        destino.setMcasPotenciaCalculo(origen.getMcasPotenciaCalculo());
+        destino.setMcasNumeroPagos(origen.getMcasNumeroPagos());
+        destino.setMcasFechaPrimeraAplicacion(origen.getMcasFechaPrimeraAplicacion());
+        destino.setMcasAltaNueva(origen.getMcasAltaNueva());
+        destino.setMcasFechaUltimaRelacionComercializadora(
+                origen.getMcasFechaUltimaRelacionComercializadora());
+    }
+
+    private void dispararMcasSiProcede(Contrato contrato) {
+        if (!contratoListoParaMcas(contrato)) {
+            logger.debug("Contrato {} aun no esta listo para MCAS; no se genera propuesta de borrador",
+                    contrato.getId());
+            return;
+        }
+        // Con el módulo desactivado MCAS es inerte: ni crea propuestas ni toma
+        // bloqueos sobre el contrato.
+        if (!mcasProposalService.moduloHabilitado()) {
+            logger.debug("MCAS deshabilitado (MCAS_ENABLED=false); no se dispara para contrato {}",
+                    contrato.getId());
+            return;
+        }
+        // La propuesta se genera tras el COMMIT del contrato (McasContratoEventListener),
+        // para que un fallo de MCAS nunca revierta el guardado del contrato y para
+        // evitar el interbloqueo del SELECT ... FOR UPDATE sobre la fila aún sin confirmar.
+        eventPublisher.publishEvent(new McasContratoGuardadoEvent(contrato.getId()));
+    }
+
+    /**
+     * MCAS se dispara al guardar un contrato comercialmente identificable, nunca
+     * por completar parcialmente los campos de un borrador. Los datos propios de
+     * cada estrategia se validan despues en el motor y pueden requerir revision.
+     */
+    private boolean contratoListoParaMcas(Contrato contrato) {
+        return contrato.getId() != null
+                && contrato.getMcasTipoPrecio() != null
+                && !contrato.getMcasTipoPrecio().isBlank()
+                && contrato.getMcasTipoSuministro() != null
+                && !contrato.getMcasTipoSuministro().isBlank()
+                && contrato.getContrato() != null
+                && !contrato.getContrato().isBlank()
+                && contrato.getFechaInicio() != null
+                && contrato.getIdComercializadoraActual() != null
+                && contrato.getIdComercializadoraActual() > 0;
     }
 
     /**
@@ -157,31 +228,9 @@ public class ContratoService {
     }
 
     public List<Contrato> obtenerPorPuntoSuministroId(Integer puntoSuministroId) {
-        List<Contrato> contratos = contratoRepository.findByPuntoSuministroId(puntoSuministroId);
-
-        // Cargar la información del cliente para cada contrato en una sola consulta
-        // (antes se hacía un findById por contrato dentro del forEach: N consultas).
-        List<Integer> clienteIds = contratos.stream()
-                .map(c -> c.getCliente() != null ? c.getCliente().getId() : null)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        if (!clienteIds.isEmpty()) {
-            Map<Integer, Cliente> clientesPorId = clienteRepository.findAllById(clienteIds).stream()
-                    .collect(Collectors.toMap(Cliente::getId, c -> c));
-
-            contratos.forEach(contrato -> {
-                if (contrato.getCliente() != null) {
-                    Cliente cliente = clientesPorId.get(contrato.getCliente().getId());
-                    if (cliente != null) {
-                        contrato.setCliente(cliente);
-                    }
-                }
-            });
-        }
-
-        return contratos;
+        // El cliente de cada contrato ya viene cargado (relación EAGER, en lotes):
+        // no hace falta volver a consultarlo.
+        return contratoRepository.findByPuntoSuministroId(puntoSuministroId);
     }
 
     public void eliminarPorId(Integer id) {
@@ -198,6 +247,7 @@ public class ContratoService {
 
         // Garantizar que el nuevo contrato no tenga ID (se creará nuevo)
         nuevoContrato.setId(null);
+        nuevoContrato.setMcasEsRenovacion(true);
 
         // Preservar asociaciones del original si no vienen en el nuevo
         if (nuevoContrato.getCliente() == null && original.getCliente() != null) {
@@ -216,9 +266,12 @@ public class ContratoService {
         // Guardar nuevo contrato
         Contrato guardado = contratoRepository.save(nuevoContrato);
 
-        // Marcar original como vencido
-        original.setFechaBaja(Date.valueOf(LocalDate.now()));
-        contratoRepository.save(original);
+        // Marcar original como vencido (si ya tenía una baja real, se conserva su fecha)
+        if (BajaEfectiva.estaActivo(original.getFechaBaja())) {
+            original.setFechaBaja(Date.valueOf(LocalDate.now()));
+            contratoRepository.save(original);
+        }
+        dispararMcasSiProcede(guardado);
 
         logger.info("Contrato {} renovado. Nuevo contrato ID: {}. Original marcado como vencido.", idContratoOriginal, guardado.getId());
         return guardado;

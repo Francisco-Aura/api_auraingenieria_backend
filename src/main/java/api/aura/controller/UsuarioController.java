@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import api.aura.entity.Usuario;
 import api.aura.service.UsuarioService;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,12 +51,14 @@ public class UsuarioController {
         Optional<Usuario> usuario = usuarioService.obtenerUsuarioPorNombreUsuarioPass(user, pass);
 
         if (usuario.isPresent()) {
-            // Construimos un mapa con la información necesaria del usuario
-            Map<String, Object> respuesta = Map.of(
-                    "id", usuario.get().getId(),
-                    "nombre", usuario.get().getNombre(),
-                    "email", usuario.get().getEmail(),
-                    "nivelAcceso", usuario.get().getNivelAcceso());
+            // Construimos un mapa con la información necesaria del usuario.
+            // LinkedHashMap y no Map.of: el email (y el resto) pueden ser nulos,
+            // y Map.of lanzaría NullPointerException impidiendo el acceso.
+            Map<String, Object> respuesta = new LinkedHashMap<>();
+            respuesta.put("id", usuario.get().getId());
+            respuesta.put("nombre", usuario.get().getNombre());
+            respuesta.put("email", usuario.get().getEmail());
+            respuesta.put("nivelAcceso", usuario.get().getNivelAcceso());
 
             return ResponseEntity.ok(respuesta);
         } else {

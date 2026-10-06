@@ -90,10 +90,12 @@ public class TareaService {
             tarea.setFechaInicioProgreso(ahora);
         }
         mt_Tarea guardada = tareaRepository.save(tarea);
+        Integer usuarioAccionId = dto.getUsuarioAccionId() != null ? dto.getUsuarioAccionId() : dto.getUsuarioCreadorId();
         registrarHistorial(guardada, guardada.getEstado(),
-                obtenerUsuarioAccion(dto.getUsuarioCreadorId(), guardada.getUsuarioCreador()),
+                obtenerUsuarioAccion(usuarioAccionId, guardada.getUsuarioCreador()),
                 ahora, null, "Creación de la tarea");
-        notificacionService.notificarAsignacion(guardada);
+        // Con el autor, quien crea una tarea y se la asigna a sí mismo no se autonotifica
+        notificacionService.notificarAsignacion(guardada, usuarioAccionId);
         return toDto(guardada, true);
     }
 
@@ -132,8 +134,9 @@ public class TareaService {
         Long estadoNuevo = actualizada.getEstado() != null ? actualizada.getEstado().getId() : null;
         String estadoNombreNuevo = actualizada.getEstado() != null ? actualizada.getEstado().getNombre() : null;
 
-        // ID del usuario que realiza la acción (para no auto-notificar)
-        Integer usuarioAccionId = dto.getUsuarioCreadorId();
+        // ID del usuario que realiza la acción (para no auto-notificar). Los clientes
+        // antiguos no lo envían: entonces se mantiene el creador como antes.
+        Integer usuarioAccionId = dto.getUsuarioAccionId() != null ? dto.getUsuarioAccionId() : dto.getUsuarioCreadorId();
 
         // Si el usuario asignado cambió
         if (!java.util.Objects.equals(usuarioAsignadoNuevo, usuarioAsignadoAnterior)) {
@@ -252,13 +255,18 @@ public class TareaService {
             return toDto(tarea, true);
         }
 
+        boolean eraFinal = valorEstadoFinal(tarea);
         Usuario usuarioAccion = obtenerUsuarioAccion(request.getUsuarioAccionId(), tarea.getUsuarioAsignado());
         aplicarCambioEstado(tarea, estado, usuarioAccion, request.getMotivoBloqueo(), request.getComentario());
         mt_Tarea guardada = tareaRepository.save(tarea);
-        notificacionService.notificarCambioEstado(guardada, estado.getNombre());
+        // Con el autor del cambio, la persona asignada no recibe avisos de sus propios cambios
+        notificacionService.notificarCambioEstado(guardada, estado.getNombre(), request.getUsuarioAccionId());
         // Si el estado es final, notificar a los administradores
         if (Boolean.TRUE.equals(estado.getEstadoFinal())) {
             notificacionService.notificarCompletada(guardada, usuarioAccion);
+            if (!eraFinal) {
+                crearSiguienteRepeticion(guardada, usuarioAccion);
+            }
         }
         return toDto(guardada, true);
     }
@@ -336,24 +344,25 @@ public class TareaService {
                 "Métricas Básicas - Total: {}, Vencidas: {}, En Progreso: {}, Pendientes: {}, Completadas: {}, Bloqueadas: {}",
                 total, vencidas, enProgreso, pendientes, completadas, tareasBloqueadas);
 
-        // Calcular estadísticas semanales (lunes a domingo actual)
-        LocalDateTime inicioSemana = ahora.minusDays(ahora.getDayOfWeek().getValue() - 1).toLocalDate().atStartOfDay();
-        LocalDateTime finSemana = inicioSemana.plusDays(6).withHour(23).withMinute(59).withSecond(59);
+        // Semana en curso: lunes 00:00 hasta el domingo 23:59:59.999999999, extremos
+        // incluidos. Antes se comparaba contra «inicioSemana - 1 día» y «finSemana + 1
+        // día», una ventana de nueve días que metía en el recuento el domingo anterior
+        // y el lunes siguiente.
+        LocalDateTime inicioSemana = ahora.toLocalDate()
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+                .atStartOfDay();
+        LocalDateTime finSemana = inicioSemana.plusDays(6).with(java.time.LocalTime.MAX);
 
         // Tareas completadas ESTA SEMANA (por fecha de finalización)
         long completadasSemana = tareas.stream()
-                .filter(t -> Boolean.TRUE.equals(valorEstadoFinal(t)) &&
-                        t.getFechaFinalizacion() != null &&
-                        t.getFechaFinalizacion().isAfter(inicioSemana.minusDays(1)) &&
-                        t.getFechaFinalizacion().isBefore(finSemana.plusDays(1)))
+                .filter(t -> Boolean.TRUE.equals(valorEstadoFinal(t))
+                        && TareaCalculos.dentroDe(t.getFechaFinalizacion(), inicioSemana, finSemana))
                 .count();
 
         // Total de tareas de esta semana
         long totalSemana = completadasSemana + tareas.stream()
-                .filter(t -> Boolean.FALSE.equals(valorEstadoFinal(t)) &&
-                        t.getFechaVencimiento() != null &&
-                        t.getFechaVencimiento().isAfter(inicioSemana.minusDays(1)) &&
-                        t.getFechaVencimiento().isBefore(finSemana.plusDays(1)))
+                .filter(t -> Boolean.FALSE.equals(valorEstadoFinal(t))
+                        && TareaCalculos.dentroDe(t.getFechaVencimiento(), inicioSemana, finSemana))
                 .count();
 
         // Métricas de tiempo
@@ -401,11 +410,7 @@ public class TareaService {
                         .orElse(0);
         log.debug("Tareas Vencidas: {}, Delay Promedio: {} días", tareasVencidasList.size(), delayPromedioDias);
 
-        // Tareas bloqueadas en el período actual
-        long tareasBloqueadasPeriodo = tareas.stream()
-                .filter(t -> t.getEstado() != null && Boolean.TRUE.equals(t.getEstado().getEsBloqueo()))
-                .count();
-        log.debug("Tareas Bloqueadas: {}", tareasBloqueadasPeriodo);
+        log.debug("Tareas Bloqueadas: {}", tareasBloqueadas);
 
         // Tareas próximas a vencer (próximos 3 días)
         LocalDateTime proximosTresDias = ahora.plusDays(3);
@@ -446,7 +451,7 @@ public class TareaService {
                 .tasaCompletacion(tasaCompletacion)
                 .eficiencia(eficiencia)
                 .delayPromedioDias(delayPromedioDias)
-                .tareasBloqueadasPeriodo(tareasBloqueadasPeriodo)
+                .tareasBloqueadasPeriodo(tareasBloqueadas)
                 .tareasProximasAVencer(tareasProximasAVencer)
                 .prioridadPromedioPendientes(prioridadPromedioPendientes)
                 .tareasSinAsignar(tareasSinAsignar)
@@ -701,7 +706,7 @@ public class TareaService {
         tarea.setEstado(nuevoEstado);
         if (Boolean.TRUE.equals(nuevoEstado.getEstadoFinal())) {
             tarea.setFechaFinalizacion(ahora);
-        } else if (tarea.getFechaFinalizacion() != null && !Boolean.TRUE.equals(nuevoEstado.getEstadoFinal())) {
+        } else if (tarea.getFechaFinalizacion() != null) {
             tarea.setFechaFinalizacion(null);
         }
 
@@ -723,6 +728,61 @@ public class TareaService {
         }
 
         registrarHistorial(tarea, nuevoEstado, usuarioAccion, ahora, motivoBloqueo, comentario);
+    }
+
+    /**
+     * «Repetir»: al completar una tarea periódica se crea la siguiente con el mismo
+     * contenido y las fechas desplazadas un periodo. Si ya existe (se reabrió y se
+     * volvió a completar), no se duplica.
+     */
+    private void crearSiguienteRepeticion(mt_Tarea tarea, Usuario usuarioAccion) {
+        java.util.function.UnaryOperator<LocalDateTime> siguiente = periodoRepeticion(tarea.getRepetir());
+        if (siguiente == null) {
+            return;
+        }
+        LocalDateTime base = tarea.getFechaVencimiento() != null ? tarea.getFechaVencimiento() : tarea.getFechaFinalizacion();
+        LocalDateTime vencimiento = siguiente.apply(base);
+        Integer clienteId = tarea.getClienteRelacionado() != null ? tarea.getClienteRelacionado().getId() : null;
+        if (tareaRepository.contarRepeticiones(tarea.getId(), tarea.getTitulo(), vencimiento, clienteId) > 0) {
+            return;
+        }
+        mt_TareaEstado inicial = estadoRepository.findByEstadoFinalFalseOrderByOrdenAsc().stream().findFirst().orElse(null);
+        mt_Tarea nueva = mt_Tarea.builder()
+                .titulo(tarea.getTitulo())
+                .descripcion(tarea.getDescripcion())
+                .prioridad(tarea.getPrioridad())
+                .notificar(tarea.getNotificar())
+                .enviarCorreo(tarea.getEnviarCorreo())
+                .fijada(tarea.getFijada())
+                .repetir(tarea.getRepetir())
+                .fechaInicio(tarea.getFechaInicio() != null ? siguiente.apply(tarea.getFechaInicio()) : null)
+                .fechaVencimiento(vencimiento)
+                .estado(inicial)
+                .usuarioAsignado(tarea.getUsuarioAsignado())
+                .usuarioCreador(tarea.getUsuarioCreador())
+                .clienteRelacionado(tarea.getClienteRelacionado())
+                .clientePotencialNombre(tarea.getClientePotencialNombre())
+                .cups(tarea.getCups())
+                .categoria(tarea.getCategoria())
+                .subcategoria(tarea.getSubcategoria())
+                .build();
+        mt_Tarea guardada = tareaRepository.save(nueva);
+        registrarHistorial(guardada, inicial, usuarioAccion, LocalDateTime.now(), null,
+                "Repetición de la tarea #" + tarea.getId());
+        notificacionService.notificarAsignacion(guardada, usuarioAccion != null ? usuarioAccion.getId() : null);
+    }
+
+    private static java.util.function.UnaryOperator<LocalDateTime> periodoRepeticion(String repetir) {
+        if (repetir == null) {
+            return null;
+        }
+        return switch (repetir.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "diario" -> fecha -> fecha.plusDays(1);
+            case "semanal" -> fecha -> fecha.plusWeeks(1);
+            case "mensual" -> fecha -> fecha.plusMonths(1);
+            case "anual" -> fecha -> fecha.plusYears(1);
+            default -> null;
+        };
     }
 
     private void cerrarHistorialAbierto(mt_Tarea tarea, LocalDateTime referencia) {

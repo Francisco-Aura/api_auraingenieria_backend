@@ -18,6 +18,7 @@ public class TBNivelAccesoService {
     @Autowired
     private TBNivelAccesoRepository nivelAccesoRepository;
 
+    @CacheEvict(value = "tablas-maestras", key = "'nivel-acceso'")
     public TBNivelAcceso crearNivelAcceso(TBNivelAcceso nivelAcceso) {
         return nivelAccesoRepository.save(nivelAcceso);
     }

@@ -35,4 +35,7 @@ build/
 ### Uploads (archivos adjuntos de tareas) ###
 uploads/
 
+### Configuracion local de cada puesto (conexion a BBDD) ###
+src/main/resources/application-local.properties
+
 docs/

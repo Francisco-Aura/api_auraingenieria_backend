@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,33 +33,10 @@ public class FileStorageService {
      * Usado al crear la tarea con adjuntos desde el formulario principal.
      */
     public mt_Adjunto guardarAdjuntoTarea(MultipartFile file, mt_Tarea tarea) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("El archivo está vacío");
-        }
         if (tarea == null) {
             throw new IllegalArgumentException("La tarea no puede ser nula");
         }
-
-        Cliente cliente = tarea.getClienteRelacionado();
-        String directorio = construirRutaDirectorio(cliente, tarea);
-        Path dirPath = Paths.get(directorio);
-        Files.createDirectories(dirPath);
-
-        String nombreOriginal = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String nombreArchivo = timestamp + "_" + UUID.randomUUID() + "_" + nombreOriginal;
-        Path rutaCompleta = dirPath.resolve(nombreArchivo);
-        Files.copy(file.getInputStream(), rutaCompleta);
-
-        log.info("Archivo de tarea guardado: {}", rutaCompleta);
-
-        return mt_Adjunto.builder()
-                .nombreArchivo(nombreOriginal)
-                .rutaArchivo(rutaCompleta.toString())
-                .tipoMime(file.getContentType())
-                .tamanio(file.getSize())
-                .tarea(tarea)
-                .build();
+        return escribir(file, tarea).tarea(tarea).build();
     }
 
     /**
@@ -67,45 +45,56 @@ public class FileStorageService {
      * uploads/tareas/{clienteNombre}_{dni}/{tareaId}/{timestamp}_{uuid}_{filename}
      */
     public mt_Adjunto guardarAdjunto(MultipartFile file, mt_Comentario comentario) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("El archivo está vacío");
-        }
-
         if (comentario == null || comentario.getTarea() == null) {
             throw new IllegalArgumentException("El comentario o la tarea asociada son nulos");
         }
+        return escribir(file, comentario.getTarea()).comentario(comentario).build();
+    }
 
-        mt_Tarea tarea = comentario.getTarea();
-        Cliente cliente = tarea.getClienteRelacionado();
+    /**
+     * Copia el archivo en la carpeta de su tarea y devuelve el adjunto a medio
+     * construir: solo falta decir si cuelga de la tarea o de un comentario. Las dos
+     * rutas de guardado eran el mismo código repetido.
+     *
+     * <p>El nombre físico se compone con marca de tiempo y UUID, de modo que dos
+     * archivos con el mismo nombre nunca se pisan, y se queda solo con el nombre del
+     * fichero recibido: una ruta en el nombre no puede sacar el archivo de su
+     * carpeta.</p>
+     */
+    private mt_Adjunto.mt_AdjuntoBuilder escribir(MultipartFile file, mt_Tarea tarea) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo está vacío");
+        }
 
-        // Construir la ruta del directorio
-        String directorio = construirRutaDirectorio(cliente, tarea);
-        Path dirPath = Paths.get(directorio);
-
-        // Crear directorios si no existen
+        Path dirPath = Paths.get(construirRutaDirectorio(tarea.getClienteRelacionado(), tarea)).normalize();
         Files.createDirectories(dirPath);
 
-        // Limpiar y generar nombre de archivo único
         String nombreOriginal = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+        String nombreSeguro = Paths.get(nombreOriginal).getFileName().toString();
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String nombreArchivo = timestamp + "_" + UUID.randomUUID() + "_" + nombreOriginal;
+        Path rutaCompleta = dirPath.resolve(timestamp + "_" + UUID.randomUUID() + "_" + nombreSeguro).normalize();
+        if (!rutaCompleta.startsWith(dirPath)) {
+            throw new IllegalArgumentException("Nombre de archivo no permitido: " + nombreOriginal);
+        }
+        copiar(file, rutaCompleta);
 
-        // Ruta completa del archivo
-        Path rutaCompleta = dirPath.resolve(nombreArchivo);
+        log.info("Archivo guardado: {}", rutaCompleta);
 
-        // Guardar el archivo
-        Files.copy(file.getInputStream(), rutaCompleta);
-
-        log.info("Archivo guardado: {}", rutaCompleta.toString());
-
-        // Crear entidad mt_Adjunto
         return mt_Adjunto.builder()
-                .nombreArchivo(nombreOriginal)
+                .nombreArchivo(nombreSeguro)
                 .rutaArchivo(rutaCompleta.toString())
                 .tipoMime(file.getContentType())
-                .tamanio(file.getSize())
-                .comentario(comentario)
-                .build();
+                .tamanio(file.getSize());
+    }
+
+    /**
+     * Copia el archivo recibido y cierra su flujo (en Windows un flujo abierto
+     * impide borrar el temporal de la subida).
+     */
+    private void copiar(MultipartFile file, Path destino) throws IOException {
+        try (InputStream contenido = file.getInputStream()) {
+            Files.copy(contenido, destino);
+        }
     }
 
     /**

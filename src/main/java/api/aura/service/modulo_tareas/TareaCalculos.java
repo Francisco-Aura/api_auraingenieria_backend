@@ -26,6 +26,11 @@ final class TareaCalculos {
         return Math.abs(diferenciaMinutos) <= 1;
     }
 
+    /** true si {@code fecha} cae dentro del intervalo, con los dos extremos incluidos. */
+    static boolean dentroDe(LocalDateTime fecha, LocalDateTime desde, LocalDateTime hasta) {
+        return fecha != null && !fecha.isBefore(desde) && !fecha.isAfter(hasta);
+    }
+
     static String obtenerNombrePrioridad(Integer prioridad) {
         if (prioridad == null) return "Media";
         return switch (prioridad) {

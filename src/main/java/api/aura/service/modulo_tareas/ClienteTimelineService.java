@@ -24,15 +24,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -90,11 +89,6 @@ public class ClienteTimelineService {
         return toNotaDto(clienteNotaRepository.save(nota));
     }
 
-    public ClienteNotaDTO crearNotaFijadaConArchivo(Integer clienteId, CrearNotaClienteRequest request, MultipartFile archivo) {
-        List<MultipartFile> archivos = archivo != null && !archivo.isEmpty() ? List.of(archivo) : List.of();
-        return crearNotaFijadaConArchivos(clienteId, request, archivos);
-    }
-
     public ClienteNotaDTO crearNotaFijadaConArchivos(Integer clienteId, CrearNotaClienteRequest request, List<MultipartFile> archivos) {
         validarRequestNota(request);
 
@@ -131,25 +125,7 @@ public class ClienteTimelineService {
         nota.setEditado(true);
         nota.setFechaEdicion(LocalDateTime.now());
 
-        return toNotaDto(clienteNotaRepository.save(nota));
-    }
-
-    public ClienteNotaDTO actualizarNotaConArchivo(Integer clienteId, Long notaId, ActualizarNotaClienteRequest request, MultipartFile archivo) {
-        validarCliente(clienteId);
-        validarRequestActualizacionNota(request);
-
-        ClienteNota nota = clienteNotaRepository.findByIdAndCliente_Id(notaId, clienteId)
-                .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
-
-        nota.setComentario(request.getComentario().trim());
-        nota.setCups(normalizarCups(request.getCups()));
-        nota.setEditado(true);
-        nota.setFechaEdicion(LocalDateTime.now());
-
-        if (archivo != null && !archivo.isEmpty()) {
-            return actualizarNotaConArchivos(clienteId, notaId, request, List.of(archivo));
-        }
-        return actualizarNota(clienteId, notaId, request);
+        return conAdjuntos(clienteNotaRepository.save(nota));
     }
 
     /**
@@ -256,11 +232,8 @@ public class ClienteTimelineService {
         return obtenerNotaDto(clienteId, notaId);
     }
 
-    /**
-     * Devuelve el adjunto concreto para su descarga.
-     */
-    @Transactional(readOnly = true)
-    public ClienteNotaAdjunto obtenerAdjuntoParaDescarga(Integer clienteId, Long notaId, Long adjuntoId) {
+    /** Adjunto concreto validado (existe la nota, el adjunto y el fichero en disco). */
+    private ClienteNotaAdjunto obtenerAdjuntoParaDescarga(Integer clienteId, Long notaId, Long adjuntoId) {
         validarCliente(clienteId);
         if (!clienteNotaRepository.existsByIdAndCliente_Id(notaId, clienteId)) {
             throw new IllegalArgumentException("Nota no encontrada para este cliente");
@@ -330,7 +303,9 @@ public class ClienteTimelineService {
                 if (!destino.startsWith(dirPath.normalize())) {
                     throw new SecurityException("Ruta de archivo no permitida");
                 }
-                Files.copy(archivo.getInputStream(), destino);
+                try (InputStream contenido = archivo.getInputStream()) {
+                    Files.copy(contenido, destino);
+                }
 
                 ClienteNotaAdjunto adjunto = ClienteNotaAdjunto.builder()
                         .nota(nota)
@@ -385,7 +360,12 @@ public class ClienteTimelineService {
                 .orElseThrow(() -> new IllegalArgumentException("Nota no encontrada para este cliente"));
 
         nota.setFijado(!Boolean.TRUE.equals(nota.getFijado()));
-        return toNotaDto(clienteNotaRepository.save(nota));
+        return conAdjuntos(clienteNotaRepository.save(nota));
+    }
+
+    /** DTO de la nota con sus adjuntos: la pantalla sustituye la nota por la respuesta. */
+    private ClienteNotaDTO conAdjuntos(ClienteNota nota) {
+        return toNotaDto(nota, clienteNotaAdjuntoRepository.findByNota_IdOrderByFechaSubidaAsc(nota.getId()));
     }
 
     @Transactional(readOnly = true)

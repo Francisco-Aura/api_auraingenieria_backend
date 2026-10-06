@@ -27,10 +27,6 @@ public class TareaNotificacionService {
     private final UsuarioRepository usuarioRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public void notificarAsignacion(mt_Tarea tarea) {
-        notificarAsignacion(tarea, null);
-    }
-
     public void notificarAsignacion(mt_Tarea tarea, Integer usuarioAccionId) {
         if (tarea.getUsuarioAsignado() == null) {
             return;
@@ -43,10 +39,6 @@ public class TareaNotificacionService {
                 String.format("Se te ha asignado la tarea '%s'", tarea.getTitulo()));
     }
 
-    public void notificarCambioEstado(mt_Tarea tarea, String estadoDestino) {
-        notificarCambioEstado(tarea, estadoDestino, null);
-    }
-
     public void notificarCambioEstado(mt_Tarea tarea, String estadoDestino, Integer usuarioAccionId) {
         if (tarea.getUsuarioAsignado() == null) {
             return;
@@ -57,21 +49,6 @@ public class TareaNotificacionService {
         }
         crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.CAMBIO_ESTADO,
                 String.format("La tarea '%s' cambió a %s", tarea.getTitulo(), estadoDestino));
-    }
-
-    public void notificarVencimiento(mt_Tarea tarea) {
-        String mensaje = String.format("La tarea '%s' está vencida", tarea.getTitulo());
-
-        if (tarea.getUsuarioAsignado() != null) {
-            crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.VENCIMIENTO, mensaje);
-        }
-
-        usuarioRepository.findByNivelAcceso(1).forEach(admin -> {
-            if (tarea.getUsuarioAsignado() != null && tarea.getUsuarioAsignado().getId().equals(admin.getId())) {
-                return;
-            }
-            crearNotificacion(tarea, admin, mt_Notificacion.TipoNotificacion.VENCIMIENTO, mensaje);
-        });
     }
 
     public void notificarComentario(mt_Tarea tarea, Usuario autor, String comentario) {
@@ -118,22 +95,6 @@ public class TareaNotificacionService {
         }
         String mensaje = String.format("%s te mencionó en la tarea '%s'", autor.getNombre(), tarea.getTitulo());
         crearNotificacion(tarea, mencionado, mt_Notificacion.TipoNotificacion.MENCION, mensaje);
-    }
-
-    public void notificarCambioTarea(mt_Tarea tarea, String detallesCambio) {
-        notificarCambioTarea(tarea, detallesCambio, null);
-    }
-
-    public void notificarCambioTarea(mt_Tarea tarea, String detallesCambio, Integer usuarioAccionId) {
-        if (tarea.getUsuarioAsignado() == null) {
-            return;
-        }
-        // No notificar si el usuario que modifica es el mismo que el asignado
-        if (usuarioAccionId != null && usuarioAccionId.equals(tarea.getUsuarioAsignado().getId())) {
-            return;
-        }
-        crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.CAMBIO_ESTADO,
-                String.format("La tarea '%s' fue modificada: %s", tarea.getTitulo(), detallesCambio));
     }
 
     public void notificarCampoEspecifico(mt_Tarea tarea, String tipoCampo, String mensaje) {

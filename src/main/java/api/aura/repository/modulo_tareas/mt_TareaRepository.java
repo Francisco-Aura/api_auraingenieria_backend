@@ -13,7 +13,6 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
 
     List<mt_Tarea> findByUsuarioAsignado_Id(Integer usuarioId);
 
-    List<mt_Tarea> findByUsuarioAsignado_IdIn(List<Integer> usuariosIds);
 
     List<mt_Tarea> findByClienteRelacionado_Id(Integer clienteId);
 
@@ -25,24 +24,25 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
 
     List<mt_Tarea> findByUsuarioAsignado_IdAndEstado_EstadoFinalFalseAndFechaVencimientoBetween(Integer usuarioId, LocalDateTime desde, LocalDateTime hasta);
 
-    @Query("SELECT t FROM mt_Tarea t WHERE t.estado.estadoFinal = false AND t.usuarioAsignado.id = :usuarioId")
-    List<mt_Tarea> findPendientesByUsuario(@Param("usuarioId") Integer usuarioId);
-
-    // Contadores para estadísticas globales (admin)
-    long countByEstado_EstadoFinalFalse();
-    long countByEstado_EstadoFinalFalseAndFechaVencimientoBefore(LocalDateTime fecha);
-    long countByEstado_CuentaTiempoTrueAndEstado_EstadoFinalFalse();
-    long countByEstado_EstadoFinalTrue();
-    long countByUsuarioAsignadoIsNullAndEstado_EstadoFinalFalse();
-
     // Tareas con notificación activa que vencen en la próxima hora y no han sido
     // notificadas aún
     @Query("SELECT t FROM mt_Tarea t WHERE t.notificar = true " +
             "AND t.estado.estadoFinal = false " +
             "AND t.fechaVencimiento BETWEEN :desde AND :hasta " +
-            "AND t.notificadoProximoVencimiento = false")
+            "AND (t.notificadoProximoVencimiento = false OR t.notificadoProximoVencimiento IS NULL)")
     List<mt_Tarea> findTareasParaNotificarVencimiento(@Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta);
+
+    // «Repetir»: ¿existe ya la siguiente repetición (mismo título, cliente y vencimiento)?
+    @Query("""
+            SELECT COUNT(t) FROM mt_Tarea t
+            WHERE t.id <> :idOrigen
+              AND t.titulo = :titulo
+              AND t.fechaVencimiento = :fechaVencimiento
+              AND ((:clienteId IS NULL AND t.clienteRelacionado IS NULL) OR t.clienteRelacionado.id = :clienteId)
+            """)
+    long contarRepeticiones(@Param("idOrigen") Long idOrigen, @Param("titulo") String titulo,
+            @Param("fechaVencimiento") LocalDateTime fechaVencimiento, @Param("clienteId") Integer clienteId);
 
     @Query("""
             SELECT t
@@ -56,18 +56,6 @@ public interface mt_TareaRepository extends JpaRepository<mt_Tarea, Long> {
             ORDER BY COALESCE(t.fechaVencimiento, t.fechaCreacion) DESC
             """)
     List<mt_Tarea> findIncidenciasByClienteId(@Param("clienteId") Integer clienteId);
-
-    @Query("""
-            SELECT t
-            FROM mt_Tarea t
-            WHERE t.clienteRelacionado.id = :clienteId
-              AND t.titulo = :titulo
-              AND ((:cups IS NULL AND t.cups IS NULL) OR t.cups = :cups)
-            ORDER BY t.id DESC
-            """)
-    List<mt_Tarea> findTareasAnclaNotas(@Param("clienteId") Integer clienteId,
-                                        @Param("titulo") String titulo,
-                                        @Param("cups") String cups);
 
     // Reinicio diario de flags de notificación de vencimiento: mismo criterio que el
     // filtrado en Java que sustituye (notificadoProximoVencimiento = true y tarea no

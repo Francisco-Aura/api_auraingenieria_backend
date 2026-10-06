@@ -61,4 +61,17 @@ class RepositoryActiveStateContractTest {
         assertTrue(query.contains("YEAR(") && query.contains("= 1"));
         assertTrue(query.contains("YEAR(") && query.contains("= 1900"));
     }
+
+    @Test
+    void elAvisoDeVencimientoNoSeSaltaLasTareasConElFlagSinInformar() throws Exception {
+        // «notificadoProximoVencimiento = false» deja fuera las filas con NULL: en SQL
+        // una comparación con NULL nunca es cierta. Una tarea heredada con el campo sin
+        // informar no recibiría nunca el aviso de «1 hora antes».
+        String query = queryOf(api.aura.repository.modulo_tareas.mt_TareaRepository.class,
+                "findTareasParaNotificarVencimiento", java.time.LocalDateTime.class, java.time.LocalDateTime.class);
+
+        assertTrue(query.replaceAll("\s+", " ").toUpperCase().contains("NOTIFICADOPROXIMOVENCIMIENTO IS NULL"),
+                "la consulta debe tratar el flag sin informar como «no notificada»: " + query);
+    }
+
 }

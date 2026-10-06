@@ -15,10 +15,10 @@ import api.aura.repository.ContratoRepository;
 import api.aura.repository.PuntoSuministroRepository;
 import api.aura.repository.ServicioRepository;
 import api.aura.repository.UsuarioRepository;
+import api.aura.util.BajaEfectiva;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Calendar;
 
 @Service
 public class ClienteService {
@@ -37,6 +37,7 @@ public class ClienteService {
     @Autowired
     private ContratoRepository contratoRepository;
 
+    @Transactional
     public Cliente crearCliente(ClienteDTO clienteDTO) {
         Cliente cliente = new Cliente();
 
@@ -135,8 +136,8 @@ public class ClienteService {
                     cliente.setFechaAlta(clienteDTO.getFechaAlta());
 
                     // Detectar transición de baja ANTES de sobreescribir
-                    boolean esPrimeraBaja = !esFechaBajaEfectiva(cliente.getFechaBaja())
-                            && esFechaBajaEfectiva(clienteDTO.getFechaBaja());
+                    boolean esPrimeraBaja = BajaEfectiva.estaActivo(cliente.getFechaBaja())
+                            && BajaEfectiva.tieneBaja(clienteDTO.getFechaBaja());
                     java.util.Date nuevaFechaBaja = clienteDTO.getFechaBaja() != null
                         ? new java.sql.Date(clienteDTO.getFechaBaja().getTime())
                         : null;
@@ -209,16 +210,6 @@ public class ClienteService {
         var contratos = contratoRepository.findActivosPorClienteId(clienteId);
         contratos.forEach(c -> c.setFechaBaja(fechaSql));
         contratoRepository.saveAll(contratos);
-    }
-
-    private boolean esFechaBajaEfectiva(java.util.Date fechaBaja) {
-        if (fechaBaja == null) {
-            return false;
-        }
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(fechaBaja);
-        int year = calendar.get(Calendar.YEAR);
-        return year != 1 && year != 1900;
     }
 
     public Page<Cliente> obtenerTodosLosClientes(PageRequest pageRequest) {

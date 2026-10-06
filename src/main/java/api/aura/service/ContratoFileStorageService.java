@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.UUID;
@@ -98,7 +99,9 @@ public class ContratoFileStorageService {
 
         try (InputStream contenido = archivo.getInputStream()) {
             byte[] cabecera = contenido.readNBytes(PDF_SIGNATURE.length());
-            if (!PDF_SIGNATURE.equals(new String(cabecera))) {
+            // La firma son bytes ASCII: sin indicar juego de caracteres se leeria
+            // con el del sistema y en una maquina con otro juego no cuadraria.
+            if (!PDF_SIGNATURE.equals(new String(cabecera, StandardCharsets.US_ASCII))) {
                 throw new IllegalArgumentException("El contenido del archivo no corresponde a un PDF válido");
             }
         } catch (IOException e) {

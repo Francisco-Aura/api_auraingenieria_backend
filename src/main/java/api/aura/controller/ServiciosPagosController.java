@@ -85,6 +85,9 @@ public class ServiciosPagosController {
 
             if (params.containsKey("fechaInicio")) {
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                // Sin esto, "2026-02-30" no falla: se convierte en el 2 de marzo y todo
+                // el plan de cuotas sale con las fechas corridas sin avisar.
+                formatter.setLenient(false);
                 Date fechaInicio = formatter.parse(params.get("fechaInicio").toString());
                 plantilla.setPrimerPagoFecha(fechaInicio);
             }

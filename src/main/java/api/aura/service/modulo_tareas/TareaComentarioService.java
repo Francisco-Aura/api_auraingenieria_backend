@@ -32,6 +32,10 @@ public class TareaComentarioService {
         private final AdjuntoRepository adjuntoRepository;
         private final FileStorageService fileStorageService;
 
+        // @NombreSinEspacios tal como lo inserta el desplegable de menciones. UNICODE_CHARACTER_CLASS
+        // para que \w incluya tildes y ñ (María, Núñez...): sin él la mención se cortaba y no notificaba.
+        private static final Pattern PATRON_MENCION = Pattern.compile("@([\\w.]+)", Pattern.UNICODE_CHARACTER_CLASS);
+
         public List<ComentarioDTO> obtenerPorTarea(Long tareaId) {
                 List<mt_Comentario> comentarios = comentarioRepository.findByTarea_IdOrderByFechaCreacionAsc(tareaId);
                 // Ordenar: primero fijados, luego por fecha descendente (más reciente primero)
@@ -72,9 +76,10 @@ public class TareaComentarioService {
          */
         private void procesarMenciones(String texto, mt_Tarea tarea, Usuario autor) {
                 if (texto == null || texto.isBlank()) return;
-                Pattern pattern = Pattern.compile("@([\\w.]+)");
-                Matcher matcher = pattern.matcher(texto);
+                Matcher matcher = PATRON_MENCION.matcher(texto);
                 java.util.List<Usuario> todosLosUsuarios = null;
+                // Nombrar dos veces a la misma persona en un comentario es un solo aviso
+                java.util.Set<Integer> yaAvisados = new java.util.HashSet<>();
                 while (matcher.find()) {
                         String username = matcher.group(1);
                         // Cargar el listado de usuarios una sola vez por comentario, no por mención
@@ -84,8 +89,9 @@ public class TareaComentarioService {
                         // Buscar usuario por nombre (tolerante a mayúsculas)
                         todosLosUsuarios.stream()
                                 .filter(u -> u.getNombre() != null &&
-                                        u.getNombre().toLowerCase().replace(" ", "").equals(username.toLowerCase()))
+                                        u.getNombre().replaceAll("\\s+", "").equalsIgnoreCase(username))
                                 .findFirst()
+                                .filter(mencionado -> yaAvisados.add(mencionado.getId()))
                                 .ifPresent(mencionado -> notificacionService.notificarMencion(tarea, mencionado, autor));
                 }
         }

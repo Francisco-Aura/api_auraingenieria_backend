@@ -21,16 +21,27 @@ public class AuraUserDataSource extends DelegatingDataSource {
 
     @Override
     public Connection getConnection() throws SQLException {
-        Connection conn = super.getConnection();
-        applyUser(conn);
-        return conn;
+        return conUsuario(super.getConnection());
     }
 
     @Override
     public Connection getConnection(String username, String password) throws SQLException {
-        Connection conn = super.getConnection(username, password);
-        applyUser(conn);
-        return conn;
+        return conUsuario(super.getConnection(username, password));
+    }
+
+    /** Si no se puede fijar el usuario, la conexión se devuelve al pool en vez de quedar retenida. */
+    private Connection conUsuario(Connection conn) throws SQLException {
+        try {
+            applyUser(conn);
+            return conn;
+        } catch (SQLException | RuntimeException e) {
+            try {
+                conn.close();
+            } catch (SQLException cierre) {
+                e.addSuppressed(cierre);
+            }
+            throw e;
+        }
     }
 
     private void applyUser(Connection conn) throws SQLException {

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import api.aura.entity.Usuario;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
@@ -15,4 +16,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
         Usuario findByUser(@Param("username") String username, @Param("password") String password);
 
         List<Usuario> findByNivelAcceso(Integer nivelAcceso);
+
+        Optional<Usuario> findFirstByNombreIgnoreCase(String nombre);
 }
