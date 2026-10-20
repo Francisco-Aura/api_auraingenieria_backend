@@ -19,8 +19,9 @@ public class mt_Notificacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Tarea del módulo de tareas. Es null en las notificaciones que vienen de otros sistemas (el planificador). */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tarea_id", nullable = false)
+    @JoinColumn(name = "tarea_id")
     private mt_Tarea tarea;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -40,6 +41,14 @@ public class mt_Notificacion {
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    /** Sistema del que viene la notificación cuando no es una tarea del módulo (p. ej. "PLANIFICADOR"). */
+    @Column(length = 30)
+    private String origen;
+
+    /** Título que se muestra cuando no hay tarea (p. ej. el nombre del proyecto del planificador). */
+    @Column(length = 255)
+    private String titulo;
+
     @PrePersist
     public void onCreate() {
         this.fechaCreacion = LocalDateTime.now();
@@ -54,6 +63,7 @@ public class mt_Notificacion {
         VENCIMIENTO,
         COMENTARIO,
         COMPLETADA,
-        MENCION
+        MENCION,
+        PLANIFICADOR
     }
 }
