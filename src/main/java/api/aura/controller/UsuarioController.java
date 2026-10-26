@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import api.aura.entity.Usuario;
 import api.aura.service.UsuarioService;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,11 +52,15 @@ public class UsuarioController {
 
         if (usuario.isPresent()) {
             // Construimos un mapa con la información necesaria del usuario
-            Map<String, Object> respuesta = Map.of(
-                    "id", usuario.get().getId(),
-                    "nombre", usuario.get().getNombre(),
-                    "email", usuario.get().getEmail(),
-                    "nivelAcceso", usuario.get().getNivelAcceso());
+            Map<String, Object> respuesta = new LinkedHashMap<>();
+            respuesta.put("id", usuario.get().getId());
+            respuesta.put("nombre", usuario.get().getNombre());
+            respuesta.put("email", usuario.get().getEmail());
+            respuesta.put("nivelAcceso", usuario.get().getNivelAcceso());
+            // Grupo de trabajo (comercial, ingenieria, administracion, coordinacion); los usuarios sin grupo no lo llevan
+            if (usuario.get().getGrupo() != null) {
+                respuesta.put("grupo", usuario.get().getGrupo());
+            }
 
             return ResponseEntity.ok(respuesta);
         } else {

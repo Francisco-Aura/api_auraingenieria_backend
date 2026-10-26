@@ -15,4 +15,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
         Usuario findByUser(@Param("username") String username, @Param("password") String password);
 
         List<Usuario> findByNivelAcceso(Integer nivelAcceso);
+
+        /** Usuarios de un grupo de trabajo (clave sin tildes, p. ej. "ingenieria"). */
+        List<Usuario> findByGrupo(String grupo);
 }

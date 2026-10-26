@@ -18,4 +18,5 @@ public class NotificacionDTO {
     private String mensaje;
     private Boolean leida;
     private LocalDateTime fechaCreacion;
+    private String enlace;
 }
