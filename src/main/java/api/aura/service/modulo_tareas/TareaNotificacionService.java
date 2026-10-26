@@ -169,12 +169,13 @@ public class TareaNotificacionService {
         }
         String mensaje = recortar(aviso.getMessage().trim(), 255);
         String titulo = recortar(aviso.getTitle(), 255);
+        String enlace = aviso.getLink() == null || aviso.getLink().isBlank() ? null : recortar(aviso.getLink().trim(), 255);
 
         List<Usuario> destinatarios = usuarioRepository.findByGrupo(grupo).stream()
                 .filter(usuario -> !esQuienTermino(usuario, aviso))
                 .collect(Collectors.toList());
         destinatarios.forEach(usuario -> crearNotificacionExterna(usuario,
-                mt_Notificacion.TipoNotificacion.PLANIFICADOR, mensaje, titulo, ORIGEN_PLANIFICADOR));
+                mt_Notificacion.TipoNotificacion.PLANIFICADOR, mensaje, titulo, ORIGEN_PLANIFICADOR, enlace));
         return destinatarios.size();
     }
 
@@ -237,7 +238,7 @@ public class TareaNotificacionService {
 
     /** Notificación que no pertenece a una tarea del módulo (viene de otro sistema, p. ej. el planificador). */
     private void crearNotificacionExterna(Usuario destinatario, mt_Notificacion.TipoNotificacion tipo,
-            String mensaje, String titulo, String origen) {
+            String mensaje, String titulo, String origen, String enlace) {
         if (destinatario == null || destinatario.getId() == null) {
             return;
         }
@@ -247,6 +248,7 @@ public class TareaNotificacionService {
                 .mensaje(mensaje)
                 .titulo(titulo)
                 .origen(origen)
+                .enlace(enlace)
                 .build());
     }
 
@@ -278,6 +280,7 @@ public class TareaNotificacionService {
                 .mensaje(notificacion.getMensaje())
                 .leida(notificacion.getLeida())
                 .fechaCreacion(notificacion.getFechaCreacion())
+                .enlace(notificacion.getEnlace())
                 .build();
     }
 }

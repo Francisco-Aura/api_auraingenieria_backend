@@ -22,6 +22,8 @@ public class PlanificadorAvisoRequest {
     /** Título que se muestra en la notificación (el proyecto). */
     private String title;
     private String message;
+    /** Enlace al proyecto y la tarea ("proyecto=ID&tarea=ID"); se guarda tal cual y Vue lo abre al pulsar el aviso. */
+    private String link;
     private String projectId;
     private String projectName;
     private String finishedTaskId;

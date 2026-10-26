@@ -49,6 +49,10 @@ public class mt_Notificacion {
     @Column(length = 255)
     private String titulo;
 
+    /** A dónde lleva al pulsarla, cuando viene de otro sistema (planificador: "proyecto=ID&tarea=ID"). */
+    @Column(length = 255)
+    private String enlace;
+
     @PrePersist
     public void onCreate() {
         this.fechaCreacion = LocalDateTime.now();
