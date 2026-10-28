@@ -102,7 +102,8 @@ class McasAuditoriaIntegralTest {
         assertThat(propuesta.getEstado()).isEqualTo("PENDIENTE_VALIDACION");
         assertThat(propuesta.getImporteCalculado()).isEqualByComparingTo("180.00");
         assertThat(propuesta.getIdPoliticaRetrocesion()).isNull();
-        assertThat(propuesta.getAdvertenciasJson()).contains("retrocesion");
+        assertThat(propuesta.getAdvertenciasJson()).contains("No se ha podido mostrar la retrocesión potencial: hay varias "
+                + "políticas de retrocesión publicadas").doesNotContain("PUBLICADAS");
     }
 
     @Test

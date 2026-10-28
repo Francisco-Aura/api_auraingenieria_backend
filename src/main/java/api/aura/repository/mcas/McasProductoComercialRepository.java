@@ -11,4 +11,6 @@ public interface McasProductoComercialRepository extends JpaRepository<McasProdu
     List<McasProductoComercial> findByIdComercializadoraAndActivoTrue(Integer idComercializadora);
     List<McasProductoComercial> findByIdComercializadoraAndTipoPrecioAndTipoSuministroAndActivoTrue(
             Integer idComercializadora, String tipoPrecio, String tipoSuministro);
+    /** Para generar un código que no choque con la clave única (comercializadora, código). */
+    boolean existsByIdComercializadoraAndCodigo(Integer idComercializadora, String codigo);
 }

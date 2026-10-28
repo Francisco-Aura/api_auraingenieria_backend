@@ -25,4 +25,27 @@ public final class McasTexto {
     public static boolean mismaTarifa(String a, String b) {
         return a != null && b != null && normalizarTarifa(a).equals(normalizarTarifa(b));
     }
+
+    /**
+     * Código interno a partir de un texto: mayúsculas, sin acentos y con «_» entre
+     * palabras («Plan Online 15» ⇒ «PLAN_ONLINE_15», «Plan Ñ» ⇒ «PLAN_N»). Vacío si
+     * el texto no tiene letras ni números.
+     */
+    public static String codigo(String texto) {
+        if (texto == null) return "";
+        return sinAcentos(texto).replaceAll("[^A-Z0-9]+", "_").replaceAll("^_+|_+$", "");
+    }
+
+    /** Primera palabra del texto, en mayúsculas y sin acentos («IBERDROLA CLIENTES» ⇒ «IBERDROLA»). */
+    public static String primeraPalabra(String texto) {
+        if (texto == null) return "";
+        for (String parte : sinAcentos(texto).split("[^A-Z0-9]+"))
+            if (!parte.isEmpty()) return parte;
+        return "";
+    }
+
+    private static String sinAcentos(String texto) {
+        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "").toUpperCase(Locale.ROOT);
+    }
 }

@@ -3,6 +3,7 @@ package api.aura.service.mcas;
 import api.aura.dto.mcas.McasSimulacionDTO;
 import api.aura.entity.Contrato;
 import api.aura.entity.mcas.McasConjuntoReglas;
+import api.aura.entity.mcas.McasReglaComision;
 import api.aura.repository.mcas.McasConjuntoReglasRepository;
 import api.aura.repository.mcas.McasReglaComisionRepository;
 import api.aura.service.ModuloConfiguracionService;
@@ -19,8 +20,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
- * Prueba un conjunto de reglas (esté o no publicado) con los datos de un
- * contrato real. Solo lee: no crea propuestas, servicios ni auditoría.
+ * «Probar con un contrato»: prueba una tabla de comisiones (esté o no activa) con
+ * los datos de un contrato real. Solo lee: no crea propuestas, servicios ni
+ * auditoría. Todo lo que devuelve para leer va en texto para el usuario.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,13 +40,14 @@ public class McasSimulacionService {
     @Transactional(readOnly = true)
     public McasSimulacionDTO simular(Integer idConjunto, String referenciaContrato) {
         McasConjuntoReglas conjunto = conjuntoRepo.findById(idConjunto)
-                .orElseThrow(() -> new IllegalArgumentException("Conjunto de reglas no encontrado: " + idConjunto));
+                .orElseThrow(() -> new IllegalArgumentException("No existe la tabla de comisiones " + idConjunto + "."));
         Contrato contrato = localizador.buscarUno(referenciaContrato);
         List<String> avisos = avisosDeAplicacion(conjunto, contrato);
 
         McasSimulacionDTO.McasSimulacionDTOBuilder dto = McasSimulacionDTO.builder()
                 .idContrato(contrato.getId()).numeroContrato(contrato.getContrato())
                 .idConjunto(conjunto.getId()).codigoConjunto(conjunto.getCodigo())
+                .nombreConjunto(McasRuleSetValidator.nombreConjunto(conjunto))
                 .estadoConjunto(conjunto.getEstado()).avisos(avisos)
                 .lineas(List.of()).calendario(List.of());
 
@@ -56,15 +59,17 @@ public class McasSimulacionService {
 
         ContextoCalculo ctx = propuestas.construirContexto(contrato, "simulacion-" + UUID.randomUUID());
         ResultadoCalculo res = motor.evaluarConjunto(ctx, conjunto);
-        String regla = res.getIdRegla() != null
-                ? reglaRepo.findById(res.getIdRegla()).map(r -> r.getCodigo()).orElse(null) : null;
+        McasReglaComision regla = res.getIdRegla() != null ? reglaRepo.findById(res.getIdRegla()).orElse(null) : null;
 
         return dto.resultado(res.getResultado().name())
                 .importe(res.getImporteTotal())
                 .numeroPagos(res.getNumeroPagos())
-                .reglaAplicada(regla)
+                .reglaAplicada(regla != null ? regla.getCodigo() : null)
+                .nombreRegla(regla != null ? McasRuleSetValidator.nombreRegla(regla) : null)
                 .metodoCalculo(res.getMetodoCalculo())
-                .mensajes(res.getAdvertencias() != null ? res.getAdvertencias() : List.of())
+                // El motor ya los da en texto para el usuario; paraOperador es idempotente
+                .mensajes(res.getAdvertencias() == null ? List.of()
+                        : res.getAdvertencias().stream().map(McasMensajes::paraOperador).toList())
                 .lineas(res.getLineas() == null ? List.of() : res.getLineas().stream()
                         .map(l -> new McasSimulacionDTO.Linea(l.getDescripcion(), l.getMetodo(), l.getImporte()))
                         .toList())
@@ -73,35 +78,51 @@ public class McasSimulacionService {
                 .build();
     }
 
-    /** Motivos por los que el cálculo automático real no usaría este conjunto para el contrato. */
+    /** Motivos por los que el cálculo automático real no usaría esta tabla para el contrato. */
     private List<String> avisosDeAplicacion(McasConjuntoReglas conjunto, Contrato c) {
         List<String> avisos = new ArrayList<>();
-        if (!"PUBLICADO".equals(conjunto.getEstado()))
-            avisos.add("El conjunto está en estado " + conjunto.getEstado()
-                    + ": el cálculo automático solo usa conjuntos publicados.");
+        String estado = switch (String.valueOf(conjunto.getEstado())) {
+            case "PUBLICADO" -> null;
+            case "BORRADOR" -> "en borrador";
+            case "VALIDADO" -> "validada, pero sin activar";
+            case "ARCHIVADO" -> "archivada";
+            default -> "sin activar";
+        };
+        if (estado != null)
+            avisos.add("La tabla está " + estado + ": el cálculo automático solo usa las tablas activas.");
         if (!Objects.equals(conjunto.getIdComercializadora(), c.getIdComercializadoraActual()))
-            avisos.add("La comercializadora actual del contrato no es la del conjunto.");
+            avisos.add("La comercializadora del contrato no es la de esta tabla.");
         if (conjunto.getIdGestora() != null && !Objects.equals(conjunto.getIdGestora(), c.getMcasIdGestora()))
-            avisos.add("El conjunto es solo para una gestora y el contrato tiene otra gestora MCAS (o ninguna).");
+            avisos.add("Esta tabla es solo para una gestora y el contrato tiene otra gestora (o ninguna).");
         String tipoPrecio = c.getMcasTipoPrecio() != null ? c.getMcasTipoPrecio().trim().toUpperCase() : null;
         if (tipoPrecio != null && !"AMBOS".equals(conjunto.getFasePrecio())
                 && !tipoPrecio.equals(conjunto.getFasePrecio()))
-            avisos.add("El contrato es de precio " + tipoPrecio + " y el conjunto es de fase " + conjunto.getFasePrecio() + ".");
+            avisos.add("El contrato es de " + tipoPrecio(tipoPrecio) + " y la tabla es para contratos de "
+                    + tipoPrecio(conjunto.getFasePrecio()) + ".");
         if (c.getFechaInicio() != null && conjunto.getVigenciaDesde() != null) {
             LocalDate inicio = api.aura.util.FechaNegocio.aLocalDate(c.getFechaInicio());
             boolean fuera = inicio.isBefore(conjunto.getVigenciaDesde())
                     || (conjunto.getVigenciaHasta() != null && inicio.isAfter(conjunto.getVigenciaHasta()));
             if (fuera)
                 avisos.add("La fecha de inicio del contrato (" + inicio.format(FECHA)
-                        + ") está fuera de la vigencia del conjunto.");
+                        + ") está fuera de las fechas de la tabla.");
         }
         if (!flags.estaActivo(McasProposalService.FLAG_ENABLED))
-            avisos.add("El indicador «Módulo» está desactivado: al guardar contratos no se generan propuestas.");
+            avisos.add("El interruptor «Módulo» está apagado: al guardar contratos no se calculan comisiones.");
         else if ("FIJO".equals(tipoPrecio) && !flags.estaActivo(McasProposalService.FLAG_FIJO))
-            avisos.add("El indicador «Precio fijo» está desactivado: los contratos a precio fijo quedan en revisión manual.");
+            avisos.add("El interruptor «Precio fijo» está apagado: los contratos a precio fijo quedan en revisión manual.");
         else if ("INDEXADO".equals(tipoPrecio) && !flags.estaActivo(McasProposalService.FLAG_INDEXADO))
-            avisos.add("El indicador «Indexado» está desactivado: los contratos indexados quedan en revisión manual.");
+            avisos.add("El interruptor «Indexado» está apagado: los contratos indexados quedan en revisión manual.");
         return avisos;
+    }
+
+    private static String tipoPrecio(String fase) {
+        return switch (String.valueOf(fase)) {
+            case "FIJO" -> "precio fijo";
+            case "INDEXADO" -> "precio indexado";
+            case "AMBOS" -> "precio fijo o indexado";
+            default -> "precio " + String.valueOf(fase).toLowerCase(java.util.Locale.ROOT);
+        };
     }
 
     private List<McasSimulacionDTO.Cuota> calendario(ResultadoCalculo res, Contrato c, ContextoCalculo ctx) {

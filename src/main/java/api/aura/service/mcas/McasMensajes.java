@@ -33,6 +33,23 @@ public final class McasMensajes {
     private static final String ERROR_CONFIGURACION =
             "La tabla de comisiones tiene un error de configuración; avise al administrador para que la revise.";
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final String AVISE_ADMINISTRADOR = "Avise al administrador para que lo revise.";
+
+    /** Estados de la propuesta con la etiqueta de la pantalla (mcasEstados.js). */
+    private static final Map<String, String> ESTADOS = Map.ofEntries(
+            Map.entry("PENDIENTE_CALCULO", "Pendiente de cálculo"),
+            Map.entry("REQUIERE_DATOS", "Faltan datos"),
+            Map.entry("REQUIERE_REVISION_MANUAL", "Revisión manual"),
+            Map.entry("ERROR_CALCULO", "Error de cálculo"),
+            Map.entry("PENDIENTE_VALIDACION", "Pendiente de validación"),
+            Map.entry("RECHAZADO", "Rechazada"),
+            Map.entry("EN_EDICION", "En edición"),
+            Map.entry("FINALIZADO_APROBADO", "Aprobada"),
+            Map.entry("FINALIZADO_EDITADO", "Aprobada con edición"),
+            Map.entry("FINALIZADO_NO_COMISIONABLE", "No comisionable"),
+            Map.entry("DESACTUALIZADO", "Desactualizada"),
+            Map.entry("CANCELADO", "Cancelada"),
+            Map.entry("SUPERADO", "Superada"));
 
     /**
      * Etiquetas que no son un campo de la pestaña MCAS o que describen un valor no
@@ -96,6 +113,11 @@ public final class McasMensajes {
                     "Según la tabla de comisiones, este contrato no genera comisión."),
             new Traduccion("^La pol[ií]tica de pago de la regla .+ no se puede leer; se reparte en un solo pago$", m ->
                     "No se ha podido leer el número de pagos de la regla; la comisión se reparte en un solo pago."),
+            new Traduccion("^Sin pol[ií]tica de retroces[ií][oó]n asignada: .*\\bcoinciden\\b.*$", m ->
+                    "No se ha podido mostrar la retrocesión potencial: hay varias políticas de retrocesión "
+                            + "publicadas que encajan con este contrato. " + AVISE_ADMINISTRADOR),
+            new Traduccion("^Sin pol[ií]tica de retroces[ií][oó]n asignada\\b.*$", m ->
+                    "No se ha podido mostrar la retrocesión potencial. " + AVISE_ADMINISTRADOR),
             new Traduccion("^Error interno\\b.*$", m ->
                     "No se ha podido calcular la comisión por un error inesperado; avise al administrador."),
             new Traduccion("^(?:(?:FIXED_AMOUNT|RANGE_LOOKUP|MATRIX_LOOKUP|MULTI_DIMENSION_LOOKUP|RATE_PER_MWH"
@@ -149,6 +171,13 @@ public final class McasMensajes {
             if (m.matches()) return traduccion.texto().apply(m);
         }
         return causaTecnica;
+    }
+
+    /** Estado de una propuesta como lo enseña la pantalla («PENDIENTE_VALIDACION» ⇒ «Pendiente de validación»). */
+    public static String estadoPropuesta(String estado) {
+        if (estado == null || estado.isBlank()) return "";
+        String etiqueta = ESTADOS.get(estado.trim().toUpperCase(Locale.ROOT));
+        return etiqueta != null ? etiqueta : legible(estado.trim().toLowerCase(Locale.ROOT));
     }
 
     /** Importe en formato español: «1.234,50 €». */

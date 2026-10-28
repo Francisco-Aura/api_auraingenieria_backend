@@ -46,6 +46,55 @@ class McasConfigurationControllerTest {
     }
 
     @Test
+    void producto_sin_codigo_lo_genera_desde_el_nombre_unico_en_la_comercializadora() {
+        var productos = mock(McasProductoComercialRepository.class);
+        var controller = new McasProductosController(productos);
+        when(productos.existsByIdComercializadoraAndCodigo(7, "PLAN_PERSONALIZADO")).thenReturn(true);
+        when(productos.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = controller.crear(McasProductoComercial.builder().idComercializadora(7).codigo(" ")
+                .nombre(" Plan Personalizado ").tipoPrecio("FIJO").tipoSuministro("LUZ").build());
+        var otro = controller.crear(McasProductoComercial.builder().idComercializadora(8)
+                .nombre("Plan Online · Ñ").tipoPrecio("FIJO").tipoSuministro("LUZ").build());
+
+        assertThat(respuesta.getStatusCode().value()).isEqualTo(200);
+        assertThat(((McasProductoComercial) respuesta.getBody()).getCodigo()).isEqualTo("PLAN_PERSONALIZADO_2");
+        assertThat(((McasProductoComercial) respuesta.getBody()).getNombre()).isEqualTo("Plan Personalizado");
+        assertThat(((McasProductoComercial) otro.getBody()).getCodigo()).isEqualTo("PLAN_ONLINE_N");
+    }
+
+    @Test
+    void producto_editado_sin_codigo_conserva_el_que_tenia_y_los_errores_se_explican_sin_codigos_internos() {
+        var productos = mock(McasProductoComercialRepository.class);
+        var controller = new McasProductosController(productos);
+        var guardado = McasProductoComercial.builder().id(5).idComercializadora(7).codigo("PLAN_ONLINE")
+                .nombre("Plan Online").tipoPrecio("FIJO").tipoSuministro("LUZ").build();
+        when(productos.findById(5)).thenReturn(Optional.of(guardado));
+        when(productos.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var editado = controller.actualizar(5, McasProductoComercial.builder().idComercializadora(7).codigo("")
+                .nombre("Plan Online 2026").tipoPrecio("FIJO").tipoSuministro("LUZ").build());
+        assertThat(((McasProductoComercial) editado.getBody()).getCodigo()).isEqualTo("PLAN_ONLINE");
+
+        assertThat(controller.crear(McasProductoComercial.builder().idComercializadora(7).nombre("X")
+                .tipoPrecio("OTRO").tipoSuministro("LUZ").build()).getBody())
+                .isEqualTo(Map.of("error", "Elija el tipo de precio del producto: fijo o indexado."));
+        assertThat(controller.crear(McasProductoComercial.builder().idComercializadora(7).nombre("X")
+                .tipoPrecio("FIJO").tipoSuministro("AGUA").build()).getBody())
+                .isEqualTo(Map.of("error", "Elija el tipo de suministro del producto: luz o gas."));
+        assertThat(controller.crear(McasProductoComercial.builder().idComercializadora(7).nombre(" ")
+                .tipoPrecio("FIJO").tipoSuministro("LUZ").build()).getBody())
+                .isEqualTo(Map.of("error", "Indique el nombre del producto."));
+        assertThat(controller.crear(McasProductoComercial.builder().nombre("X")
+                .tipoPrecio("FIJO").tipoSuministro("LUZ").build()).getBody())
+                .isEqualTo(Map.of("error", "Elija la comercializadora del producto."));
+        assertThat(controller.crear(McasProductoComercial.builder().idComercializadora(7).nombre("X")
+                .tipoPrecio("FIJO").tipoSuministro("LUZ").activoDesde(java.time.LocalDate.of(2026, 2, 1))
+                .activoHasta(java.time.LocalDate.of(2026, 1, 1)).build()).getBody())
+                .isEqualTo(Map.of("error", "La fecha «Activo hasta» no puede ser anterior a «Activo desde»."));
+    }
+
+    @Test
     void listado_de_productos_sin_filtros_incluye_los_dados_de_baja() {
         var productos = mock(McasProductoComercialRepository.class);
         var controller = new McasProductosController(productos);

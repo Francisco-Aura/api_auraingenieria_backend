@@ -11,7 +11,7 @@ import java.time.LocalDate;
 public class McasPoliticaRetrocesion {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    /** Clave estable para semillas y administración (V20260929_1). */
+    /** Clave estable para la administración (V20260929_1); si llega vacía, se genera. */
     @Column(unique = true, length = 100)
     private String codigo;
     @Column(name = "id_comercializadora", nullable = false)

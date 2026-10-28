@@ -558,4 +558,65 @@ class McasProposalServiceTest {
         verify(servicioRepo).save(servicio.capture());
         assertThat(servicio.getValue().getImporte()).isEqualTo(100.56);
     }
+
+    @Test
+    void los_mensajes_para_el_usuario_van_con_tildes_en_usted_y_sin_codigos_de_estado() {
+        Contrato contrato = contratoBase();
+        String hash = snapshots.capturar(contrato).hash();
+        when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
+        McasPropuesta enEdicion = McasPropuesta.builder().id(81L).idContrato(42).hashContrato(hash)
+                .estado("EN_EDICION").claveIdempotencia("e").tipoEvento("NUEVO_CONTRATO").numeroPagos(1).build();
+        when(propuestaRepo.findById(81L)).thenReturn(Optional.of(enEdicion));
+
+        assertThatThrownBy(() -> service.finalizarEditado(81L, BigDecimal.TEN, 13, null, "Ajuste"))
+                .hasMessage("El número de pagos debe estar entre 1 y 12.");
+        assertThatThrownBy(() -> service.finalizarEditado(81L, BigDecimal.TEN, 1, null, " "))
+                .hasMessage("Indique el motivo de la corrección.");
+        assertThatThrownBy(() -> service.rechazar(81L, " ")).hasMessage("Indique el motivo del rechazo.");
+        assertThatThrownBy(() -> service.aprobar(81L))
+                .hasMessage("Solo se puede aprobar una propuesta pendiente de validación (estado actual: «En edición»).");
+        assertThatThrownBy(() -> service.rechazar(81L, "No cuadra"))
+                .hasMessage("Solo se puede rechazar una propuesta pendiente de validación (estado actual: «En edición»).");
+        assertThatThrownBy(() -> service.abrirEdicion(81L)).hasMessage("Solo se puede completar a mano una propuesta "
+                + "rechazada o pendiente de revisión manual (estado actual: «En edición»).");
+
+        McasPropuesta pendiente = McasPropuesta.builder().id(82L).idContrato(42).hashContrato(hash)
+                .estado("PENDIENTE_VALIDACION").claveIdempotencia("p").tipoEvento("NUEVO_CONTRATO")
+                .importeCalculado(BigDecimal.TEN).numeroPagos(3).build();
+        when(propuestaRepo.findById(82L)).thenReturn(Optional.of(pendiente));
+        assertThatThrownBy(() -> service.finalizarEditado(82L, BigDecimal.TEN, 1, null, "Ajuste"))
+                .hasMessage("Solo se puede terminar la corrección de una propuesta en edición "
+                        + "(estado actual: «Pendiente de validación»).");
+        when(calendarioRepo.findByIdPropuestaOrderByNumeroPagoAsc(82L)).thenReturn(List.of(
+                McasCalendarioPago.builder().numeroPago(1).importe(BigDecimal.ONE).build(),
+                McasCalendarioPago.builder().numeroPago(2).importe(BigDecimal.ONE).build(),
+                McasCalendarioPago.builder().numeroPago(3).importe(BigDecimal.ONE).build()));
+        when(plazosRepo.findFirstByNumeroCuotas(3)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.aprobar(82L)).hasMessage("No existe una modalidad de pago de 3 cuotas: "
+                + "créela en Administración › Pago Plazos antes de aprobar la comisión.");
+
+        pendiente.setHashContrato("otro");
+        assertThatThrownBy(() -> service.aprobar(82L))
+                .hasMessage("El contrato ha cambiado desde el cálculo: recalcule la propuesta antes de aprobarla.");
+    }
+
+    @Test
+    void una_retrocesion_mal_configurada_se_avisa_en_texto_humano_y_lo_tecnico_queda_en_el_log() throws Exception {
+        Contrato contrato = contratoBase();
+        contrato.setMcasTipoPrecio("FIJO");
+        contrato.setMcasTipoSuministro("LUZ");
+        when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
+        when(flags.estaActivo(anyString())).thenReturn(false);       // módulo apagado: no pasa por el motor
+        when(propuestaRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(retrocesionPolicies.seleccionar(any())).thenThrow(new IllegalStateException(
+                "2 politicas de retrocesion PUBLICADAS coinciden con igual especificidad"));
+
+        McasPropuesta p = service.iniciarCalculo(42);
+
+        List<String> advertencias = new ObjectMapper().readValue(p.getAdvertenciasJson(),
+                new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+        assertThat(advertencias).contains("No se ha podido mostrar la retrocesión potencial: hay varias políticas "
+                + "de retrocesión publicadas que encajan con este contrato. Avise al administrador para que lo revise.");
+        assertThat(p.getAdvertenciasJson()).doesNotContain("politicas de retrocesion PUBLICADAS");
+    }
 }

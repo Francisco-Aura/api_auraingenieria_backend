@@ -63,22 +63,27 @@ public class EstrategiaMatrizLookup implements EstrategiaCalculo {
                 throw new McasCalculoException("MATRIX_LOOKUP: la celda " + e.getKey()
                         + " contiene resultados distintos");
             return List.of(ResultadoCalculo.LineaResultado.builder()
-                    .tipoLinea("COMISION_BASE").descripcion("Matriz: celda " + e.getKey())
+                    .tipoLinea("COMISION_BASE").descripcion(("MATRIX_LOOKUP".equals(regla.getMetodoCalculo())
+                            ? "Tabla de dos datos: " : "Tabla de varios datos: ") + valores(todos, ctx))
                     .metodo("MATRIX_LOOKUP").valorBase(ctx.getConsumoAnualKwh())
                     .importe(resultados.get(0)).idRegla(regla.getId()).build());
         }
         // Sin celda para los datos del contrato (fuera de la tabla, «N. Aplica»,
         // «Consultar»): la comisión se completa a mano (v2 §14). Solo son errores
         // de configuración las celdas ambiguas o sin importe.
+        String valores = valores(todos, ctx);
+        throw new McasRevisionManualException(Character.toUpperCase(valores.charAt(0)) + valores.substring(1)
+                + " fuera de la tabla de la regla " + EstrategiaRangoLookup.nombreRegla(regla)
+                + ": complete la comisión manualmente");
+    }
+
+    /** Valores del contrato en las dimensiones de la tabla: «consumo anual 35.000 kWh y potencia 20 kW». */
+    private static String valores(List<McasValorRango> todos, ContextoCalculo ctx) {
         List<String> valores = todos.stream().map(McasValorRango::getDimension).distinct()
-                .map(dim -> EstrategiaRangoLookup.describirValor(dim,
-                        EstrategiaRangoLookup.resolverInputNumerico(ctx, dim),
-                        EstrategiaRangoLookup.resolverInputTexto(ctx, dim)))
+                .map(dim -> EstrategiaRangoLookup.minuscula(EstrategiaRangoLookup.describirValor(ctx, dim)))
                 .collect(Collectors.toCollection(java.util.ArrayList::new));
-        for (int i = 1; i < valores.size(); i++)
-            valores.set(i, Character.toLowerCase(valores.get(i).charAt(0)) + valores.get(i).substring(1));
-        throw new McasRevisionManualException(String.join(" y ", valores) + " fuera de la tabla de la regla "
-                + EstrategiaRangoLookup.nombreRegla(regla) + ": complete la comisión manualmente");
+        if (valores.size() <= 1) return String.join("", valores);
+        return String.join(", ", valores.subList(0, valores.size() - 1)) + " y " + valores.get(valores.size() - 1);
     }
 
     private boolean coincideCelda(List<McasValorRango> dims, ContextoCalculo ctx) {

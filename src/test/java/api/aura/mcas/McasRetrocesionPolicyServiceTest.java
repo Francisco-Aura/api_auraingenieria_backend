@@ -32,8 +32,9 @@ import static org.mockito.Mockito.*;
 class McasRetrocesionPolicyServiceTest {
     private final McasPoliticaRetrocesionRepository repo = mock(McasPoliticaRetrocesionRepository.class);
     private final McasTramoRetrocesionRepository tramoRepo = mock(McasTramoRetrocesionRepository.class);
+    private final TBComercializadorasRepository comercializadoras = mock(TBComercializadorasRepository.class);
     private final McasRetrocesionPolicyService service = new McasRetrocesionPolicyService(repo, tramoRepo,
-            mock(TBComercializadorasRepository.class), mock(TBGestorasRepository.class));
+            comercializadoras, mock(TBGestorasRepository.class));
 
     /** Políticas y tramos «guardados» en memoria. */
     private final Map<Integer, McasPoliticaRetrocesion> politicas = new HashMap<>();
@@ -120,7 +121,7 @@ class McasRetrocesionPolicyServiceTest {
         assertThat(service.describir(prorrateo)).contains("Prorrateo a 365 días desde la activación. Nunca supera lo cobrado.");
         assertThat(service.describir(noAplica)).contains("No aplica retrocesión");
         assertThat(service.describir(iberdrola).orElseThrow()).isEqualTo(
-                "2.0TD — desde la activación: 0–90 días: 100 %; 90–180 días: 20 (unidad sin confirmar).");
+                "2.0TD — desde la activación: 0–90 días: 100 %; 90–180 días: 20 (tipo de valor sin elegir).");
         assertThat(service.describir(999)).isEmpty();
         assertThat(service.describir(null)).isEmpty();
     }
@@ -144,7 +145,8 @@ class McasRetrocesionPolicyServiceTest {
         McasTramoRetrocesion sinConfirmar = tramo("DIAS", 0, 90, "20");
         sinConfirmar.setTipoValor("SIN_CONFIRMAR");
         Integer a = guardada("BORRADOR", null, "PORCENTAJE", List.of(sinConfirmar));
-        assertThatThrownBy(() -> service.publicar(a)).hasMessageContaining("sin confirmar");
+        assertThatThrownBy(() -> service.publicar(a)).hasMessage("El tramo 0–90 días no tiene elegido el tipo de valor: "
+                + "elija porcentaje, factor o importe fijo y guarde la política antes de publicarla.");
 
         Integer b = guardada("BORRADOR", null, "PORCENTAJE", List.of(tramo("MESES", 0, 6, "1"), tramo("MESES", 3, 9, "0.5")));
         assertThatThrownBy(() -> service.publicar(b)).hasMessageContaining("se solapan");
@@ -213,7 +215,8 @@ class McasRetrocesionPolicyServiceTest {
 
         Integer publicada = guardada("PUBLICADO", "PYME", "PORCENTAJE", List.of(tramo("MESES", 0, 3, "1")));
         assertThatThrownBy(() -> service.actualizar(publicada, datos))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("BORRADOR");
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Solo se puede editar una política en borrador (esta está publicada).");
     }
 
     @Test void crear_valida_la_estructura_de_los_tramos() {
@@ -221,7 +224,12 @@ class McasRetrocesionPolicyServiceTest {
         assertThatThrownBy(() -> service.crear(alReves)).hasMessageContaining("mayor que");
 
         McasPoliticaRetrocesionDTO unidad = dto("PYME", tramoDto("AÑOS", 0, 3, "1"));
-        assertThatThrownBy(() -> service.crear(unidad)).hasMessageContaining("DIAS o MESES");
+        assertThatThrownBy(() -> service.crear(unidad)).hasMessage("La unidad del tramo debe ser días o meses.");
+
+        McasTramoRetrocesionDTO otroTipo = tramoDto("MESES", 0, 3, "1");
+        otroTipo.setTipoValor("PUNTOS");
+        assertThatThrownBy(() -> service.crear(dto("PYME", otroTipo)))
+                .hasMessage("Elija el tipo de valor del tramo: porcentaje, factor o importe fijo.");
 
         McasPoliticaRetrocesionDTO sinComercializadora = dto("PYME");
         sinComercializadora.setIdComercializadora(null);
@@ -232,9 +240,31 @@ class McasRetrocesionPolicyServiceTest {
         assertThat(service.crear(valida).getEstado()).isEqualTo("BORRADOR");
     }
 
+    @Test void sin_codigo_se_genera_uno_con_la_comercializadora_el_segmento_el_suministro_y_la_fecha() {
+        when(comercializadoras.findById(7)).thenReturn(Optional.of(api.aura.entity.tablas_maestras.TBComercializadoras
+                .builder().id(7).nombre("IBERDROLA CLIENTES S.A.U.").build()));
+        McasPoliticaRetrocesionDTO sinCodigo = dto("PYME", tramoDto("DIAS", 0, 90, "1"));
+        sinCodigo.setTipoSuministro("luz");
+        sinCodigo.setCodigo("  ");
+        when(repo.findByCodigo("RET-IBERDROLA-PYME-LUZ-20260101")).thenReturn(Optional.of(
+                McasPoliticaRetrocesion.builder().id(1).codigo("RET-IBERDROLA-PYME-LUZ-20260101").build()));
+
+        assertThat(service.crear(sinCodigo).getCodigo()).isEqualTo("RET-IBERDROLA-PYME-LUZ-20260101-2");
+
+        McasPoliticaRetrocesionDTO generica = dto(null, tramoDto("DIAS", 0, 90, "1"));
+        assertThat(service.crear(generica).getCodigo()).isEqualTo("RET-IBERDROLA-20260101");
+
+        // Al editar, un código vacío conserva el que tenía
+        Integer id = politicas.values().stream().filter(p -> "RET-IBERDROLA-20260101".equals(p.getCodigo()))
+                .findFirst().orElseThrow().getId();
+        assertThat(service.actualizar(id, dto(null, tramoDto("DIAS", 0, 90, "1"))).getCodigo())
+                .isEqualTo("RET-IBERDROLA-20260101");
+    }
+
     @Test void eliminar_solo_borradores_sin_propuestas() {
         Integer publicada = guardada("PUBLICADO", null, "PRORRATEO", List.of());
-        assertThatThrownBy(() -> service.eliminar(publicada)).hasMessageContaining("BORRADOR");
+        assertThatThrownBy(() -> service.eliminar(publicada))
+                .hasMessage("Solo se puede eliminar una política en borrador (esta está publicada).");
 
         Integer usada = guardada("BORRADOR", null, "PRORRATEO", List.of());
         when(repo.contarPropuestas(usada)).thenReturn(2L);

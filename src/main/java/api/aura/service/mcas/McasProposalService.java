@@ -218,7 +218,8 @@ public class McasProposalService {
         McasPropuesta p = cargar(propuestaId);
         boolean cerradaSinServicio = "FINALIZADO_NO_COMISIONABLE".equals(p.getEstado()) && p.getIdServicioCreado() == null;
         if (ESTADOS_TERMINALES.contains(p.getEstado()) && !"DESACTUALIZADO".equals(p.getEstado()) && !cerradaSinServicio)
-            throw new IllegalStateException("No se puede recalcular en estado " + p.getEstado());
+            throw new IllegalStateException("Esta propuesta no se puede recalcular (estado actual: «"
+                    + McasMensajes.estadoPropuesta(p.getEstado()) + "»).");
         Integer idContrato = p.getIdContrato();
         String prev = p.getEstado();
         String usuario = usuario();
@@ -370,9 +371,10 @@ public class McasProposalService {
         String usuario = usuario();
         McasPropuesta p = cargar(propuestaId);
         if (!"PENDIENTE_VALIDACION".equals(p.getEstado()))
-            throw new IllegalStateException("Solo se puede aprobar desde PENDIENTE_VALIDACION. Estado: " + p.getEstado());
+            throw new IllegalStateException("Solo se puede aprobar una propuesta pendiente de validación (estado actual: «"
+                    + McasMensajes.estadoPropuesta(p.getEstado()) + "»).");
         if (p.getIdServicioCreado() != null)
-            throw new IllegalStateException("Ya existe servicio #" + p.getIdServicioCreado());
+            throw new IllegalStateException("Esta propuesta ya creó el servicio #" + p.getIdServicioCreado() + ".");
 
         Integer idContrato = p.getIdContrato();
         Contrato c = contratoRepo.findByIdForUpdate(idContrato)
@@ -405,11 +407,12 @@ public class McasProposalService {
     @Transactional
     public McasPropuesta rechazar(Long propuestaId, String motivo) {
         if (motivo == null || motivo.isBlank())
-            throw new IllegalArgumentException("Motivo de rechazo obligatorio");
+            throw new IllegalArgumentException("Indique el motivo del rechazo.");
         String usuario = usuario();
         McasPropuesta p = cargar(propuestaId);
         if (!"PENDIENTE_VALIDACION".equals(p.getEstado()))
-            throw new IllegalStateException("Solo se puede rechazar desde PENDIENTE_VALIDACION. Estado: " + p.getEstado());
+            throw new IllegalStateException("Solo se puede rechazar una propuesta pendiente de validación (estado actual: «"
+                    + McasMensajes.estadoPropuesta(p.getEstado()) + "»).");
         String prev = p.getEstado();
         p.setEstado("RECHAZADO"); p.setMotivoRechazo(motivo);
         p.setActualizadoPor(usuario); p.setActualizadoEn(LocalDateTime.now());
@@ -436,8 +439,8 @@ public class McasProposalService {
         String usuario = usuario();
         McasPropuesta p = cargar(propuestaId);
         if (!ESTADOS_EDITABLES.contains(p.getEstado()))
-            throw new IllegalStateException("Solo se puede editar una propuesta rechazada o pendiente de revisión manual. Estado: "
-                    + p.getEstado());
+            throw new IllegalStateException("Solo se puede completar a mano una propuesta rechazada o pendiente de "
+                    + "revisión manual (estado actual: «" + McasMensajes.estadoPropuesta(p.getEstado()) + "»).");
         // Una comisión por contrato y evento: si ya hay una aprobada, la propuesta se
         // queda como está y el usuario ve qué comisión existe, en vez de editar algo
         // que al finalizar se rechazaría.
@@ -461,21 +464,22 @@ public class McasProposalService {
         String usuario = usuario();
         McasPropuesta p = cargar(propuestaId);
         if (!"EN_EDICION".equals(p.getEstado()))
-            throw new IllegalStateException("Solo se puede finalizar desde EN_EDICION. Estado: " + p.getEstado());
+            throw new IllegalStateException("Solo se puede terminar la corrección de una propuesta en edición (estado actual: «"
+                    + McasMensajes.estadoPropuesta(p.getEstado()) + "»).");
         if (p.getIdServicioCreado() != null)
-            throw new IllegalStateException("Ya existe servicio #" + p.getIdServicioCreado());
+            throw new IllegalStateException("Esta propuesta ya creó el servicio #" + p.getIdServicioCreado() + ".");
         if (importeDefinitivo != null && importeDefinitivo.signum() < 0)
-            throw new IllegalArgumentException("El importe definitivo no puede ser negativo");
+            throw new IllegalArgumentException("El importe definitivo no puede ser negativo.");
         // Al céntimo, como las cuotas: «100,555» creaba un servicio de 100.555 con cuotas
         // que sumaban 100,56
         if (importeDefinitivo != null) importeDefinitivo = importeDefinitivo.setScale(2, java.math.RoundingMode.HALF_UP);
         // Una propuesta que el motor no calculó (revisión manual) no tiene importe al que volver.
         if (importeDefinitivo == null && p.getImporteCalculado() == null)
-            throw new IllegalArgumentException("Indique el importe definitivo de la comisión");
+            throw new IllegalArgumentException("Indique el importe definitivo de la comisión.");
         if (numeroPagos != null && (numeroPagos < 1 || numeroPagos > 12))
-            throw new IllegalArgumentException("El numero de pagos debe estar entre 1 y 12");
+            throw new IllegalArgumentException("El número de pagos debe estar entre 1 y 12.");
         if (motivoEdicion == null || motivoEdicion.isBlank())
-            throw new IllegalArgumentException("El motivo de edicion es obligatorio");
+            throw new IllegalArgumentException("Indique el motivo de la corrección.");
 
         Integer idContrato = p.getIdContrato();
         Contrato c = contratoRepo.findByIdForUpdate(idContrato)
@@ -485,7 +489,7 @@ public class McasProposalService {
         // de pago ni comercializadora.
         if (c.getFechaInicio() == null || c.getIdComercializadoraActual() == null || c.getIdComercializadoraActual() == 0)
             throw new IllegalArgumentException(
-                    "Complete la fecha de inicio y la comercializadora del contrato antes de crear el servicio");
+                    "Complete la fecha de inicio y la comercializadora del contrato antes de crear el servicio.");
         exigirSinComisionPrevia(p);
         // La vigencia se comprueba antes de tocar la propuesta o su calendario. La
         // excepción conserva únicamente el cambio a DESACTUALIZADO y su auditoría.
@@ -550,7 +554,7 @@ public class McasProposalService {
 
     private McasPropuesta cargar(Long id) {
         return propuestaRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Propuesta MCAS no encontrada: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("No existe la propuesta de comisión #" + id + "."));
     }
 
     private String usuario() {
@@ -684,7 +688,7 @@ public class McasProposalService {
         auditoria.registrar(p.getId(), p.getIdContrato(), "PROPUESTA_DESACTUALIZADA",
                 anterior, "DESACTUALIZADO", Map.of("hash_actual", hashActual), usuario, null);
         throw new McasPropuestaDesactualizadaException(
-                "El contrato ha cambiado desde el calculo. Recalcula la propuesta antes de aprobar.");
+                "El contrato ha cambiado desde el cálculo: recalcule la propuesta antes de aprobarla.");
     }
 
     private LocalDate fecha(java.util.Date valor, LocalDate porDefecto) {
@@ -746,11 +750,12 @@ public class McasProposalService {
         LocalDate fechaEf = fecha(c.getFechaInicio(), LocalDate.now());
 
         String codigoTarifa = resolverCodigoTarifa(c);
-        String codigoProducto = c.getMcasIdProductoComercial() != null
-                ? productoRepo.findById(c.getMcasIdProductoComercial()).map(McasProductoComercial::getCodigo).orElse(null) : null;
+        McasProductoComercial producto = c.getMcasIdProductoComercial() != null
+                ? productoRepo.findById(c.getMcasIdProductoComercial()).orElse(null) : null;
+        String codigoProducto = producto != null ? producto.getCodigo() : null;
 
-        // Hoja2: «POTENCIA P6 (O MAYOR CONTRATADA)». Si el contrato no trae potencia
-        // de cálculo se usa la mayor de P1–P6; no cambia el hash, porque las
+        // Potencia de cálculo: la del contrato o, si no la trae, la mayor contratada
+        // (P1–P6, «potencia P6 o mayor contratada»); no cambia el hash, porque las
         // potencias ya forman parte de la instantánea.
         BigDecimal potencia = c.getMcasPotenciaCalculo();
         String potenciaOrigen = potencia != null ? "CONTRATO" : null;
@@ -775,6 +780,7 @@ public class McasProposalService {
                 .codigoTarifaAcceso(codigoTarifa)
                 .idProductoComercial(c.getMcasIdProductoComercial())
                 .codigoProductoComercial(codigoProducto)
+                .nombreProductoComercial(producto != null ? producto.getNombre() : null)
                 .potenciaCalculoKw(potencia)
                 .potenciaOrigen(potenciaOrigen)
                 .consumoAnualKwh(kwh)
@@ -922,8 +928,9 @@ public class McasProposalService {
             // Un fallo de la BD no es una política mal configurada (ver MotorMcas)
             throw e;
         } catch (RuntimeException e) {
+            // Lo técnico, al log; al usuario, el aviso en texto humano
             log.warn("MCAS contrato={} sin politica de retrocesion: {}", ctx.getIdContrato(), e.getMessage(), e);
-            advertencias.add("Sin politica de retrocesion asignada: " + e.getMessage());
+            advertencias.add(McasMensajes.paraOperador("Sin politica de retrocesion asignada: " + e.getMessage()));
             return null;
         }
     }
@@ -1011,14 +1018,14 @@ public class McasProposalService {
 
         List<McasCalendarioPago> pagos = calendarioRepo.findByIdPropuestaOrderByNumeroPagoAsc(p.getId());
         if (pagos.size() > 12)
-            throw new IllegalStateException("El calendario MCAS supera el limite de 12 pagos del servicio");
+            throw new IllegalStateException("La comisión tiene más de 12 pagos y un servicio admite como mucho 12.");
         int cuotas = pagos.isEmpty() ? 1 : pagos.size();
         // El informe «Servicios pendientes de pago» cruza servicios_pagos con
         // tbpago_plazos: un servicio sin modalidad no aparece nunca en el.
         TBPagoPlazos plazos = pagoPlazosRepo.findFirstByNumeroCuotas(cuotas)
                 .orElseThrow(() -> new IllegalStateException(
                         "No existe una modalidad de pago de " + cuotas + " cuota" + (cuotas == 1 ? "" : "s")
-                        + ": creela en Administracion > Pago Plazos antes de aprobar la comision"));
+                        + ": créela en Administración › Pago Plazos antes de aprobar la comisión."));
 
         Servicio s = new Servicio();
         s.setFecha(new java.sql.Date(System.currentTimeMillis()));
@@ -1043,8 +1050,8 @@ public class McasProposalService {
             s.setFechaInicioServicio(new java.sql.Date(c.getFechaInicio().getTime()));
         if (c.getFechaFin() != null)
             s.setFechaFinServicio(new java.sql.Date(c.getFechaFin().getTime()));
-        s.setObservaciones("Comision generada por MCAS. Propuesta #" + p.getId() + ". "
-                + origenImporte(p) + ". Aprobado: " + usuario);
+        s.setObservaciones("Comisión generada por MCAS. Propuesta #" + p.getId() + ". "
+                + origenImporte(p) + ". Aprobada por: " + usuario + ".");
         s = servicioRepo.save(s);
         crearServiciosPagos(s, pagos, plazos, imp);
         return s;
@@ -1059,18 +1066,29 @@ public class McasProposalService {
         if (p.getImporteCalculado() != null && p.getTrazaCalculoJson() != null) {
             try {
                 var traza = mapper.readTree(p.getTrazaCalculoJson());
-                String regla = traza.path("regla").asText(null);
+                // Nombres legibles si los hay (traza nueva); si no, los códigos
+                String regla = textoTraza(traza, "regla_nombre", "regla");
                 if (regla != null) {
-                    String conjunto = traza.path("conjunto").asText(null);
+                    String conjunto = textoTraza(traza, "conjunto_nombre", "conjunto");
                     String version = traza.path("conjunto_version").asText(null);
-                    return "Regla " + regla + (conjunto != null
-                            ? " (conjunto " + conjunto + (version != null ? " v " + version : "") + ")" : "");
+                    return "Regla «" + regla + "»" + (conjunto != null
+                            ? " de la tabla de comisiones «" + conjunto + "»" + (version != null ? " (versión " + version + ")" : "")
+                            : "");
                 }
             } catch (Exception e) {
                 log.warn("MCAS propuesta={} traza ilegible al crear el servicio: {}", p.getId(), e.getMessage());
             }
         }
         return "Importe introducido manualmente";
+    }
+
+    /** Primer texto no vacío de la traza entre las claves dadas. */
+    private static String textoTraza(com.fasterxml.jackson.databind.JsonNode traza, String... claves) {
+        for (String clave : claves) {
+            String valor = traza.path(clave).asText(null);
+            if (valor != null && !valor.isBlank()) return valor.trim();
+        }
+        return null;
     }
 
     private void crearServiciosPagos(Servicio s, List<McasCalendarioPago> pagos, TBPagoPlazos plazos,

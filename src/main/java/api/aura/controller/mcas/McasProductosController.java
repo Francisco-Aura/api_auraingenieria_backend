@@ -2,6 +2,7 @@ package api.aura.controller.mcas;
 
 import api.aura.entity.mcas.McasProductoComercial;
 import api.aura.repository.mcas.McasProductoComercialRepository;
+import api.aura.service.mcas.engine.McasTexto;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,11 +35,14 @@ public class McasProductosController {
         return ResponseEntity.ok(repo.findAll(Sort.by("idComercializadora", "codigo")));
     }
 
+    /** Sin código, se genera a partir del nombre («Plan Online» ⇒ PLAN_ONLINE; PLAN_ONLINE_2 si ya existe). */
     @PostMapping
     public ResponseEntity<?> crear(@RequestBody McasProductoComercial p) {
         String error = validar(p);
         if (error != null) return ResponseEntity.badRequest().body(Map.of("error", error));
         p.setId(null); if (p.getActivo() == null) p.setActivo(true);
+        p.setNombre(p.getNombre().trim());
+        p.setCodigo(vacio(p.getCodigo()) ? codigoDesdeNombre(p.getIdComercializadora(), p.getNombre()) : p.getCodigo().trim());
         return ResponseEntity.ok(repo.save(p));
     }
 
@@ -48,7 +52,9 @@ public class McasProductosController {
         if (error != null) return ResponseEntity.badRequest().body(Map.of("error", error));
         return repo.findById(id).map(p -> {
             p.setIdComercializadora(datos.getIdComercializadora()); p.setIdGestora(datos.getIdGestora());
-            p.setCodigo(datos.getCodigo()); p.setNombre(datos.getNombre());
+            // Vacío conserva el que tenía: las reglas buscan el producto por su código
+            if (!vacio(datos.getCodigo())) p.setCodigo(datos.getCodigo().trim());
+            p.setNombre(datos.getNombre().trim());
             p.setTipoPrecio(datos.getTipoPrecio()); p.setTipoSuministro(datos.getTipoSuministro());
             p.setCodigoZona(datos.getCodigoZona()); p.setCodigoGo(datos.getCodigoGo());
             p.setActivoDesde(datos.getActivoDesde()); p.setActivoHasta(datos.getActivoHasta());
@@ -66,17 +72,32 @@ public class McasProductosController {
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
+    /** Motivo por el que no se puede guardar (con las etiquetas del formulario), o null. El código puede ir vacío. */
     private String validar(McasProductoComercial p) {
-        if (p.getIdComercializadora() == null) return "La comercializadora es obligatoria";
-        if (p.getCodigo() == null || p.getCodigo().isBlank()) return "El codigo es obligatorio";
-        if (p.getNombre() == null || p.getNombre().isBlank()) return "El nombre es obligatorio";
+        if (p.getIdComercializadora() == null || p.getIdComercializadora() == 0)
+            return "Elija la comercializadora del producto.";
+        if (vacio(p.getNombre())) return "Indique el nombre del producto.";
         if (!List.of("FIJO", "INDEXADO").contains(p.getTipoPrecio()))
-            return "tipoPrecio debe ser FIJO o INDEXADO";
+            return "Elija el tipo de precio del producto: fijo o indexado.";
         if (!List.of("LUZ", "GAS").contains(p.getTipoSuministro()))
-            return "tipoSuministro debe ser LUZ o GAS";
+            return "Elija el tipo de suministro del producto: luz o gas.";
         if (p.getActivoDesde() != null && p.getActivoHasta() != null
                 && p.getActivoHasta().isBefore(p.getActivoDesde()))
-            return "activoHasta no puede ser anterior a activoDesde";
+            return "La fecha «Activo hasta» no puede ser anterior a «Activo desde».";
         return null;
+    }
+
+    /** Código a partir del nombre, único en la comercializadora (sufijo _2, _3…; máx. 100 caracteres). */
+    private String codigoDesdeNombre(Integer idComercializadora, String nombre) {
+        String base = McasTexto.codigo(nombre);
+        if (base.isEmpty()) base = "PRODUCTO";
+        if (base.length() > 95) base = base.substring(0, 95);
+        String codigo = base;
+        for (int n = 2; repo.existsByIdComercializadoraAndCodigo(idComercializadora, codigo); n++) codigo = base + "_" + n;
+        return codigo;
+    }
+
+    private static boolean vacio(String texto) {
+        return texto == null || texto.isBlank();
     }
 }

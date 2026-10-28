@@ -292,4 +292,23 @@ class McasMensajesTest {
         assertThat(McasMensajes.camposDe("Ninguna regla coincide en conjunto 'X'")).isEmpty();
         assertThat(McasMensajes.camposDe(null)).isEmpty();
     }
+
+    @Test
+    void retrocesion_mal_configurada_en_texto_humano_tambien_en_propuestas_antiguas() {
+        assertThat(McasMensajes.paraOperador("Sin politica de retrocesion asignada: 2 politicas de retrocesion "
+                + "PUBLICADAS coinciden con igual especificidad")).isEqualTo("No se ha podido mostrar la retrocesión "
+                + "potencial: hay varias políticas de retrocesión publicadas que encajan con este contrato. "
+                + "Avise al administrador para que lo revise.");
+        assertThat(McasMensajes.paraOperador("Sin politica de retrocesion asignada: NullPointerException"))
+                .isEqualTo("No se ha podido mostrar la retrocesión potencial. Avise al administrador para que lo revise.");
+    }
+
+    @Test
+    void estado_de_la_propuesta_con_la_etiqueta_de_la_pantalla() {
+        assertThat(McasMensajes.estadoPropuesta("PENDIENTE_VALIDACION")).isEqualTo("Pendiente de validación");
+        assertThat(McasMensajes.estadoPropuesta("REQUIERE_REVISION_MANUAL")).isEqualTo("Revisión manual");
+        assertThat(McasMensajes.estadoPropuesta("FINALIZADO_EDITADO")).isEqualTo("Aprobada con edición");
+        assertThat(McasMensajes.estadoPropuesta("OTRO_ESTADO")).isEqualTo("Otro estado");
+        assertThat(McasMensajes.estadoPropuesta(null)).isEqualTo("");
+    }
 }

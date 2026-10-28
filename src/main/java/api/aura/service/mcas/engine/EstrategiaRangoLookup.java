@@ -48,19 +48,32 @@ public class EstrategiaRangoLookup implements EstrategiaCalculo {
         if (coincidentes.size() == 1) {
             McasValorRango r = coincidentes.get(0);
             return List.of(ResultadoCalculo.LineaResultado.builder()
-                    .tipoLinea("COMISION_BASE").descripcion("Tabla de rangos: " + dim + " = " + (input != null ? FormatoMcas.numero(input) : inputTexto))
+                    .tipoLinea("COMISION_BASE").descripcion("Tabla por tramos: " + minuscula(describirValor(ctx, dim)))
                     .metodo("RANGE_LOOKUP").valorBase(input)
                     .importe(r.getValorResultado()).idRegla(regla.getId()).build());
         }
-        // Un valor que la tabla no contempla (p. ej. «Consultar» en el Excel) no es un
+        // Un valor que la tabla no contempla (p. ej. un tramo que la comercializadora no paga) no es un
         // error de configuración: la comisión se completa a mano (v2 §14).
-        throw new McasRevisionManualException(describirValor(dim, input, inputTexto)
+        throw new McasRevisionManualException(describirValor(ctx, dim)
                 + " fuera de la tabla de la regla " + nombreRegla(regla) + ": complete la comisión manualmente");
     }
 
     /** Código de la regla para los mensajes (o su id si aún no tiene código). */
     static String nombreRegla(McasReglaComision regla) {
         return regla.getCodigo() != null ? regla.getCodigo() : "#" + regla.getId();
+    }
+
+    /** Valor del contrato en una dimensión de tabla, en palabras; el producto, por su nombre si lo tiene. */
+    static String describirValor(ContextoCalculo ctx, String dim) {
+        if ("codigo_producto".equals(dim) && ctx.getNombreProductoComercial() != null
+                && !ctx.getNombreProductoComercial().isBlank())
+            return "Producto «" + ctx.getNombreProductoComercial().trim() + "»";
+        return describirValor(dim, resolverInputNumerico(ctx, dim), resolverInputTexto(ctx, dim));
+    }
+
+    /** Primera letra en minúscula para seguir la frase («Consumo anual…» ⇒ «consumo anual…»). */
+    static String minuscula(String texto) {
+        return texto == null || texto.isEmpty() ? texto : Character.toLowerCase(texto.charAt(0)) + texto.substring(1);
     }
 
     /** Valor del contrato en una dimensión de tabla, en palabras: «Consumo anual 250.000 kWh». */

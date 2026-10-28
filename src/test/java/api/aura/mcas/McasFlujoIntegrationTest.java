@@ -170,10 +170,14 @@ class McasFlujoIntegrationTest {
 
         assertThat(prueba.getResultado()).isEqualTo("CALCULADO");
         assertThat(prueba.getReglaAplicada()).isEqualTo("IT_FEE_44");
+        assertThat(prueba.getNombreRegla()).isEqualTo("IT_FEE_44");             // sin nombre legible, el código
+        assertThat(prueba.getNombreConjunto()).isEqualTo(borrador.getCodigo());
         assertThat(prueba.getImporte()).isEqualByComparingTo("257.40");     // 58,5 MWh × 10 €/MWh × 44 %
         assertThat(prueba.getCalendario()).hasSize(2);
         assertThat(prueba.getLineas().get(0).descripcion()).isEqualTo("58,5 MWh × 10 €/MWh × 44 %");
-        assertThat(prueba.getAvisos()).anyMatch(a -> a.contains("BORRADOR"));
+        assertThat(prueba.getAvisos()).contains("La tabla está en borrador: el cálculo automático solo usa las tablas activas.");
+        assertThat(String.join(" ", prueba.getAvisos())).doesNotContain("conjunto").doesNotContain("indicador")
+                .doesNotContain("BORRADOR");
         assertThat(prueba.getDatosContrato()).containsEntry("tarifaAcceso", "3.0TD").containsEntry("codigoProducto", "IT_PLAN");
         assertThat(propuestas.findByIdContratoOrderByCreadoEnDesc(contrato.getId())).hasSize((int) propuestasAntes);
         assertThat(servicios.count()).isEqualTo(serviciosAntes);

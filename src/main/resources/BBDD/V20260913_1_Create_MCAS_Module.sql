@@ -4,7 +4,10 @@
 --
 -- CÓMO EJECUTARLO
 --   1. Ejecutar este script completo contra la BBDD de Aura (MariaDB).
---   2. Después, ejecutar V20260913_2_Seed_MCAS_Fixed_Confirmed.sql.
+--   2. Después, V20260929_1_MCAS_Conformidad.sql y V20260930_1_MCAS_Usabilidad.sql.
+--   Solo esquema: no carga tablas de comisiones, reglas, productos ni
+--   políticas. El módulo arranca vacío y el administrador da de alta cada
+--   comercializadora desde Configuración MCAS.
 --   Es idempotente: se puede relanzar sin riesgo (IF NOT EXISTS en todo),
 --   también si un intento anterior se quedó a medias.
 --
@@ -131,7 +134,7 @@ CREATE TABLE IF NOT EXISTS mcas_valores_rango (
 CREATE INDEX IF NOT EXISTS idx_mvr_reg ON mcas_valores_rango(id_regla, dimension);
 
 -- -----------------------------------------------
--- 6. Políticas de retrocesión (estructura para la fase 3)
+-- 6. Políticas de retrocesión (informativas: «retrocesión potencial»)
 -- -----------------------------------------------
 CREATE TABLE IF NOT EXISTS mcas_politicas_retrocesion (
     id                    INT           AUTO_INCREMENT PRIMARY KEY,
@@ -264,7 +267,7 @@ CREATE INDEX IF NOT EXISTS idx_ma_con ON mcas_auditoria(id_contrato);
 CREATE INDEX IF NOT EXISTS idx_ma_fec ON mcas_auditoria(fecha_evento);
 
 -- -----------------------------------------------
--- 11. Indicadores (MCAS desactivado por defecto)
+-- 11. Interruptores (MCAS desactivado por defecto; aquí nunca se encienden)
 -- -----------------------------------------------
 INSERT INTO configuracion_modulos (codigo, activo, descripcion) VALUES
     ('MCAS_ENABLED',              0, 'MCAS - Modulo habilitado'),

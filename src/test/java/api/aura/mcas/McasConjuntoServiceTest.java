@@ -118,7 +118,8 @@ class McasConjuntoServiceTest {
         modulos.desactivar(McasProposalService.FLAG_INDEXADO);
 
         assertThat(servicio.motivoFaseBloqueada(indexado)).isEqualTo(McasConjuntoService.FASE_INDEXADA_DESACTIVADA)
-                .isEqualTo("La fase indexada está desactivada: active el interruptor Indexado cuando el cliente lo apruebe");
+                .isEqualTo("Las tablas de precio indexado no se pueden activar con el interruptor «Indexado» apagado: "
+                        + "enciéndalo en Configuración MCAS, en «Interruptores del módulo».");
         var comprobacion = servicio.comprobacion(indexado.getId(), true);
         assertThat(comprobacion.puedeActivar()).isFalse();
         assertThat(comprobacion.incidencias()).extracting(McasIncidenciaDTO::getMensaje)
@@ -333,8 +334,7 @@ class McasConjuntoServiceTest {
 
     @Test
     void sin_codigo_se_genera_uno_unico_para_la_tabla_y_para_la_regla() {
-        // Sin acentos y solo la primera palabra. Ojo: el nombre no debe empezar como una
-        // comercializadora de la semilla (UNIEL%, IRIS%...), que McasSeedHoja2Test busca por nombre.
+        // Sin acentos y solo la primera palabra.
         Integer com = comercializadoras.save(TBComercializadoras.builder()
                 .nombre("Eléctrica Ñandú, S.L. " + System.nanoTime()).build()).getId();
         McasConjuntoReglas datos = McasConjuntoReglas.builder().idComercializadora(com).fasePrecio("FIJO")

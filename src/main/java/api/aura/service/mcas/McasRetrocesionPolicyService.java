@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 /**
  * Políticas de retrocesión: gestión desde Configuración MCAS y asociación
  * informativa a las propuestas («retrocesión potencial»). No calcula ni descuenta
- * retrocesiones: aplicarlas en las bajas es la fase 3, fuera de alcance.
+ * retrocesiones: aplicarlas en las bajas queda para una versión futura.
  */
 @Service
 public class McasRetrocesionPolicyService {
@@ -128,7 +128,7 @@ public class McasRetrocesionPolicyService {
             case "PORCENTAJE" -> numero(t.getValor().movePointRight(2)) + " %";
             case "FACTOR" -> "factor " + numero(t.getValor());
             case "IMPORTE_FIJO" -> numero(t.getValor()) + " €";
-            default -> numero(t.getValor()) + " (unidad sin confirmar)";
+            default -> numero(t.getValor()) + " (tipo de valor sin elegir)";
         };
     }
 
@@ -197,8 +197,8 @@ public class McasRetrocesionPolicyService {
     }
 
     /**
-     * Valida y publica. Una política con unidades sin confirmar (Iberdrola, v2
-     * §11.2) no se publica hasta editarla: mostraría una retrocesión inventada.
+     * Valida y publica. Una política con algún tramo sin tipo de valor elegido
+     * (SIN_CONFIRMAR) no se publica hasta editarla: mostraría una retrocesión inventada.
      */
     @Transactional
     public McasPoliticaRetrocesionDTO publicar(Integer id) {
@@ -215,8 +215,8 @@ public class McasRetrocesionPolicyService {
     public McasPoliticaRetrocesionDTO archivar(Integer id) {
         McasPoliticaRetrocesion p = cargar(id);
         if (!"PUBLICADO".equals(p.getEstado()) && !"BORRADOR".equals(p.getEstado()))
-            throw new IllegalStateException("Solo se puede archivar una política publicada o en borrador. Estado: "
-                    + p.getEstado());
+            throw new IllegalStateException("Solo se puede archivar una política publicada o en borrador (esta está "
+                    + estadoLegible(p.getEstado()) + ").");
         p.setEstado("ARCHIVADO");
         repo.save(p);
         return obtener(id);
@@ -233,8 +233,8 @@ public class McasRetrocesionPolicyService {
         for (McasTramoRetrocesion t : tramos) {
             validarEstructura(t);
             if ("SIN_CONFIRMAR".equals(t.getTipoValor()))
-                throw new IllegalArgumentException("El tramo " + rango(t)
-                        + " tiene la unidad sin confirmar: confírmela con el cliente y edite el tramo antes de publicar");
+                throw new IllegalArgumentException("El tramo " + rango(t) + " no tiene elegido el tipo de valor: "
+                        + "elija porcentaje, factor o importe fijo y guarde la política antes de publicarla.");
             if (t.getValor().signum() < 0)
                 throw new IllegalArgumentException("El tramo " + rango(t) + " tiene un valor negativo");
             if (List.of("PORCENTAJE", "FACTOR").contains(t.getTipoValor()) && t.getValor().compareTo(BigDecimal.ONE) > 0)
@@ -260,14 +260,14 @@ public class McasRetrocesionPolicyService {
     /** Datos mínimos de un tramo (también al guardar un borrador: las columnas son NOT NULL). */
     private void validarEstructura(McasTramoRetrocesion t) {
         if (t.getUnidad() == null || !UNIDADES.contains(t.getUnidad()))
-            throw new IllegalArgumentException("La unidad del tramo debe ser DIAS o MESES");
+            throw new IllegalArgumentException("La unidad del tramo debe ser días o meses.");
         if (t.getDesdeValor() == null || t.getDesdeValor() < 0)
             throw new IllegalArgumentException("Cada tramo necesita un «desde» mayor o igual que 0");
         if (t.getHastaValor() != null && t.getHastaValor() <= t.getDesdeValor())
             throw new IllegalArgumentException("El «hasta» del tramo " + t.getDesdeValor() + "–" + t.getHastaValor()
                     + " debe ser mayor que el «desde»");
         if (t.getTipoValor() == null || !TIPOS_VALOR.contains(t.getTipoValor()))
-            throw new IllegalArgumentException("El tipo de valor del tramo debe ser " + String.join(", ", TIPOS_VALOR));
+            throw new IllegalArgumentException("Elija el tipo de valor del tramo: porcentaje, factor o importe fijo.");
         if (t.getValor() == null)
             throw new IllegalArgumentException("Cada tramo necesita un valor");
     }
@@ -299,7 +299,17 @@ public class McasRetrocesionPolicyService {
 
     private void exigirBorrador(McasPoliticaRetrocesion p, String accion) {
         if (!"BORRADOR".equals(p.getEstado()))
-            throw new IllegalStateException("Solo se puede " + accion + " una política en BORRADOR. Estado: " + p.getEstado());
+            throw new IllegalStateException("Solo se puede " + accion + " una política en borrador (esta está "
+                    + estadoLegible(p.getEstado()) + ").");
+    }
+
+    private static String estadoLegible(String estado) {
+        return switch (String.valueOf(estado)) {
+            case "PUBLICADO" -> "publicada";
+            case "ARCHIVADO" -> "archivada";
+            case "VALIDADO" -> "validada";
+            default -> "en estado " + McasMensajes.estadoPropuesta(estado).toLowerCase(Locale.ROOT);
+        };
     }
 
     // ============================================================
@@ -317,9 +327,11 @@ public class McasRetrocesionPolicyService {
             throw new IllegalArgumentException("El fin de la vigencia no puede ser anterior a su inicio");
         if (vacio(d.getMetodo()))
             throw new IllegalArgumentException("Indique el método de retrocesión");
-        String codigo = vacio(d.getCodigo()) ? null : d.getCodigo().trim();
-        if (codigo != null) repo.findByCodigo(codigo).filter(o -> !o.getId().equals(idActual)).ifPresent(o -> {
-            throw new IllegalArgumentException("Ya existe otra política con el código " + codigo);
+        // Sin código: al crear se genera; al editar se conserva el que tenía
+        String codigo = !vacio(d.getCodigo()) ? d.getCodigo().trim()
+                : idActual != null && !vacio(p.getCodigo()) ? p.getCodigo() : codigoPolitica(d);
+        repo.findByCodigo(codigo).filter(o -> !o.getId().equals(idActual)).ifPresent(o -> {
+            throw new IllegalArgumentException("Ya existe otra política con el código " + codigo + ".");
         });
         p.setCodigo(codigo);
         p.setIdComercializadora(d.getIdComercializadora());
@@ -334,6 +346,27 @@ public class McasRetrocesionPolicyService {
         p.setLimiteImportePagado(d.getLimiteImportePagado() == null || d.getLimiteImportePagado());
         p.setDescripcion(vacio(d.getDescripcion()) ? null : d.getDescripcion().trim());
     }
+
+    /**
+     * Código de una política nueva sin código: «RET-», la comercializadora (primera
+     * palabra), el segmento y el suministro si los tiene y la fecha de inicio
+     * («RET-IBERDROLA-PYME-LUZ-20260101»), con «-2», «-3»… si ya existe.
+     */
+    private String codigoPolitica(McasPoliticaRetrocesionDTO d) {
+        String comercializadora = comercializadoraRepo.findById(d.getIdComercializadora())
+                .map(TBComercializadoras::getNombre).map(McasTexto::primeraPalabra).filter(n -> !n.isEmpty())
+                .orElse("C" + d.getIdComercializadora());
+        String base = String.join("-", Stream.of("RET", comercializadora, McasTexto.codigo(d.getSegmento()),
+                        McasTexto.codigo(d.getTipoSuministro()), d.getVigenciaDesde().format(FECHA_CODIGO))
+                .filter(s -> !s.isEmpty()).toList());
+        if (base.length() > 95) base = base.substring(0, 95);
+        String codigo = base;
+        for (int n = 2; repo.findByCodigo(codigo).isPresent(); n++) codigo = base + "-" + n;
+        return codigo;
+    }
+
+    private static final java.time.format.DateTimeFormatter FECHA_CODIGO =
+            java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private List<McasTramoRetrocesion> tramosDesde(McasPoliticaRetrocesionDTO d) {
         List<McasTramoRetrocesion> tramos = new ArrayList<>();

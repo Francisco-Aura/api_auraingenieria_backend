@@ -423,6 +423,8 @@ public class MotorMcas {
                                       McasReglaComision regla, McasConjuntoReglas conjunto) {
         if (conjunto != null) {
             node.put("conjunto", conjunto.getCodigo());
+            if (conjunto.getNombre() != null && !conjunto.getNombre().isBlank())
+                node.put("conjunto_nombre", conjunto.getNombre().trim());
             node.put("conjunto_version", conjunto.getVersion());
         }
         if (regla != null) {

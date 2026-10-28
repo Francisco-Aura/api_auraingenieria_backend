@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
 public class McasPropuestasController {
 
     private static final Logger log = LoggerFactory.getLogger(McasPropuestasController.class);
+    /** Dos personas cambiando la misma propuesta a la vez (409). */
+    static final String CONFLICTO =
+            "Otra persona ha cambiado esta propuesta a la vez: recargue la lista e inténtelo de nuevo.";
     private final McasProposalService service;
     private final ClienteRepository clienteRepo;
     private final TBComercializadorasRepository comercializadoraRepo;
@@ -110,7 +113,7 @@ public class McasPropuestasController {
         try { return ResponseEntity.ok(toResumen(service.descartar(id, body != null ? body.get("motivo") : null))); }
         catch (IllegalStateException | IllegalArgumentException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
         catch (ObjectOptimisticLockingFailureException e) {
-            return ResponseEntity.status(409).body(Map.of("error", "Conflicto de concurrencia. Recarga y reintenta."));
+            return ResponseEntity.status(409).body(Map.of("error", CONFLICTO));
         }
     }
 
@@ -182,7 +185,7 @@ public class McasPropuestasController {
         try { return ResponseEntity.ok(toResumen(service.aprobar(id))); }
         catch (IllegalStateException | IllegalArgumentException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
         catch (ObjectOptimisticLockingFailureException e) {
-            return ResponseEntity.status(409).body(Map.of("error", "Conflicto de concurrencia. Recarga y reintenta."));
+            return ResponseEntity.status(409).body(Map.of("error", CONFLICTO));
         }
     }
 
@@ -208,7 +211,7 @@ public class McasPropuestasController {
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (ObjectOptimisticLockingFailureException e) {
-            return ResponseEntity.status(409).body(Map.of("error", "Conflicto de concurrencia. Recarga y reintenta."));
+            return ResponseEntity.status(409).body(Map.of("error", CONFLICTO));
         }
     }
 

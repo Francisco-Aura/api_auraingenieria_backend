@@ -46,7 +46,8 @@ public class McasConjuntoService {
 
     /** Texto del contrato de API (A8). */
     public static final String FASE_INDEXADA_DESACTIVADA =
-            "La fase indexada está desactivada: active el interruptor Indexado cuando el cliente lo apruebe";
+            "Las tablas de precio indexado no se pueden activar con el interruptor «Indexado» apagado: "
+                    + "enciéndalo en Configuración MCAS, en «Interruptores del módulo».";
 
     /** Propuestas que un recálculo cambiaría (las cerradas o en corrección manual no). */
     private static final List<String> PROPUESTAS_PENDIENTES = List.of("PENDIENTE_CALCULO", "PENDIENTE_VALIDACION",

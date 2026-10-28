@@ -66,12 +66,12 @@ class McasRetrocesionControllerTest {
                 .andExpect(jsonPath("$.tramos[0].tipoValor").value("SIN_CONFIRMAR"))
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
         int id = creada.path("id").asInt();
-        assertThat(creada.path("resumen").asText()).contains("0–90 días: 20 (unidad sin confirmar)");
+        assertThat(creada.path("resumen").asText()).contains("0–90 días: 20 (tipo de valor sin elegir)");
 
         // Sin confirmar la unidad no se publica.
         mvc.perform(post("/api/mcas/politicas-retrocesion/" + id + "/publicar"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("sin confirmar")));
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("no tiene elegido el tipo de valor")));
 
         // Editar sustituye los tramos.
         mvc.perform(put("/api/mcas/politicas-retrocesion/" + id)

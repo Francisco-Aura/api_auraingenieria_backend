@@ -19,16 +19,21 @@ public class McasSimulacionDTO {
     String numeroContrato;
     Integer idConjunto;
     String codigoConjunto;
+    /** Nombre legible de la tabla (su código si no tiene nombre). */
+    String nombreConjunto;
     String estadoConjunto;
     /** CALCULADO, REQUIERE_DATOS, REQUIERE_REVISION_MANUAL, NO_COMISIONABLE o ERROR_CALCULO. */
     String resultado;
     BigDecimal importe;
     Integer numeroPagos;
+    /** Código de la regla aplicada (se mantiene por compatibilidad). */
     String reglaAplicada;
+    /** Nombre legible de la regla aplicada (su código si no tiene nombre). */
+    String nombreRegla;
     String metodoCalculo;
-    /** Explicación del motor: datos que faltan, reglas solapadas, motivo manual... */
+    /** Explicación del motor en texto para el usuario: datos que faltan, reglas solapadas, motivo manual... */
     List<String> mensajes;
-    /** Diferencias entre el contrato y el conjunto que impedirían usarlo en el cálculo real. */
+    /** Diferencias entre el contrato y la tabla que impedirían usarla en el cálculo real. */
     List<String> avisos;
     List<Linea> lineas;
     List<Cuota> calendario;

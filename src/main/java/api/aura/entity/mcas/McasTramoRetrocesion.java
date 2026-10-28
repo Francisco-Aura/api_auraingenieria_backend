@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 /**
  * Tramo de una política de retrocesión: tiempo desde la activación (en días o
  * meses) y lo que se devolvería si el contrato causa baja dentro de él.
- * PORCENTAJE y FACTOR se guardan como factor (0,6 = 60 %); SIN_CONFIRMAR marca
- * un valor del Excel cuya unidad falta por confirmar con el cliente.
+ * PORCENTAJE y FACTOR se guardan como factor (0,6 = 60 %); SIN_CONFIRMAR («Sin
+ * elegir» en pantalla) marca un tramo sin tipo de valor: la política no se publica así.
  */
 @Entity
 @Table(name = "mcas_tramos_retrocesion")
@@ -26,7 +26,7 @@ public class McasTramoRetrocesion {
     @Column(name = "hasta_valor")
     private Integer hastaValor;
     // Los DEFAULT de columnDefinition solo sirven al esquema que genera Hibernate
-    // en los tests (H2), para que los scripts de semillas se comporten como en MariaDB.
+    // en los tests (H2), para que los scripts SQL se comporten como en MariaDB.
     @Column(name = "desde_inclusivo", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     @Builder.Default
     private Boolean desdeInclusivo = true;

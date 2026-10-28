@@ -4,9 +4,8 @@
 --
 -- CÓMO EJECUTARLO
 --   1. Ejecutar este script completo contra la BBDD de Aura (MariaDB),
---      con V20260929_1 y V20260929_2 ya ejecutados.
---   2. Después, si se entrega con esta versión, ejecutar
---      V20260930_2_Seed_MCAS_Nombres.sql (nombres legibles de las tablas).
+--      con V20260913_1 y V20260929_1 ya ejecutados.
+--   Solo esquema: no inserta ni cambia datos.
 --   Es idempotente: se puede relanzar sin riesgo (IF NOT EXISTS en todo),
 --   también si un intento anterior se quedó a medias.
 --

@@ -64,8 +64,10 @@ class SesionesEnDiscoTest {
         long limite = System.currentTimeMillis() + 15_000;
         while (ficherosDeSesion() == 0 && System.currentTimeMillis() < limite) Thread.sleep(200);
         assertThat(ficherosDeSesion()).isEqualTo(1);
-        assertThat(Files.getPosixFilePermissions(carpeta.resolve("AURA_SESSION")))
-                .as("solo el usuario del backend puede leerlas").isEqualTo(PosixFilePermissions.fromString("rwx------"));
+        // Los permisos POSIX solo existen en Linux/macOS (el servidor); en Windows no se pueden leer
+        if (carpeta.getFileSystem().supportedFileAttributeViews().contains("posix"))
+            assertThat(Files.getPosixFilePermissions(carpeta.resolve("AURA_SESSION")))
+                    .as("solo el usuario del backend puede leerlas").isEqualTo(PosixFilePermissions.fromString("rwx------"));
 
         // Otro backend con la misma carpeta (el primero ni se ha parado ni ha guardado nada al salir)
         try (ConfigurableApplicationContext nuevo = new SpringApplicationBuilder(AuraApplication.class).run(

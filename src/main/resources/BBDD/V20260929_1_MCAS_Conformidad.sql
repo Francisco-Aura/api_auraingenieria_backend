@@ -4,8 +4,9 @@
 --
 -- CÓMO EJECUTARLO
 --   1. Ejecutar este script completo contra la BBDD de Aura (MariaDB),
---      con V20260913_1 y V20260913_2 ya ejecutados.
---   2. Después, ejecutar V20260929_2_Seed_MCAS_Reglas_Hoja2.sql.
+--      con V20260913_1 ya ejecutado.
+--   2. Después, ejecutar V20260930_1_MCAS_Usabilidad.sql.
+--   Solo esquema: no inserta ni cambia datos.
 --   Es idempotente: se puede relanzar sin riesgo (IF NOT EXISTS en todo),
 --   también si un intento anterior se quedó a medias.
 --
@@ -16,9 +17,9 @@
 --
 -- Qué cambia en el esquema (lo demás de esta versión es solo código):
 --   - Políticas de retrocesión con clave estable (codigo) y un texto para el
---     operador (descripcion), para sembrarlas y gestionarlas desde la pantalla.
---   - Los tramos admiten tipo_valor = 'SIN_CONFIRMAR' (valor del Excel con la
---     unidad pendiente de confirmar por el cliente). La columna ya es
+--     operador (descripcion), para gestionarlas desde la pantalla.
+--   - Los tramos admiten tipo_valor = 'SIN_CONFIRMAR' (valor con la unidad aún
+--     por decidir: la política no se puede publicar así). La columna ya es
 --     VARCHAR(20): solo se actualiza su comentario.
 --
 -- Nomenclatura: tablas en minúsculas y snake_case, como las crea Hibernate.
@@ -28,7 +29,7 @@
 -- 1. Políticas de retrocesión: código y descripción
 -- -----------------------------------------------
 ALTER TABLE mcas_politicas_retrocesion
-    ADD COLUMN IF NOT EXISTS codigo      VARCHAR(100) NULL COMMENT 'Clave estable (semillas y administración)' AFTER id,
+    ADD COLUMN IF NOT EXISTS codigo      VARCHAR(100) NULL COMMENT 'Clave estable (administración)' AFTER id,
     ADD COLUMN IF NOT EXISTS descripcion VARCHAR(500) NULL COMMENT 'Texto para el operador';
 
 -- Único: varias políticas sin código (NULL) siguen siendo válidas.

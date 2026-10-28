@@ -23,6 +23,7 @@ public class ContextoCalculo {
     String codigoTarifaAcceso;      // nombre de la tarifa (ej: "3.0TD") para match en condiciones
     Integer idProductoComercial;
     String codigoProductoComercial; // código del producto para match en condiciones
+    String nombreProductoComercial; // nombre del producto, para las descripciones del desglose
     BigDecimal potenciaCalculoKw;
     String potenciaOrigen;          // CONTRATO / MAYOR_CONTRATADA (P1–P6) / null si no hay potencia
     BigDecimal consumoAnualKwh;

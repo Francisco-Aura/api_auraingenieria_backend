@@ -331,7 +331,7 @@ class McasConformidadClienteTest {
 
             assertThatThrownBy(() -> mcas.finalizarEditado(p.getId(), new BigDecimal("80"), 1, null, "Importe manual"))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Complete la fecha de inicio y la comercializadora del contrato antes de crear el servicio");
+                    .hasMessage("Complete la fecha de inicio y la comercializadora del contrato antes de crear el servicio.");
             assertThat(propuestas.findById(p.getId()).orElseThrow().getEstado()).isEqualTo("EN_EDICION");
         }
         assertThat(servicios.count()).isEqualTo(serviciosAntes);
@@ -366,10 +366,11 @@ class McasConformidadClienteTest {
         McasPropuesta a = mcas.aprobar(p.getId());
 
         String conjunto = conjuntos.findById(p.getIdConjuntoReglas()).orElseThrow().getCodigo();
+        // Sin nombre legible salen los códigos; con nombre, el nombre (ver McasArranqueVacioTest)
         assertThat(servicios.findById(a.getIdServicioCreado()).orElseThrow().getObservaciones())
-                .contains("Propuesta #" + p.getId())
-                .contains("Regla IT_IMPORTE_FIJO")
-                .contains("conjunto " + conjunto + " v 2");
+                .startsWith("Comisión generada por MCAS. Propuesta #" + p.getId() + ".")
+                .contains("Regla «IT_IMPORTE_FIJO» de la tabla de comisiones «" + conjunto + "» (versión 2)")
+                .endsWith("Aprobada por: " + a.getAprobadoPor() + ".");
     }
 
     // ============================================================
