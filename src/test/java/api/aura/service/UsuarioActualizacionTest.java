@@ -20,12 +20,14 @@ import static org.mockito.Mockito.when;
 class UsuarioActualizacionTest {
 
     private final UsuarioRepository repositorio = mock(UsuarioRepository.class);
+    static final CifradoContrasenas CIFRADO = new CifradoContrasenas("JHGtyIjf8Y0RZgUPC42gSW2BsxozvM1n0mI/df+oBUU=");
     private final UsuarioService servicio = new UsuarioService();
 
     private Usuario enBaseDeDatos() {
         Usuario usuario = Usuario.builder().id(4).nombre("ANA COMERCIAL").user("ana")
                 .pass("secreto").email("ana@aura.es").nivelAcceso(1).build();
         ReflectionTestUtils.setField(servicio, "usuarioRepository", repositorio);
+        ReflectionTestUtils.setField(servicio, "cifrado", CIFRADO);
         when(repositorio.findById(4)).thenReturn(Optional.of(usuario));
         when(repositorio.save(any())).thenAnswer(inv -> inv.getArgument(0));
         return usuario;
@@ -59,6 +61,20 @@ class UsuarioActualizacionTest {
         Usuario resultado = servicio.actualizarUsuario(4,
                 Usuario.builder().nombre("ANA COMERCIAL").user("ana").pass("otra").nivelAcceso(1).build());
 
-        assertThat(resultado.getPass()).isEqualTo("otra");
+        // Se guarda cifrada, nunca en claro, y se puede recuperar
+        assertThat(resultado.getPass()).startsWith("{c}");
+        assertThat(CIFRADO.descifrar(resultado.getPass())).isEqualTo("otra");
+    }
+
+    @Test
+    void reenviar_la_misma_contrasena_no_la_vuelve_a_cifrar() {
+        Usuario existente = enBaseDeDatos();
+        existente.setPass(CIFRADO.cifrar("secreto"));
+        String antes = existente.getPass();
+
+        servicio.actualizarUsuario(4, Usuario.builder().nombre("ANA").user("ana").pass("secreto").nivelAcceso(1).build());
+
+        // Sin cambios: así editar otro dato no cierra las sesiones abiertas del usuario
+        assertThat(existente.getPass()).isEqualTo(antes);
     }
 }

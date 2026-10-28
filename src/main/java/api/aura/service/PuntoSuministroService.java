@@ -205,10 +205,11 @@ public class PuntoSuministroService {
         destino.setCUPSgas(origen.getCUPSgas());
         destino.setFechaBaja(origen.getFechaBaja());
         destino.setFechaInstalacion(origen.getFechaInstalacion());
-        destino.setModem(origen.getModem());
-        destino.setPropiedadModem(origen.getPropiedadModem());
-        destino.setContador(origen.getContador());
-        destino.setPropiedadContador(origen.getPropiedadContador());
+        // Campos antiguos que el formulario ya no envía: antes cada edición los vaciaba
+        if (origen.getModem() != null) destino.setModem(origen.getModem());
+        if (origen.getPropiedadModem() != null) destino.setPropiedadModem(origen.getPropiedadModem());
+        if (origen.getContador() != null) destino.setContador(origen.getContador());
+        if (origen.getPropiedadContador() != null) destino.setPropiedadContador(origen.getPropiedadContador());
         destino.setObservaciones(origen.getObservaciones());
         destino.setPotenciaBIE(origen.getPotenciaBIE());
         destino.setPotenciaTecnicaRed(origen.getPotenciaTecnicaRed());

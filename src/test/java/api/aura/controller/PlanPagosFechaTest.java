@@ -2,6 +2,10 @@ package api.aura.controller;
 
 import api.aura.entity.ServiciosPagos;
 import api.aura.service.ServiciosPagosService;
+import api.aura.config.AuraUserHolder;
+import api.aura.config.UsuarioSesion;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +39,17 @@ class PlanPagosFechaTest {
 
     @InjectMocks
     private ServiciosPagosController controlador;
+
+    /** El plan de pagos es de la gestión de servicios, reservada a administradores. */
+    @BeforeEach
+    void sesionDeAdministrador() {
+        AuraUserHolder.set(new UsuarioSesion(1, "Admin", 1));
+    }
+
+    @AfterEach
+    void cerrarSesion() {
+        AuraUserHolder.clear();
+    }
 
     private Map<String, Object> peticion(String fecha) {
         return Map.of("idPagoPlazos", 3, "importeTotal", 240.0, "fechaInicio", fecha);

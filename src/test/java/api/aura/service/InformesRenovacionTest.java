@@ -43,4 +43,20 @@ class InformesRenovacionTest {
         assertThat(consulta(metodo))
                 .contains("LEFT JOIN tbcomercializadoras AS ANT ON contratos.id_comercializadora_anterior = ANT.ID");
     }
+
+    @org.junit.jupiter.api.Test
+    void en_el_historico_un_contrato_renovado_sale_como_renovado_aunque_tenga_baja() {
+        // Al renovar desde la aplicación el original se da de baja: la comprobación de
+        // renovación tiene que ir antes que la de baja (probado también en MariaDB).
+        // Vigente va primero, y solo sin baja: un contrato en vigor no cambia de estado
+        String sql = consulta("findContratosHistorico");
+        int vigente = sql.indexOf("THEN 'Vigente'");
+        int renovado = sql.indexOf("THEN 'Renovado'");
+        int baja = sql.indexOf("THEN 'Baja'");
+        assertThat(vigente).isPositive();
+        assertThat(renovado).isGreaterThan(vigente);
+        assertThat(baja).isGreaterThan(renovado);
+        assertThat(sql.substring(sql.indexOf("CASE WHEN"), vigente))
+                .contains("contratos.fecha_baja IS NULL) AND contratos.fecha_fin > CURDATE()");
+    }
 }

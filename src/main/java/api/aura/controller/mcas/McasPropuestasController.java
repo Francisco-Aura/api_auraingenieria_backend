@@ -1,6 +1,7 @@
 package api.aura.controller.mcas;
 
 import api.aura.config.McasAccesoUsuario;
+import api.aura.controller.SesionActual;
 import api.aura.dto.mcas.*;
 import api.aura.entity.Cliente;
 import api.aura.entity.mcas.*;
@@ -155,7 +156,7 @@ public class McasPropuestasController {
         catch (IllegalArgumentException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
         catch (Exception e) {
             log.error("Error calcular MCAS contrato={}", idContrato, e);
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error interno"));
+            return ResponseEntity.internalServerError().body(Map.of("error", SesionActual.mensajeSeguro(e, "Error interno")));
         }
     }
 
@@ -166,7 +167,7 @@ public class McasPropuestasController {
         catch (IllegalArgumentException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
         catch (Exception e) {
             log.error("Error calcular-forzado MCAS contrato={}", idContrato, e);
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error interno"));
+            return ResponseEntity.internalServerError().body(Map.of("error", SesionActual.mensajeSeguro(e, "Error interno")));
         }
     }
 

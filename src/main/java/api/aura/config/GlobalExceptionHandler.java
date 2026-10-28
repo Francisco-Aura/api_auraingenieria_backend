@@ -102,11 +102,33 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        log.warn("Conflicto de datos al guardar: {}", getRootCauseMessage(ex));
+        log.warn("Conflicto de datos al guardar ({}): {}", peticionActual(), getRootCauseMessage(ex));
         Map<String, String> error = new HashMap<>();
         String mensaje = traducirErrorBD(ex);
         error.put("error", mensaje);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Dos personas guardando el mismo registro a la vez (p. ej. dos validadores con la
+     * misma propuesta MCAS): 409 con el mismo aviso que ya daban aprobar o descartar,
+     * en vez de un «error inesperado».
+     */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, String>> handleConflictoConcurrencia(
+            org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "Conflicto de concurrencia. Recarga y reintenta."));
+    }
+
+    /**
+     * Otra operación tenía bloqueado el mismo registro o la consulta tardó demasiado: es
+     * pasajero. El conflicto optimista de arriba es más concreto y tiene su propio mensaje.
+     */
+    @ExceptionHandler(org.springframework.dao.TransientDataAccessException.class)
+    public ResponseEntity<Map<String, String>> handleEsperaAgotada(org.springframework.dao.TransientDataAccessException ex) {
+        log.warn("Operación sin completar por bloqueo o tiempo de espera ({}): {}", peticionActual(), getRootCauseMessage(ex));
+        return error(HttpStatus.CONFLICT, "La operación no se pudo completar a tiempo (puede haber otra en curso sobre los mismos datos). Inténtelo de nuevo en unos segundos.");
     }
 
     @ExceptionHandler(Exception.class)
@@ -137,7 +159,7 @@ public class GlobalExceptionHandler {
                 if (msg.contains("Duplicate entry")) {
                     String valor = extraerEntre(msg, "Duplicate entry '", "' for key '");
                     String clave = extraerEntre(msg, "' for key '", "'");
-                    String texto = (clave != null && clave.toLowerCase().contains("cif"))
+                    String texto = esClaveCif(clave)
                         ? "Ya existe un cliente con el CIF '" + valor + "'. El CIF debe ser único."
                         : "Ya existe un registro con esos datos. No se permiten duplicados.";
                     return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", texto));
@@ -153,8 +175,18 @@ public class GlobalExceptionHandler {
             cause = cause.getCause();
         }
         // Error no previsto: al usuario un mensaje genérico, y en el log el detalle completo
-        log.error("Error no controlado al procesar la petición", ex);
+        log.error("Error no controlado al procesar {}", peticionActual(), ex);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, ERROR_INESPERADO);
+    }
+
+    /** «PUT /api/contratos/7» de la petición en curso (sin parámetros), para el log. */
+    private static String peticionActual() {
+        if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()
+                instanceof org.springframework.web.context.request.ServletRequestAttributes atributos) {
+            jakarta.servlet.http.HttpServletRequest peticion = atributos.getRequest();
+            return peticion.getMethod() + " " + api.aura.util.NombresArchivo.sinControl(peticion.getRequestURI());
+        }
+        return "-";
     }
 
     private ResponseEntity<Map<String, String>> error(HttpStatusCode estado, String mensaje) {
@@ -187,7 +219,7 @@ public class GlobalExceptionHandler {
             String clave = extraerEntre(msg, "' for key '", "'");
             if (clave != null) {
                 String claveMin = clave.toLowerCase();
-                if (claveMin.contains("cif"))
+                if (esClaveCif(clave))
                     return "Ya existe un cliente con el CIF '" + valor + "'. El CIF debe ser único.";
                 if (claveMin.contains("clientes") && claveMin.contains("nombre"))
                     return "Ya existe un cliente con ese nombre.";
@@ -236,10 +268,12 @@ public class GlobalExceptionHandler {
 
         // --- Clave foránea (FK) violada -------------------------------------
         if (msg.contains("foreign key constraint") || msg.contains("FOREIGN KEY")) {
-            if (msg.contains("Referenc") || msg.contains("REFERENCES")) {
-                return "No se puede eliminar este registro porque está siendo utilizado por otros datos del sistema.";
+            // MariaDB pone «REFERENCES» en los dos casos: lo que distingue borrar algo en uso
+            // de guardar algo que apunta a un dato que ya no existe es el principio del mensaje
+            if (msg.contains("Cannot add or update a child row")) {
+                return "No se pudo guardar porque hay una referencia a un dato que no existe.";
             }
-            return "No se pudo guardar porque hay una referencia a un dato que no existe.";
+            return "No se puede eliminar este registro porque está siendo utilizado por otros datos del sistema.";
         }
 
         // --- Valor fuera de rango (overflow numérico) ----------------------
@@ -254,6 +288,17 @@ public class GlobalExceptionHandler {
 
         // --- Fallback genérico (nunca expone técnico) ----------------------
         return "No se pudo guardar el registro por un conflicto de datos. Revise los valores introducidos.";
+    }
+
+    /**
+     * Clave única del CIF de clientes. En la BD real se llama como la generó Hibernate
+     * (UK3a2rt3ly0mpuiukltrxof2tah, sin «cif» en el nombre), así que el aviso específico
+     * de CIF duplicado nunca llegaba a mostrarse.
+     */
+    private static boolean esClaveCif(String clave) {
+        if (clave == null) return false;
+        String c = clave.toLowerCase();
+        return c.contains("cif") || c.contains("uk3a2rt3ly0mpuiukltrxof2tah");
     }
 
     private String getRootCauseMessage(Throwable ex) {

@@ -19,11 +19,15 @@ final class TareaCalculos {
         return Math.max(Duration.between(inicio, fin).getSeconds(), 0);
     }
 
+    /**
+     * Misma fecha y hora al minuto (se ignoran segundos y milisegundos). Antes valía un
+     * margen de casi dos minutos y mover el vencimiento de 18:00 a 18:01 no contaba como
+     * cambio: ni avisaba al asignado ni rearmaba el aviso de «vence en 1 hora».
+     */
     static boolean sonFechasIguales(LocalDateTime fecha1, LocalDateTime fecha2) {
         if (fecha1 == null && fecha2 == null) return true;
         if (fecha1 == null || fecha2 == null) return false;
-        long diferenciaMinutos = ChronoUnit.MINUTES.between(fecha2, fecha1);
-        return Math.abs(diferenciaMinutos) <= 1;
+        return fecha1.truncatedTo(ChronoUnit.MINUTES).equals(fecha2.truncatedTo(ChronoUnit.MINUTES));
     }
 
     /** true si {@code fecha} cae dentro del intervalo, con los dos extremos incluidos. */

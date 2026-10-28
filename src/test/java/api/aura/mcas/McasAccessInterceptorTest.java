@@ -1,6 +1,8 @@
 package api.aura.mcas;
 
 import api.aura.config.AuraUserFilter;
+import api.aura.config.AuraUserHolder;
+import api.aura.config.UsuarioSesion;
 import api.aura.config.GlobalExceptionHandler;
 import api.aura.config.McasAccesoUsuario;
 import api.aura.config.McasAccessInterceptor;
@@ -14,6 +16,7 @@ import api.aura.repository.UsuarioRepository;
 import api.aura.repository.mcas.McasProductoComercialRepository;
 import api.aura.service.ModuloConfiguracionService;
 import api.aura.service.mcas.McasAccessService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,8 +44,15 @@ class McasAccessInterceptorTest {
     private ModuloConfiguracionService modulos;
     private MockMvc mvc;
 
+    /** Sesión de administrador para el controlador; el interceptor usa el servicio simulado. */
+    @AfterEach
+    void cerrarSesion() {
+        AuraUserHolder.clear();
+    }
+
     @BeforeEach
     void setUp() {
+        AuraUserHolder.set(new UsuarioSesion(1, "Admin", 1));
         access = mock(McasAccessService.class);
         modulos = mock(ModuloConfiguracionService.class);
         when(modulos.activar(anyString())).thenReturn(new ModuloConfiguracion());
@@ -141,7 +151,7 @@ class McasAccessInterceptorTest {
         verify(access, never()).requireUsuario();
     }
 
-    /** Con el filtro y el servicio reales: la identidad sale de la cabecera X-Aura-Usuario-Nombre. */
+    /** Con el filtro y el servicio reales: la identidad sale de la sesión, no de la cabecera X-Aura-Usuario-Nombre. */
     @Test
     void anonimo_recibe_403_aunque_el_metodo_lleve_la_anotacion() throws Exception {
         UsuarioRepository usuarios = mock(UsuarioRepository.class);
@@ -152,13 +162,18 @@ class McasAccessInterceptorTest {
         real.perform(get("/api/mcas/prueba-acceso/usuario"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Usuario no identificado para operar MCAS"));
-        real.perform(get("/api/mcas/prueba-acceso/usuario").header("X-Aura-Usuario-Nombre", "Desconocido"))
+        real.perform(get("/api/mcas/prueba-acceso/usuario").sessionAttr(UsuarioSesion.ATRIBUTO,
+                        new UsuarioSesion(null, "Desconocido", null)))
+                .andExpect(status().isForbidden());
+        // La cabecera ya no identifica: sin sesión sigue siendo anónimo.
+        real.perform(get("/api/mcas/prueba-acceso/usuario").header("X-Aura-Usuario-Nombre", "Operador"))
                 .andExpect(status().isForbidden());
 
         // Un usuario existente de nivel 2 pasa por el método anotado, pero no por el resto.
-        real.perform(get("/api/mcas/prueba-acceso/usuario").header("X-Aura-Usuario-Nombre", "Operador"))
+        UsuarioSesion operador = new UsuarioSesion(null, "Operador", 2);
+        real.perform(get("/api/mcas/prueba-acceso/usuario").sessionAttr(UsuarioSesion.ATRIBUTO, operador))
                 .andExpect(status().isOk());
-        real.perform(get("/api/mcas/prueba-acceso/admin").header("X-Aura-Usuario-Nombre", "Operador"))
+        real.perform(get("/api/mcas/prueba-acceso/admin").sessionAttr(UsuarioSesion.ATRIBUTO, operador))
                 .andExpect(status().isForbidden());
     }
 

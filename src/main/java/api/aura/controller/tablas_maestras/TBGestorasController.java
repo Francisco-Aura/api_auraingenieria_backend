@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ public class TBGestorasController {
 
     @PostMapping
     public ResponseEntity<TBGestoras> crearGestora(@RequestBody TBGestoras gestora) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(gestorasService.crearGestora(gestora));
     }
 
@@ -34,11 +36,13 @@ public class TBGestorasController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TBGestoras> actualizarGestora(@PathVariable Integer id, @RequestBody TBGestoras gestoraActualizada) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(gestorasService.actualizarGestora(id, gestoraActualizada));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarGestora(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         gestorasService.eliminarGestora(id);
         return ResponseEntity.noContent().build();
     }

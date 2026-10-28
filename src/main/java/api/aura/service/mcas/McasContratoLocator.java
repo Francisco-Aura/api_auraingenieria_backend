@@ -91,6 +91,6 @@ public class McasContratoLocator {
     }
 
     private LocalDate fecha(Date valor) {
-        return valor == null ? null : new java.sql.Date(valor.getTime()).toLocalDate();
+        return api.aura.util.FechaNegocio.aLocalDate(valor);
     }
 }

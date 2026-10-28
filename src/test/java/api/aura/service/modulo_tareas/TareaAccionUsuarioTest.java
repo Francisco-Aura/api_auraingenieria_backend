@@ -86,4 +86,16 @@ class TareaAccionUsuarioTest {
 
         verify(notificaciones).notificarCampoEspecifico(any(mt_Tarea.class), eq("TITULO"), anyString(), eq(7));
     }
+
+    @Test
+    void la_edicion_conserva_el_creador_aunque_el_cuerpo_traiga_otro() {
+        mt_Tarea tarea = tarea();
+        TareaDTO cambios = TareaDTO.builder().titulo("Visita").prioridad(2)
+                .usuarioAsignadoId(5).usuarioCreadorId(7).usuarioAccionId(7).build();
+
+        TareaDTO resultado = servicio.actualizar(40L, cambios);
+
+        assertThat(tarea.getUsuarioCreador().getId()).isEqualTo(1);
+        assertThat(resultado.getUsuarioCreadorId()).isEqualTo(1);
+    }
 }

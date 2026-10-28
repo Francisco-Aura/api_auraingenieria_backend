@@ -39,3 +39,16 @@ uploads/
 src/main/resources/application-local.properties
 
 docs/
+
+### Secretos y logs (no deben subirse) ###
+*.log
+logs/
+.env
+*.pem
+*.key
+*.p12
+*.jks
+
+### Copias de seguridad de la BD (datos reales: nunca al repositorio) ###
+src/main/resources/BBDD/Backup_*.sql
+*.dump

@@ -28,11 +28,17 @@ public class ConfiguracionModulosController {
 
     @PostMapping("/{codigo}/activar")
     public ResponseEntity<ModuloConfiguracion> activar(@PathVariable String codigo) {
+        // Activar/desactivar módulos afecta a todos los usuarios: solo administradores
+        // (los indicadores MCAS los filtra además McasAccessInterceptor)
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(moduloConfiguracionService.activar(codigo));
     }
 
     @PostMapping("/{codigo}/desactivar")
     public ResponseEntity<ModuloConfiguracion> desactivar(@PathVariable String codigo) {
+        // Activar/desactivar módulos afecta a todos los usuarios: solo administradores
+        // (los indicadores MCAS los filtra además McasAccessInterceptor)
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(moduloConfiguracionService.desactivar(codigo));
     }
 }

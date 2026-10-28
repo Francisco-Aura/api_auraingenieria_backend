@@ -50,4 +50,29 @@ class AuraUserDataSourceTest {
         verify(sentencia).setString(1, "Ana Pérez");
         verify(sentencia).execute();
     }
+
+    @Test
+    void en_la_misma_conexion_fisica_solo_se_vuelve_a_fijar_si_cambia_el_usuario() throws Exception {
+        DataSource pool = mock(DataSource.class);
+        Connection delPool = mock(Connection.class);       // envoltorio de Hikari
+        Connection fisica = mock(Connection.class);        // la conexión real con la BD
+        PreparedStatement sentencia = mock(PreparedStatement.class);
+        when(pool.getConnection()).thenReturn(delPool);
+        when(delPool.unwrap(Connection.class)).thenReturn(fisica);
+        when(delPool.prepareStatement("SET @aura_usuario_nombre = ?")).thenReturn(sentencia);
+        AuraUserDataSource origen = new AuraUserDataSource(pool);
+
+        AuraUserHolder.set("Ana");
+        origen.getConnection();
+        origen.getConnection();                            // mismo usuario: sin otro viaje a la BD
+        AuraUserHolder.set("Luis");
+        origen.getConnection();
+        AuraUserHolder.clear();
+        origen.getConnection();                            // sin usuario: se limpia
+
+        org.mockito.Mockito.verify(sentencia, org.mockito.Mockito.times(3)).execute();
+        verify(sentencia).setString(1, "Ana");
+        verify(sentencia).setString(1, "Luis");
+        verify(sentencia).setNull(1, java.sql.Types.VARCHAR);
+    }
 }

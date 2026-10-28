@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ public class TBNivelAccesoController {
 
     @PostMapping
     public ResponseEntity<TBNivelAcceso> crearNivelAcceso(@RequestBody TBNivelAcceso nivelAcceso) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(nivelAccesoService.crearNivelAcceso(nivelAcceso));
     }
 
@@ -34,11 +36,13 @@ public class TBNivelAccesoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TBNivelAcceso> actualizarNivelAcceso(@PathVariable Integer id, @RequestBody TBNivelAcceso nivelAccesoActualizado) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(nivelAccesoService.actualizarNivelAcceso(id, nivelAccesoActualizado));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarNivelAcceso(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         nivelAccesoService.eliminarNivelAcceso(id);
         return ResponseEntity.noContent().build();
     }

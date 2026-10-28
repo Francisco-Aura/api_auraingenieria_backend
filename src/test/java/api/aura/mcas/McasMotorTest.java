@@ -384,6 +384,16 @@ class McasMotorTest {
     }
 
     // ---- helper ----
+    @Test void un_fallo_de_la_bd_sube_tal_cual_y_no_se_guarda_como_error_de_calculo() {
+        // La transacción ya queda marcada para deshacerse: disfrazarlo de ERROR_CALCULO solo
+        // retrasaba el fallo al confirmar y dejaba una auditoría suelta
+        var caida = new org.springframework.dao.DataAccessResourceFailureException("conexión perdida");
+        McasConjuntoReglasRepository conjuntos = mock(McasConjuntoReglasRepository.class, invocacion -> { throw caida; });
+        var motor = new MotorMcas(conjuntos, mock(McasReglaComisionRepository.class), rangoRepo,
+                new RegistroEstrategias(List.of()), mapper);
+        assertThatThrownBy(() -> motor.evaluar(ctx(185475, 7, null))).isSameAs(caida);
+    }
+
     private ContextoCalculo ctx(double consumoKwh, Integer feeInt, BigDecimal potencia) {
         BigDecimal kwh = consumoKwh > 0 ? new BigDecimal(String.valueOf(consumoKwh)) : null;
         BigDecimal mwh = kwh != null ? kwh.divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP) : null;

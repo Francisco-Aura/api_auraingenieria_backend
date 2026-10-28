@@ -40,7 +40,7 @@ public class TBNivelAccesoService {
                     nivelAcceso.setDescripcion(nivelAccesoActualizado.getDescripcion());
                     return nivelAccesoRepository.save(nivelAcceso);
                 })
-                .orElseThrow(() -> new RuntimeException("Nivel de acceso no encontrado con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Nivel de acceso no encontrado con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'nivel-acceso'")

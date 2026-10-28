@@ -206,6 +206,31 @@ class McasResumenContratoTest {
         assertThat(r.getMensaje()).startsWith("Faltan datos para calcular la comisión: consumo anual y segmento.");
     }
 
+    /**
+     * creado_en es DATETIME (al segundo): guardar el contrato dos veces seguidas deja
+     * la propuesta sustituida y la nueva con la misma fecha. «La última» es la de
+     * mayor id, como en el listado y el recuento, no la que devuelva la BD primero.
+     */
+    @Test
+    void con_dos_propuestas_del_mismo_segundo_manda_la_ultima_creada() {
+        Integer id = comercializadoraConFee();
+        Contrato c = nuevoContrato(id, x -> {});
+        java.time.LocalDateTime mismoSegundo = java.time.LocalDateTime.of(2026, 10, 6, 12, 0, 0);
+        McasPropuesta sustituida = propuestas.save(McasPropuesta.builder().idContrato(c.getId())
+                .tipoEvento("NUEVO_CONTRATO").claveIdempotencia("SUSTITUIDA-" + System.nanoTime())
+                .estado("DESACTUALIZADO").creadoEn(mismoSegundo).build());
+        McasPropuesta nueva = propuestas.save(McasPropuesta.builder().idContrato(c.getId())
+                .tipoEvento("NUEVO_CONTRATO").claveIdempotencia("NUEVA-" + System.nanoTime())
+                .estado("REQUIERE_DATOS").creadoEn(mismoSegundo).build());
+        assertThat(nueva.getId()).isGreaterThan(sustituida.getId());
+
+        assertThat(propuestas.findByIdContratoOrderByCreadoEnDesc(c.getId()))
+                .extracting(McasPropuesta::getId).containsExactly(nueva.getId(), sustituida.getId());
+        McasResumenContratoDTO r = resumenes.resumen(c.getId());
+        assertThat(r.getIdPropuesta()).isEqualTo(nueva.getId());
+        assertThat(r.getEstado()).isEqualTo("REQUIERE_DATOS");
+    }
+
     @Test
     void la_api_devuelve_solo_los_campos_del_contrato_de_api() throws Exception {
         Integer id = comercializadoraConFee();

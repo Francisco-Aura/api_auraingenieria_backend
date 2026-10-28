@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class McasProposalServiceTest {
@@ -195,6 +196,7 @@ class McasProposalServiceTest {
             Servicio s = inv.getArgument(0); s.setId(56); return s;
         });
         when(propuestaRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(propuestaRepo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
         McasPropuesta aprobada = service.aprobar(14L);
 
@@ -224,6 +226,7 @@ class McasProposalServiceTest {
             Servicio s = inv.getArgument(0); s.setId(57); return s;
         });
         when(propuestaRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(propuestaRepo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.aprobar(15L);
 
@@ -328,8 +331,34 @@ class McasProposalServiceTest {
             Servicio s = inv.getArgument(0); s.setId(73); return s;
         });
         when(propuestaRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(propuestaRepo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
         assertThat(service.aprobar(25L).getIdServicioCreado()).isEqualTo(73);
+    }
+
+    @Test
+    void si_el_servicio_de_la_comision_previa_se_borro_se_puede_aprobar_otra() {
+        // Al borrar el servicio la BD deja id_servicio_creado vacío (ON DELETE SET NULL)
+        Contrato contrato = contratoBase();
+        String hash = snapshots.capturar(contrato).hash();
+        McasPropuesta previa = McasPropuesta.builder().id(26L).idContrato(42)
+                .estado("FINALIZADO_APROBADO").idServicioCreado(null)
+                .claveIdempotencia("previa-borrada").tipoEvento("NUEVO_CONTRATO").build();
+        McasPropuesta nueva = McasPropuesta.builder().id(27L).idContrato(42)
+                .hashContrato(hash).estado("PENDIENTE_VALIDACION")
+                .claveIdempotencia("nueva-tras-borrar").tipoEvento("NUEVO_CONTRATO")
+                .importeDefinitivo(new BigDecimal("100")).build();
+        when(propuestaRepo.findById(27L)).thenReturn(Optional.of(nueva));
+        when(propuestaRepo.findByIdContratoOrderByCreadoEnDesc(42)).thenReturn(List.of(nueva, previa));
+        when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
+        when(servicioRepo.save(any())).thenAnswer(inv -> {
+            Servicio s = inv.getArgument(0); s.setId(74); return s;
+        });
+        when(propuestaRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(propuestaRepo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(service.aprobar(27L).getIdServicioCreado()).isEqualTo(74);
+        assertThat(service.contratosConComisionVigente(List.of(previa))).as("ya no cuenta como comisión vigente").isEmpty();
     }
 
     @Test
@@ -354,6 +383,7 @@ class McasProposalServiceTest {
                 .estado("FINALIZADO_APROBADO").idServicioCreado(100).build();
         McasPropuesta deBaja = McasPropuesta.builder().id(41L).idContrato(2).tipoEvento("NUEVO_CONTRATO")
                 .estado("FINALIZADO_APROBADO").idServicioCreado(101).build();
+        // Su servicio se borró (la BD deja id_servicio_creado vacío): ya no cuenta
         McasPropuesta sinServicio = McasPropuesta.builder().id(42L).idContrato(3).tipoEvento("RENOVACION")
                 .estado("FINALIZADO_EDITADO").build();
         McasPropuesta manual = McasPropuesta.builder().id(43L).idContrato(1).tipoEvento("NUEVO_CONTRATO")
@@ -367,8 +397,7 @@ class McasProposalServiceTest {
         var claves = service.contratosConComisionVigente(List.of(vigente, deBaja, sinServicio, manual, otroEvento));
 
         assertThat(claves).containsExactlyInAnyOrder(
-                McasProposalService.claveComision(1, "NUEVO_CONTRATO"),
-                McasProposalService.claveComision(3, "RENOVACION"));
+                McasProposalService.claveComision(1, "NUEVO_CONTRATO"));
         verify(servicioRepo, times(1)).findAllById(any());
         verify(servicioRepo, never()).findById(any());
     }
@@ -398,5 +427,135 @@ class McasProposalServiceTest {
                 .mcasTipoPrecio("FIJO").mcasTipoSuministro("LUZ")
                 .mcasFeeEurMwh(new BigDecimal("7"))
                 .mcasFeeUnidad("EUR_MWH").mcasNumeroPagos(1).build();
+    }
+
+    @Test
+    void un_contrato_de_gas_se_evalua_con_su_tarifa_de_gas_y_no_con_sin_tarifa_de_luz() {
+        when(tarifasLuzRepo.findById(9)).thenReturn(Optional.of(
+                api.aura.entity.tablas_maestras.TBTarifasLuz.builder().id(9).nombre("Sin Tarifa").build()));
+        when(tarifasGasRepo.findById(3)).thenReturn(Optional.of(
+                api.aura.entity.tablas_maestras.TBTarifasGas.builder().id(3).nombre("RL.2").build()));
+
+        Contrato gas = new Contrato();
+        gas.setMcasTipoSuministro("GAS");
+        gas.setIdTarifaLuz(9);
+        gas.setIdTarifaGas(3);
+        assertThat(service.resolverCodigoTarifa(gas)).isEqualTo("RL.2");
+
+        Contrato luz = new Contrato();
+        luz.setMcasTipoSuministro("LUZ");
+        luz.setIdTarifaLuz(9);
+        luz.setIdTarifaGas(3);
+        assertThat(service.resolverCodigoTarifa(luz)).as("luz: como siempre").isEqualTo("Sin Tarifa");
+    }
+
+    @Test
+    void una_comision_aprobada_cuyo_servicio_se_borro_deja_volver_a_calcular_el_contrato_sin_cambios() {
+        Contrato contrato = contratoBase();
+        String hash = snapshots.capturar(contrato).hash();
+        // Su servicio se borró (la BD deja id_servicio_creado vacío) y el contrato no ha cambiado
+        McasPropuesta aprobada = McasPropuesta.builder().id(60L).idContrato(42).hashContrato(hash)
+                .estado("FINALIZADO_APROBADO").claveIdempotencia("42|NUEVO_CONTRATO|" + hash)
+                .tipoEvento("NUEVO_CONTRATO").build();
+        when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
+        when(propuestaRepo.findActivasPorContrato(42)).thenReturn(List.of(aprobada));
+        when(propuestaRepo.findByIdContratoOrderByCreadoEnDesc(42)).thenReturn(List.of(aprobada));
+        when(propuestaRepo.findByClaveIdempotencia(anyString())).thenReturn(Optional.of(aprobada));
+        when(propuestaRepo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(propuestaRepo.save(any())).thenAnswer(inv -> {
+            McasPropuesta p = inv.getArgument(0); if (p.getId() == null) p.setId(61L); return p;
+        });
+
+        McasPropuesta nueva = service.triggerDesdeContrato(42);
+
+        assertThat(nueva.getId()).as("se calcula otra (antes devolvía la aprobada sin servicio)").isEqualTo(61L);
+        assertThat(aprobada.getEstado()).isEqualTo("FINALIZADO_APROBADO");
+        assertThat(aprobada.getClaveIdempotencia()).startsWith("LIBERADA|60|sin-servicio|");
+        verify(propuestaRepo).saveAndFlush(aprobada);
+        verify(auditoria).registrar(eq(60L), eq(42), eq("COMISION_SIN_SERVICIO"), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void una_comision_aprobada_con_su_servicio_sigue_siendo_la_del_contrato() {
+        Contrato contrato = contratoBase();
+        String hash = snapshots.capturar(contrato).hash();
+        McasPropuesta aprobada = McasPropuesta.builder().id(62L).idContrato(42).hashContrato(hash)
+                .estado("FINALIZADO_APROBADO").idServicioCreado(85).claveIdempotencia("42|NUEVO_CONTRATO|" + hash)
+                .tipoEvento("NUEVO_CONTRATO").build();
+        when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
+        when(propuestaRepo.findByClaveIdempotencia(anyString())).thenReturn(Optional.of(aprobada));
+        when(servicioRepo.findById(85)).thenReturn(Optional.of(Servicio.builder().id(85).build()));
+
+        assertThat(service.triggerDesdeContrato(42)).isSameAs(aprobada);
+        assertThat(aprobada.getClaveIdempotencia()).isEqualTo("42|NUEVO_CONTRATO|" + hash);
+        verify(propuestaRepo, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void con_el_suministro_indicado_solo_vale_su_propia_tarifa() {
+        when(tarifasGasRepo.findById(3)).thenReturn(Optional.of(
+                api.aura.entity.tablas_maestras.TBTarifasGas.builder().id(3).nombre("Sin Tarifa").build()));
+        when(tarifasLuzRepo.findById(5)).thenReturn(Optional.of(
+                api.aura.entity.tablas_maestras.TBTarifasLuz.builder().id(5).nombre("3.0TD").build()));
+
+        Contrato luzSinTarifa = new Contrato();
+        luzSinTarifa.setMcasTipoSuministro("LUZ");
+        luzSinTarifa.setIdTarifaLuz(0);
+        luzSinTarifa.setIdTarifaGas(3);
+        assertThat(service.resolverCodigoTarifa(luzSinTarifa))
+                .as("falta la tarifa de luz: se pide el dato, no se usa la «Sin Tarifa» de gas").isNull();
+
+        Contrato sinTipo = new Contrato();
+        sinTipo.setIdTarifaLuz(0);
+        sinTipo.setIdTarifaGas(3);
+        assertThat(service.resolverCodigoTarifa(sinTipo)).as("sin tipo de suministro, la que haya").isEqualTo("Sin Tarifa");
+
+        Contrato luz = new Contrato();
+        luz.setMcasTipoSuministro(" luz ");
+        luz.setIdTarifaLuz(5);
+        luz.setIdTarifaGas(3);
+        assertThat(service.resolverCodigoTarifa(luz)).isEqualTo("3.0TD");
+    }
+
+    @Test
+    void recalcular_deja_constancia_de_quien_sustituyo_la_propuesta() {
+        Contrato contrato = contratoBase();
+        McasPropuesta enEdicion = McasPropuesta.builder().id(70L).idContrato(42).hashContrato("h")
+                .estado("EN_EDICION").claveIdempotencia("42|NUEVO_CONTRATO|h").tipoEvento("NUEVO_CONTRATO").build();
+        when(propuestaRepo.findById(70L)).thenReturn(Optional.of(enEdicion));
+        when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
+        when(propuestaRepo.save(any())).thenAnswer(inv -> {
+            McasPropuesta p = inv.getArgument(0); if (p.getId() == null) p.setId(71L); return p;
+        });
+
+        service.recalcular(70L);
+
+        assertThat(enEdicion.getEstado()).isEqualTo("SUPERADO");
+        assertThat(enEdicion.getActualizadoEn()).isNotNull();
+        verify(auditoria).registrar(eq(70L), eq(42), eq("PROPUESTA_SUPERADA"), eq("EN_EDICION"), eq("SUPERADO"), any(), any(), any());
+    }
+
+    @Test
+    void un_importe_manual_con_mas_de_dos_decimales_se_redondea_al_centimo() {
+        Contrato contrato = contratoBase();
+        String hash = snapshots.capturar(contrato).hash();
+        McasPropuesta propuesta = McasPropuesta.builder().id(80L).idContrato(42).hashContrato(hash)
+                .estado("EN_EDICION").claveIdempotencia("42|NUEVO_CONTRATO|" + hash).tipoEvento("NUEVO_CONTRATO")
+                .numeroPagos(1).build();
+        when(propuestaRepo.findById(80L)).thenReturn(Optional.of(propuesta));
+        when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
+        when(servicioRepo.save(any())).thenAnswer(inv -> { Servicio s = inv.getArgument(0); s.setId(90); return s; });
+        when(propuestaRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(propuestaRepo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(calendarioRepo.findByIdPropuestaOrderByNumeroPagoAsc(80L)).thenReturn(List.of(
+                McasCalendarioPago.builder().idPropuesta(80L).numeroPago(1).importe(new BigDecimal("100.56")).build()));
+
+        McasPropuesta finalizada = service.finalizarEditado(80L, new BigDecimal("100.555"), 1, null, "Ajuste");
+
+        assertThat(finalizada.getImporteDefinitivo()).isEqualByComparingTo("100.56");
+        assertThat(finalizada.getImporteDefinitivo().scale()).isEqualTo(2);
+        ArgumentCaptor<Servicio> servicio = ArgumentCaptor.forClass(Servicio.class);
+        verify(servicioRepo).save(servicio.capture());
+        assertThat(servicio.getValue().getImporte()).isEqualTo(100.56);
     }
 }

@@ -16,6 +16,7 @@ import api.aura.repository.ClienteRepository;
 import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.ClienteNotaAdjuntoRepository;
 import api.aura.repository.modulo_tareas.ClienteNotaRepository;
+import api.aura.util.ArchivosTransaccion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -292,7 +293,8 @@ public class ClienteTimelineService {
             try {
                 Path dirPath = Paths.get(notasUploadPath, "cliente_" + clienteId);
                 Files.createDirectories(dirPath);
-                String nombreOriginal = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename() : "archivo";
+                String nombreOriginal = archivo.getOriginalFilename() != null
+                        ? api.aura.util.NombresArchivo.sinControl(archivo.getOriginalFilename()) : "archivo";
                 // Extraer y sanitizar la extensión para prevenir path traversal
                 String rawExtension = nombreOriginal.contains(".") ? nombreOriginal.substring(nombreOriginal.lastIndexOf('.')) : "";
                 String extension = rawExtension.replaceAll("[^a-zA-Z0-9.]", "");
@@ -304,8 +306,10 @@ public class ClienteTimelineService {
                     throw new SecurityException("Ruta de archivo no permitida");
                 }
                 try (InputStream contenido = archivo.getInputStream()) {
-                    Files.copy(contenido, destino);
+                    ArchivosTransaccion.copiar(contenido, destino);
                 }
+                // Si la transacción se deshace (p. ej. falla el archivo siguiente), no queda huérfano
+                ArchivosTransaccion.borrarSiSeDeshace(destino);
 
                 ClienteNotaAdjunto adjunto = ClienteNotaAdjunto.builder()
                         .nota(nota)
@@ -343,14 +347,14 @@ public class ClienteTimelineService {
                 .build();
     }
 
+    /**
+     * El archivo se borra cuando el cambio en BD queda confirmado: si la transacción
+     * se deshace, la nota o el adjunto siguen teniendo su archivo. Un fallo al borrar
+     * no es crítico (solo queda un archivo huérfano).
+     */
     private void eliminarArchivoFisico(String ruta) {
         if (ruta == null) return;
-        try {
-            Path path = Paths.get(ruta);
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-            // No crítico si falla la eliminación física
-        }
+        ArchivosTransaccion.borrarTrasConfirmar(Paths.get(ruta));
     }
 
     public ClienteNotaDTO toggleFijadoNota(Integer clienteId, Long notaId) {

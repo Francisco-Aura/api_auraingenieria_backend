@@ -175,6 +175,11 @@ public class MotorMcas {
             return resultadoNoComisionable(ctx, e.getMessage(), null, null);
         } catch (McasCalculoException e) {
             return resultadoError(ctx, e.getMessage());
+        } catch (org.springframework.dao.DataAccessException | jakarta.persistence.PersistenceException e) {
+            // Un fallo de la BD deja la transacción marcada para deshacerse: si se convirtiera
+            // en «error de cálculo», la propuesta se perdería igual al confirmar y quedaría
+            // una auditoría suelta. Se deja subir para que falle limpio.
+            throw e;
         } catch (Exception e) {
             log.error("Error inesperado motor MCAS contrato={}", ctx.getIdContrato(), e);
             return resultadoError(ctx, "Error interno: " + e.getMessage());

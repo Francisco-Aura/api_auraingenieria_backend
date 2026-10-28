@@ -159,7 +159,7 @@ public class McasVistaPreviaService {
     /** Mismo calendario que la propuesta: desde la primera aplicación (o el inicio), un pago al mes. */
     private List<McasVistaPreviaDTO.Cuota> calendario(BigDecimal importe, int pagos, Contrato c, ContextoCalculo ctx) {
         LocalDate primera = c.getMcasFechaPrimeraAplicacion() != null
-                ? new java.sql.Date(c.getMcasFechaPrimeraAplicacion().getTime()).toLocalDate()
+                ? api.aura.util.FechaNegocio.aLocalDate(c.getMcasFechaPrimeraAplicacion())
                 : ctx.getFechaEfectiva();
         List<BigDecimal> cuotas = motor.buildPagos(importe, pagos);
         List<McasVistaPreviaDTO.Cuota> lista = new ArrayList<>();

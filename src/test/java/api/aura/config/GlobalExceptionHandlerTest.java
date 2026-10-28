@@ -51,6 +51,16 @@ class GlobalExceptionHandlerTest {
             throw new IllegalStateException("detalle interno del fallo");
         }
 
+        @GetMapping("/prueba/bloqueo")
+        String bloqueo() {
+            throw new org.springframework.dao.PessimisticLockingFailureException("Lock wait timeout exceeded");
+        }
+
+        @GetMapping("/prueba/optimista")
+        String optimista() {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(Object.class, 1);
+        }
+
         @PostMapping("/prueba/archivo")
         String archivo(@RequestParam("archivo") MultipartFile archivo) {
             throw new MaxUploadSizeExceededException(10 * 1024 * 1024);
@@ -109,5 +119,25 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.error").value("Se ha producido un error inesperado. Por favor, inténtelo de nuevo."));
 
         assertThat(salida.getAll()).contains("detalle interno del fallo").contains("IllegalStateException");
+    }
+
+    @Test
+    void el_log_de_un_error_inesperado_dice_que_peticion_fallo(CapturedOutput salida) throws Exception {
+        mvc.perform(get("/prueba/fallo")).andExpect(status().isInternalServerError());
+        assertThat(salida.getAll()).contains("GET /prueba/fallo");
+    }
+
+    @Test
+    void un_registro_bloqueado_por_otra_operacion_pide_reintentar_en_vez_de_un_error_generico() throws Exception {
+        mvc.perform(get("/prueba/bloqueo"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("La operación no se pudo completar a tiempo (puede haber otra en curso sobre los mismos datos). Inténtelo de nuevo en unos segundos."));
+    }
+
+    @Test
+    void el_conflicto_optimista_conserva_su_mensaje() throws Exception {
+        mvc.perform(get("/prueba/optimista"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Conflicto de concurrencia. Recarga y reintenta."));
     }
 }

@@ -8,6 +8,7 @@ import api.aura.repository.ClienteRepository;
 import api.aura.repository.PuntoSuministroRepository;
 import api.aura.service.mcas.McasProposalService;
 import api.aura.util.BajaEfectiva;
+import api.aura.util.FechaNegocio;
 import api.aura.service.mcas.McasContratoGuardadoEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -233,8 +234,13 @@ public class ContratoService {
         return contratoRepository.findByPuntoSuministroId(puntoSuministroId);
     }
 
+    @Transactional
     public void eliminarPorId(Integer id) {
-        contratoRepository.deleteById(id);
+        // Su PDF se quedaba huérfano en disco: se borra cuando el borrado queda confirmado
+        contratoRepository.findById(id).ifPresent(contrato -> {
+            contratoFileStorageService.eliminarPdfSiExiste(contrato);
+            contratoRepository.delete(contrato);
+        });
     }
 
     /**
@@ -242,12 +248,17 @@ public class ContratoService {
      */
     @Transactional
     public Contrato renovarContrato(Integer idContratoOriginal, Contrato nuevoContrato) {
-        Contrato original = contratoRepository.findById(idContratoOriginal)
+        // Bloqueo del original hasta el final de la transacción: dos peticiones de
+        // renovación del mismo contrato (doble envío, dos pestañas) van una detrás de otra
+        Contrato original = contratoRepository.findByIdForUpdate(idContratoOriginal)
                 .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado con ID: " + idContratoOriginal));
 
         // Garantizar que el nuevo contrato no tenga ID (se creará nuevo)
         nuevoContrato.setId(null);
         nuevoContrato.setMcasEsRenovacion(true);
+        // El formulario copia el contrato original, también su baja: la renovación de un
+        // contrato ya dado de baja nacía de baja y no salía en ningún informe
+        nuevoContrato.setFechaBaja(null);
 
         // Preservar asociaciones del original si no vienen en el nuevo
         if (nuevoContrato.getCliente() == null && original.getCliente() != null) {
@@ -261,6 +272,15 @@ public class ContratoService {
         } else if (nuevoContrato.getPuntoSuministro() != null && nuevoContrato.getPuntoSuministro().getId() != null) {
             puntoSuministroRepository.findById(nuevoContrato.getPuntoSuministro().getId())
                     .ifPresent(nuevoContrato::setPuntoSuministro);
+        }
+
+        // Si la misma renovación ya se ha guardado (mismo punto, número y fechas), se
+        // devuelve esa en vez de crear un contrato duplicado
+        Contrato yaRenovado = renovacionIgual(original, nuevoContrato);
+        if (yaRenovado != null) {
+            logger.info("Renovación repetida del contrato {}: se devuelve la ya creada (ID {})",
+                    idContratoOriginal, yaRenovado.getId());
+            return yaRenovado;
         }
 
         // Guardar nuevo contrato
@@ -277,10 +297,32 @@ public class ContratoService {
         return guardado;
     }
 
+    /**
+     * Renovación ya guardada por una petición anterior (doble envío): un contrato del
+     * mismo punto creado después del original, con el mismo número y fechas. El original
+     * nunca cuenta: si venía de otra renovación y se dejaban su número y fechas, la
+     * renovación devolvía el propio original y no creaba nada.
+     */
+    private Contrato renovacionIgual(Contrato original, Contrato nuevo) {
+        if (nuevo.getPuntoSuministro() == null || nuevo.getPuntoSuministro().getId() == null) return null;
+        return contratoRepository.findByPuntoSuministroId(nuevo.getPuntoSuministro().getId()).stream()
+                .filter(c -> c.getId() != null && original.getId() != null && c.getId() > original.getId())
+                .filter(c -> Boolean.TRUE.equals(c.getMcasEsRenovacion()))
+                // Una renovación que después se dio de baja ya no cuenta: hay que crear otra
+                .filter(c -> BajaEfectiva.estaActivo(c.getFechaBaja()))
+                .filter(c -> java.util.Objects.equals(c.getContrato(), nuevo.getContrato()))
+                .filter(c -> java.util.Objects.equals(FechaNegocio.aLocalDate(c.getFechaInicio()), FechaNegocio.aLocalDate(nuevo.getFechaInicio())))
+                .filter(c -> java.util.Objects.equals(FechaNegocio.aLocalDate(c.getFechaFin()), FechaNegocio.aLocalDate(nuevo.getFechaFin())))
+                .findFirst()
+                .orElse(null);
+    }
+
     @Transactional
     public Contrato renovarContratoConPdf(Integer idContratoOriginal, Contrato nuevoContrato,
             org.springframework.web.multipart.MultipartFile archivo) {
         Contrato guardado = renovarContrato(idContratoOriginal, nuevoContrato);
+        // En una renovación repetida que ya tiene su PDF no se sube otra copia
+        if (guardado.getRutaArchivoContrato() != null && !guardado.getRutaArchivoContrato().isBlank()) return guardado;
         contratoFileStorageService.guardarPdf(guardado, archivo);
         return contratoRepository.save(guardado);
     }

@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ public class TBSectoresController {
 
     @PostMapping
     public ResponseEntity<TBSectores> crearSector(@RequestBody TBSectores sector) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(sectoresService.crearSector(sector));
     }
 
@@ -34,11 +36,13 @@ public class TBSectoresController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TBSectores> actualizarSector(@PathVariable Integer id, @RequestBody TBSectores sectorActualizado) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(sectoresService.actualizarSector(id, sectorActualizado));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarSector(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         sectoresService.eliminarSector(id);
         return ResponseEntity.noContent().build();
     }

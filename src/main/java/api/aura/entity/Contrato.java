@@ -106,6 +106,8 @@ public class Contrato {
     private String nombreArchivo;
 
     @Column(length = 500)
+    // Al navegador solo el nombre del archivo (le basta para saber si hay PDF), no la ruta
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(using = api.aura.util.SoloNombreArchivoSerializer.class)
     private String rutaArchivoContrato;
 
     @Column(length = 100)

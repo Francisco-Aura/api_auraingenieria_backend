@@ -9,7 +9,10 @@ import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.AdjuntoRepository;
 import api.aura.repository.modulo_tareas.mt_ComentarioRepository;
 import api.aura.repository.modulo_tareas.mt_TareaRepository;
+import api.aura.config.AuraUserHolder;
+import api.aura.util.ArchivosTransaccion;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class TareaComentarioService {
 
         private final mt_ComentarioRepository comentarioRepository;
@@ -34,8 +38,13 @@ public class TareaComentarioService {
 
         // @NombreSinEspacios tal como lo inserta el desplegable de menciones. UNICODE_CHARACTER_CLASS
         // para que \w incluya tildes y ñ (María, Núñez...): sin él la mención se cortaba y no notificaba.
-        private static final Pattern PATRON_MENCION = Pattern.compile("@([\\w.]+)", Pattern.UNICODE_CHARACTER_CLASS);
+        // También guion y apóstrofo (José-Luis, O'Brien), que cortaban el nombre.
+        private static final Pattern PATRON_MENCION = Pattern.compile("@([\\w.'’-]+)", Pattern.UNICODE_CHARACTER_CLASS);
+        // Signos con los que puede acabar la frase tras la mención («Gracias @Ana.»)
+        private static final Pattern PUNTUACION_FINAL = Pattern.compile("[.'’-]+$");
 
+        // Solo lectura: sin instantáneas ni revisión de cambios de cada comentario al cerrar
+        @Transactional(readOnly = true)
         public List<ComentarioDTO> obtenerPorTarea(Long tareaId) {
                 List<mt_Comentario> comentarios = comentarioRepository.findByTarea_IdOrderByFechaCreacionAsc(tareaId);
                 // Ordenar: primero fijados, luego por fecha descendente (más reciente primero)
@@ -75,25 +84,43 @@ public class TareaComentarioService {
          * a los usuarios mencionados.
          */
         private void procesarMenciones(String texto, mt_Tarea tarea, Usuario autor) {
-                if (texto == null || texto.isBlank()) return;
+                procesarMenciones(texto, tarea, autor, java.util.Set.of());
+        }
+
+        /** Igual, sin volver a avisar a quien ya estaba mencionado (al editar un comentario). */
+        private void procesarMenciones(String texto, mt_Tarea tarea, Usuario autor, java.util.Set<Integer> yaMencionados) {
+                for (Usuario mencionado : usuariosMencionados(texto)) {
+                        if (!yaMencionados.contains(mencionado.getId())) {
+                                notificacionService.notificarMencion(tarea, mencionado, autor);
+                        }
+                }
+        }
+
+        private java.util.List<Usuario> usuariosMencionados(String texto) {
+                if (texto == null || texto.isBlank()) return java.util.List.of();
                 Matcher matcher = PATRON_MENCION.matcher(texto);
                 java.util.List<Usuario> todosLosUsuarios = null;
                 // Nombrar dos veces a la misma persona en un comentario es un solo aviso
-                java.util.Set<Integer> yaAvisados = new java.util.HashSet<>();
+                java.util.Map<Integer, Usuario> mencionados = new java.util.LinkedHashMap<>();
                 while (matcher.find()) {
                         String username = matcher.group(1);
+                        String sinPuntuacion = PUNTUACION_FINAL.matcher(username).replaceAll("");
                         // Cargar el listado de usuarios una sola vez por comentario, no por mención
                         if (todosLosUsuarios == null) {
                                 todosLosUsuarios = usuarioRepository.findAll();
                         }
                         // Buscar usuario por nombre (tolerante a mayúsculas)
                         todosLosUsuarios.stream()
-                                .filter(u -> u.getNombre() != null &&
-                                        u.getNombre().replaceAll("\\s+", "").equalsIgnoreCase(username))
+                                .filter(u -> u.getNombre() != null && esElNombre(u.getNombre(), username, sinPuntuacion))
                                 .findFirst()
-                                .filter(mencionado -> yaAvisados.add(mencionado.getId()))
-                                .ifPresent(mencionado -> notificacionService.notificarMencion(tarea, mencionado, autor));
+                                .ifPresent(mencionado -> mencionados.putIfAbsent(mencionado.getId(), mencionado));
                 }
+                return new java.util.ArrayList<>(mencionados.values());
+        }
+
+        private static boolean esElNombre(String nombre, String mencion, String mencionSinPuntuacion) {
+                String clave = nombre.replaceAll("\\s+", "");
+                return clave.equalsIgnoreCase(mencion) || clave.equalsIgnoreCase(mencionSinPuntuacion);
         }
 
         public ComentarioDTO actualizarComentario(Long id, String nuevoComentario, Integer usuarioIdActual) {
@@ -108,11 +135,14 @@ public class TareaComentarioService {
                         throw new IllegalArgumentException("No tienes permiso para editar este comentario. Solo el autor puede editarlo.");
                 }
                 
+                // Al corregir el texto solo se avisa a quien se menciona por primera vez
+                java.util.Set<Integer> yaMencionados = usuariosMencionados(comentario.getComentario()).stream()
+                                .map(Usuario::getId).collect(Collectors.toSet());
                 comentario.setComentario(nuevoComentario);
                 comentario.setFechaEdicion(java.time.LocalDateTime.now());
                 comentario.setEditado(true);
                 mt_Comentario actualizado = comentarioRepository.save(comentario);
-                procesarMenciones(nuevoComentario, actualizado.getTarea(), actualizado.getUsuarioAutor());
+                procesarMenciones(nuevoComentario, actualizado.getTarea(), actualizado.getUsuarioAutor(), yaMencionados);
                 return toDto(actualizado);
         }
 
@@ -135,7 +165,19 @@ public class TareaComentarioService {
                 if (usuarioActual.getNivelAcceso() == null || !usuarioActual.getNivelAcceso().equals(1)) {
                         throw new IllegalArgumentException("No tienes permiso para eliminar comentarios. Solo administradores pueden eliminarlos.");
                 }
-                
+
+                // Las filas de sus adjuntos se borran en cascada; sus archivos se quedaban
+                // huérfanos en disco. Se borran cuando el borrado queda confirmado.
+                for (mt_Adjunto adjunto : comentario.getAdjuntos()) {
+                        String ruta = adjunto.getRutaArchivo();
+                        if (ruta == null || ruta.isBlank()) continue;
+                        try {
+                                ArchivosTransaccion.borrarTrasConfirmar(ruta, () -> fileStorageService.eliminarArchivo(ruta));
+                        } catch (IOException e) {
+                                log.warn("No se pudo eliminar el archivo físico: {}", ruta, e);
+                        }
+                }
+
                 comentarioRepository.deleteById(id);
         }
 
@@ -147,6 +189,24 @@ public class TareaComentarioService {
                 return adjuntoRepository.save(adjunto);
         }
 
+        /** Tarea a la que pertenece un comentario; null si no tiene. */
+        @Transactional(readOnly = true)
+        public Long tareaDelComentario(Long comentarioId) {
+                mt_Comentario comentario = comentarioRepository.findById(comentarioId)
+                                .orElseThrow(() -> new IllegalArgumentException("Comentario no encontrado"));
+                return comentario.getTarea() != null ? comentario.getTarea().getId() : null;
+        }
+
+        /** Tarea a la que pertenece un adjunto (directo o de un comentario); null si no hay. */
+        @Transactional(readOnly = true)
+        public Long tareaDelAdjunto(Long adjuntoId) {
+                mt_Adjunto adjunto = obtenerAdjunto(adjuntoId);
+                if (adjunto.getTarea() != null) return adjunto.getTarea().getId();
+                if (adjunto.getComentario() != null && adjunto.getComentario().getTarea() != null)
+                        return adjunto.getComentario().getTarea().getId();
+                return null;
+        }
+
         public mt_Adjunto obtenerAdjunto(Long adjuntoId) {
                 return adjuntoRepository.findById(adjuntoId)
                                 .orElseThrow(() -> new IllegalArgumentException("Adjunto no encontrado"));
@@ -156,8 +216,17 @@ public class TareaComentarioService {
                 mt_Adjunto adjunto = adjuntoRepository.findById(adjuntoId)
                                 .orElseThrow(() -> new IllegalArgumentException("Adjunto no encontrado"));
 
-                // Eliminar archivo físico
-                fileStorageService.eliminarArchivo(adjunto.getRutaArchivo());
+                // Adjunto directo de una tarea creada por un administrador: solo se toca
+                // desde su edición, que es solo para administradores (como TareaController)
+                if (adjunto.getComentario() == null && adjunto.getTarea() != null && !AuraUserHolder.esAdmin()
+                                && adjunto.getTarea().getUsuarioCreador() != null
+                                && Integer.valueOf(1).equals(adjunto.getTarea().getUsuarioCreador().getNivelAcceso())) {
+                        throw new SecurityException("Solo un administrador puede modificar una tarea creada por un administrador");
+                }
+
+                // Archivo físico: se borra cuando el borrado de la fila queda confirmado
+                String ruta = adjunto.getRutaArchivo();
+                ArchivosTransaccion.borrarTrasConfirmar(ruta, () -> fileStorageService.eliminarArchivo(ruta));
 
                 // Eliminar registro de base de datos
                 adjuntoRepository.delete(adjunto);
@@ -166,11 +235,11 @@ public class TareaComentarioService {
         public mt_Adjunto actualizarAdjunto(Long adjuntoId, MultipartFile file) throws IOException {
                 mt_Adjunto adjunto = adjuntoRepository.findById(adjuntoId)
                                 .orElseThrow(() -> new IllegalArgumentException("Adjunto no encontrado"));
+                String rutaAnterior = adjunto.getRutaArchivo();
 
-                // Eliminar archivo físico anterior
-                fileStorageService.eliminarArchivo(adjunto.getRutaArchivo());
-
-                // Guardar nuevo archivo
+                // Primero el archivo nuevo. Antes se borraba el anterior y, si el nuevo no
+                // se podía guardar (archivo vacío, error de disco...), el adjunto se
+                // quedaba apuntando a un archivo que ya no existía.
                 mt_Comentario comentario = adjunto.getComentario();
                 mt_Adjunto nuevoAdjunto = fileStorageService.guardarAdjunto(file, comentario);
 
@@ -179,8 +248,12 @@ public class TareaComentarioService {
                 adjunto.setRutaArchivo(nuevoAdjunto.getRutaArchivo());
                 adjunto.setTipoMime(nuevoAdjunto.getTipoMime());
                 adjunto.setTamanio(nuevoAdjunto.getTamanio());
+                mt_Adjunto guardado = adjuntoRepository.save(adjunto);
 
-                return adjuntoRepository.save(adjunto);
+                // El archivo anterior se borra cuando el cambio queda confirmado
+                ArchivosTransaccion.borrarTrasConfirmar(rutaAnterior,
+                                () -> fileStorageService.eliminarArchivo(rutaAnterior));
+                return guardado;
         }
 
         private ComentarioDTO toDto(mt_Comentario comentario) {

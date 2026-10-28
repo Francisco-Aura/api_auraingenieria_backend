@@ -81,7 +81,7 @@ public class McasContratoSnapshotService {
     }
 
     private String fecha(java.util.Date valor) {
-        return valor == null ? null : new java.sql.Date(valor.getTime()).toLocalDate().toString();
+        return valor == null ? null : api.aura.util.FechaNegocio.aLocalDate(valor).toString();
     }
 
     private String sha256(String valor) {

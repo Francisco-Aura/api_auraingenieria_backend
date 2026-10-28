@@ -13,12 +13,21 @@ import java.util.Optional;
 public interface McasPropuestaRepository extends JpaRepository<McasPropuesta, Long> {
 
     Optional<McasPropuesta> findByClaveIdempotencia(String claveIdempotencia);
-    List<McasPropuesta> findByIdContratoOrderByCreadoEnDesc(Integer idContrato);
 
-    @Query("SELECT p FROM McasPropuesta p WHERE p.idContrato = :id AND p.estado NOT IN ('CANCELADO','SUPERADO') ORDER BY p.creadoEn DESC")
+    /**
+     * Propuestas del contrato, la más reciente primero. {@code creado_en} es
+     * DATETIME (al segundo): dos propuestas creadas en el mismo segundo (guardar el
+     * contrato dos veces seguidas) empataban y el orden quedaba al azar de la BD, de
+     * modo que «la última» podía ser la ya sustituida. A igualdad decide el id, igual
+     * que el recuento ({@code McasLoteService}) y el listado («ultimaDelContrato»).
+     */
+    @Query("SELECT p FROM McasPropuesta p WHERE p.idContrato = :id ORDER BY p.creadoEn DESC, p.id DESC")
+    List<McasPropuesta> findByIdContratoOrderByCreadoEnDesc(@Param("id") Integer idContrato);
+
+    @Query("SELECT p FROM McasPropuesta p WHERE p.idContrato = :id AND p.estado NOT IN ('CANCELADO','SUPERADO') ORDER BY p.creadoEn DESC, p.id DESC")
     List<McasPropuesta> findActivasPorContrato(@Param("id") Integer idContrato);
 
-    @Query("SELECT p FROM McasPropuesta p ORDER BY p.creadoEn DESC")
+    @Query("SELECT p FROM McasPropuesta p ORDER BY p.creadoEn DESC, p.id DESC")
     List<McasPropuesta> findTodasOrdenadas();
 
     /**

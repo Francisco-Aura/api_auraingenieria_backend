@@ -174,8 +174,8 @@ public class McasProposalService {
 
         // Idempotencia
         String clave = clave(c, snapshot.hash());
-        Optional<McasPropuesta> existente = propuestaRepo.findByClaveIdempotencia(clave);
-        if (existente.isPresent() && !List.of("CANCELADO", "SUPERADO").contains(existente.get().getEstado())) {
+        Optional<McasPropuesta> existente = propuestaActivaPorClave(clave, usuario, corr);
+        if (existente.isPresent()) {
             log.info("MCAS idempotencia: propuesta {} ya activa contrato={}", existente.get().getId(), idContrato);
             return existente.get();
         }
@@ -221,21 +221,23 @@ public class McasProposalService {
             throw new IllegalStateException("No se puede recalcular en estado " + p.getEstado());
         Integer idContrato = p.getIdContrato();
         String prev = p.getEstado();
-        liberarClave(p, "sup");
-        p.setEstado("SUPERADO");
-        propuestaRepo.save(p);
+        String usuario = usuario();
+        superar(p);
         if (cerradaSinServicio) {
-            auditoria.registrar(p.getId(), idContrato, "PROPUESTA_REABIERTA", prev, "SUPERADO", null, usuario(), null);
+            auditoria.registrar(p.getId(), idContrato, "PROPUESTA_REABIERTA", prev, "SUPERADO", null, usuario, null);
             // Las propuestas que quedaron en revisión solo por este «No procede» ya no tienen motivo.
             Long idDescartada = p.getId();
             propuestaRepo.findByIdContratoOrderByCreadoEnDesc(idContrato).stream()
                     .filter(x -> "REQUIERE_REVISION_MANUAL".equals(x.getEstado()))
                     .filter(x -> Objects.equals(descartePrevio(x), idDescartada))
                     .forEach(x -> {
-                        liberarClave(x, "sup");
-                        x.setEstado("SUPERADO");
-                        propuestaRepo.save(x);
+                        superar(x);
+                        auditoria.registrar(x.getId(), idContrato, "PROPUESTA_SUPERADA",
+                                "REQUIERE_REVISION_MANUAL", "SUPERADO", null, usuario, null);
                     });
+        } else {
+            // Como el resto de cambios de estado: queda quién la sustituyó por un cálculo nuevo
+            auditoria.registrar(p.getId(), idContrato, "PROPUESTA_SUPERADA", prev, "SUPERADO", null, usuario, null);
         }
         return triggerDesdeContrato(idContrato);
     }
@@ -275,7 +277,7 @@ public class McasProposalService {
         descarte.put("usuario", usuario);
         p.setDatosEditadosJson(conClave(p.getDatosEditadosJson(), CLAVE_DESCARTE, descarte));
         p.setActualizadoPor(usuario); p.setActualizadoEn(ahora);
-        p = propuestaRepo.save(p);
+        p = propuestaRepo.saveAndFlush(p); // la comprobación de versión salta aquí, antes de la auditoría
         auditoria.registrar(p.getId(), p.getIdContrato(), "PROPUESTA_DESCARTADA", prev, "FINALIZADO_NO_COMISIONABLE",
                 Map.of("motivo", texto), usuario, null);
         return p;
@@ -384,7 +386,7 @@ public class McasProposalService {
         p.setIdServicioCreado(s.getId());
         p.setAprobadoPor(usuario); p.setAprobadoEn(LocalDateTime.now());
         p.setActualizadoPor(usuario); p.setActualizadoEn(LocalDateTime.now());
-        p = propuestaRepo.save(p);
+        p = propuestaRepo.saveAndFlush(p); // la comprobación de versión salta aquí, antes de la auditoría
         auditoria.registrar(p.getId(), idContrato, "PROPUESTA_APROBADA", prev, "FINALIZADO_APROBADO",
                 Map.of("id_servicio", s.getId()), usuario, null);
         log.info("MCAS propuesta={} APROBADA servicio={}", propuestaId, s.getId());
@@ -411,7 +413,7 @@ public class McasProposalService {
         String prev = p.getEstado();
         p.setEstado("RECHAZADO"); p.setMotivoRechazo(motivo);
         p.setActualizadoPor(usuario); p.setActualizadoEn(LocalDateTime.now());
-        p = propuestaRepo.save(p);
+        p = propuestaRepo.saveAndFlush(p); // la comprobación de versión salta aquí, antes de la auditoría
         auditoria.registrar(p.getId(), p.getIdContrato(), "PROPUESTA_RECHAZADA",
                 prev, "RECHAZADO", Map.of("motivo", motivo), usuario, null);
         return pasarAEdicion(p, usuario);
@@ -447,7 +449,7 @@ public class McasProposalService {
         String prev = p.getEstado();
         p.setEstado("EN_EDICION");
         p.setActualizadoPor(usuario); p.setActualizadoEn(LocalDateTime.now());
-        p = propuestaRepo.save(p);
+        p = propuestaRepo.saveAndFlush(p); // la comprobación de versión salta aquí, antes de la auditoría
         auditoria.registrar(p.getId(), p.getIdContrato(), "EDICION_ABIERTA", prev, "EN_EDICION",
                 Map.of("origen", prev), usuario, null);
         return p;
@@ -464,6 +466,9 @@ public class McasProposalService {
             throw new IllegalStateException("Ya existe servicio #" + p.getIdServicioCreado());
         if (importeDefinitivo != null && importeDefinitivo.signum() < 0)
             throw new IllegalArgumentException("El importe definitivo no puede ser negativo");
+        // Al céntimo, como las cuotas: «100,555» creaba un servicio de 100.555 con cuotas
+        // que sumaban 100,56
+        if (importeDefinitivo != null) importeDefinitivo = importeDefinitivo.setScale(2, java.math.RoundingMode.HALF_UP);
         // Una propuesta que el motor no calculó (revisión manual) no tiene importe al que volver.
         if (importeDefinitivo == null && p.getImporteCalculado() == null)
             throw new IllegalArgumentException("Indique el importe definitivo de la comisión");
@@ -517,7 +522,7 @@ public class McasProposalService {
         p.setEstado("FINALIZADO_EDITADO"); p.setIdServicioCreado(s.getId());
         p.setAprobadoPor(usuario); p.setAprobadoEn(LocalDateTime.now());
         p.setActualizadoPor(usuario); p.setActualizadoEn(LocalDateTime.now());
-        p = propuestaRepo.save(p);
+        p = propuestaRepo.saveAndFlush(p); // la comprobación de versión salta aquí, antes de la auditoría
         auditoria.registrar(p.getId(), idContrato, "PROPUESTA_FINALIZADA_EDITADA",
                 prev, "FINALIZADO_EDITADO",
                 Map.of("importe_definitivo", imp != null ? imp : 0, "motivo", motivoEdicion != null ? motivoEdicion : ""),
@@ -553,6 +558,15 @@ public class McasProposalService {
         return u != null ? u : "sistema";
     }
 
+    /** Deja la propuesta como sustituida por un cálculo nuevo (con quién y cuándo). */
+    private void superar(McasPropuesta p) {
+        liberarClave(p, "sup");
+        p.setEstado("SUPERADO");
+        p.setActualizadoPor(usuario());
+        p.setActualizadoEn(LocalDateTime.now());
+        propuestaRepo.save(p);
+    }
+
     /**
      * Libera la clave de idempotencia de una propuesta que deja de estar activa
      * para que un cálculo nuevo pueda reutilizarla. La clave liberada no crece
@@ -560,6 +574,29 @@ public class McasProposalService {
      */
     private void liberarClave(McasPropuesta p, String motivo) {
         p.setClaveIdempotencia("LIBERADA|" + p.getId() + "|" + motivo + "|" + UUID.randomUUID());
+    }
+
+    /**
+     * La propuesta que ocupa la clave del contrato en su estado actual, si sigue activa.
+     * Una comisión aprobada cuyo servicio se borró (o se dio de baja) ya no cuenta como
+     * comisión: su clave se libera para que el contrato, aunque no haya cambiado, se pueda
+     * volver a calcular. Antes «Calcular propuesta» devolvía la aprobada antigua sin servicio.
+     */
+    private Optional<McasPropuesta> propuestaActivaPorClave(String clave, String usuario, String corr) {
+        Optional<McasPropuesta> existente = propuestaRepo.findByClaveIdempotencia(clave)
+                .filter(p -> !List.of("CANCELADO", "SUPERADO").contains(p.getEstado()));
+        if (existente.isPresent() && ESTADOS_CON_COMISION.contains(existente.get().getEstado())
+                && !servicioVigente(existente.get())) {
+            McasPropuesta sinServicio = existente.get();
+            liberarClave(sinServicio, "sin-servicio");
+            // Antes del alta de la nueva: Hibernate inserta antes de actualizar y la clave es única
+            propuestaRepo.saveAndFlush(sinServicio);
+            auditoria.registrar(sinServicio.getId(), sinServicio.getIdContrato(), "COMISION_SIN_SERVICIO",
+                    sinServicio.getEstado(), sinServicio.getEstado(),
+                    Map.of("idServicioCreado", String.valueOf(sinServicio.getIdServicioCreado())), usuario, corr);
+            return Optional.empty();
+        }
+        return existente;
     }
 
     /** Pagos introducidos en el contrato (1 a 12); null si no hay o no son válidos. */
@@ -605,14 +642,19 @@ public class McasProposalService {
                 .collect(java.util.stream.Collectors.toSet());
         Set<String> claves = new HashSet<>();
         for (McasPropuesta p : conComision)
-            if (p.getIdServicioCreado() == null || vigentes.contains(p.getIdServicioCreado()))
+            if (p.getIdServicioCreado() != null && vigentes.contains(p.getIdServicioCreado()))
                 claves.add(claveComision(p.getIdContrato(), p.getTipoEvento()));
         return claves;
     }
 
-    /** Si el servicio de la comisión se eliminó o se dio de baja, esa comisión ya no cuenta. */
+    /**
+     * Si el servicio de la comisión se eliminó o se dio de baja, esa comisión ya no cuenta.
+     * Al eliminar el servicio la BD deja vacío id_servicio_creado (ON DELETE SET NULL):
+     * una propuesta aprobada sin servicio es una cuyo servicio se borró. Antes contaba
+     * como comisión vigente y MCAS no volvía a proponer la de ese contrato.
+     */
     private boolean servicioVigente(McasPropuesta p) {
-        if (p.getIdServicioCreado() == null) return true;
+        if (p.getIdServicioCreado() == null) return false;
         return servicioRepo.findById(p.getIdServicioCreado())
                 .map(s -> s.getFechaBaja() == null).orElse(false);
     }
@@ -646,7 +688,7 @@ public class McasProposalService {
     }
 
     private LocalDate fecha(java.util.Date valor, LocalDate porDefecto) {
-        return valor == null ? porDefecto : new java.sql.Date(valor.getTime()).toLocalDate();
+        return valor == null ? porDefecto : api.aura.util.FechaNegocio.aLocalDate(valor);
     }
 
     /** Datos mínimos del contrato para calcular (también lo usa la simulación). */
@@ -755,12 +797,34 @@ public class McasProposalService {
                 .map(BigDecimal::valueOf).max(BigDecimal::compareTo).orElse(null);
     }
 
-    private String resolverCodigoTarifa(Contrato c) {
+    /**
+     * Tarifa de acceso con la que se evalúan las reglas. En un contrato de gas va la de
+     * gas (igual que en el formulario, mcasCamposContrato.campoDeClave): esos contratos
+     * guardan también el id de la tarifa de luz «Sin Tarifa», que antes ganaba siempre,
+     * y ninguna regla de gas por tarifa podía coincidir.
+     */
+    public String resolverCodigoTarifa(Contrato c) {
+        String tipo = c.getMcasTipoSuministro() != null ? c.getMcasTipoSuministro().trim() : "";
+        // Con el suministro indicado solo vale su propia tarifa: un contrato de luz sin
+        // tarifa de luz cogía la «Sin Tarifa» de gas y acababa en revisión manual sin
+        // decir que faltaba la tarifa (ahora pide el dato, como cualquier otro que falte)
+        if ("GAS".equalsIgnoreCase(tipo))
+            return c.getIdTarifaGas() != 0 ? nombreTarifaGas(c.getIdTarifaGas()) : null;
+        if ("LUZ".equalsIgnoreCase(tipo))
+            return c.getIdTarifaLuz() != 0 ? nombreTarifaLuz(c.getIdTarifaLuz()) : null;
         if (c.getIdTarifaLuz() != 0)
-            return tarifasLuzRepo.findById(c.getIdTarifaLuz()).map(t -> t.getNombre()).orElse(null);
+            return nombreTarifaLuz(c.getIdTarifaLuz());
         if (c.getIdTarifaGas() != 0)
-            return tarifasGasRepo.findById(c.getIdTarifaGas()).map(t -> t.getNombre()).orElse(null);
+            return nombreTarifaGas(c.getIdTarifaGas());
         return null;
+    }
+
+    private String nombreTarifaLuz(int id) {
+        return tarifasLuzRepo.findById(id).map(t -> t.getNombre()).orElse(null);
+    }
+
+    private String nombreTarifaGas(int id) {
+        return tarifasGasRepo.findById(id).map(t -> t.getNombre()).orElse(null);
     }
 
     /**
@@ -779,8 +843,8 @@ public class McasProposalService {
                                           Map<String, Object> trazaExtra, String corr, String usuario,
                                           McasContratoSnapshotService.Snapshot snapshot) {
         String clave = clave(c, snapshot.hash());
-        Optional<McasPropuesta> ex = propuestaRepo.findByClaveIdempotencia(clave);
-        if (ex.isPresent() && !List.of("CANCELADO", "SUPERADO").contains(ex.get().getEstado()))
+        Optional<McasPropuesta> ex = propuestaActivaPorClave(clave, usuario, corr);
+        if (ex.isPresent())
             return ex.get();
         // Sin pasar por el motor la propuesta también muestra la retrocesión potencial
         // (sin comercializadora no hay política) y precarga los pagos del contrato
@@ -854,8 +918,11 @@ public class McasProposalService {
     private Integer seleccionarRetrocesion(ContextoCalculo ctx, List<String> advertencias) {
         try {
             return retrocesionPolicies.seleccionar(ctx).orElse(null);
+        } catch (org.springframework.dao.DataAccessException | jakarta.persistence.PersistenceException e) {
+            // Un fallo de la BD no es una política mal configurada (ver MotorMcas)
+            throw e;
         } catch (RuntimeException e) {
-            log.warn("MCAS contrato={} sin politica de retrocesion: {}", ctx.getIdContrato(), e.getMessage());
+            log.warn("MCAS contrato={} sin politica de retrocesion: {}", ctx.getIdContrato(), e.getMessage(), e);
             advertencias.add("Sin politica de retrocesion asignada: " + e.getMessage());
             return null;
         }
@@ -1038,6 +1105,11 @@ public class McasProposalService {
     }
 
     private String toJson(Object o) {
-        try { return mapper.writeValueAsString(o); } catch (Exception e) { return "{}"; }
+        try {
+            return mapper.writeValueAsString(o);
+        } catch (Exception e) {
+            log.error("MCAS: no se pudo convertir a JSON un {}", o == null ? "null" : o.getClass().getSimpleName(), e);
+            return "{}";
+        }
     }
 }

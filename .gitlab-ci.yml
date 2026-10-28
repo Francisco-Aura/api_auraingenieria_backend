@@ -13,10 +13,6 @@ deploy_backend_PRE:
     - release
 
   script:
-    - echo "=== Limpiando Maven ==="
-    - rm -rf .m2/repository
-    - mvn dependency:purge-local-repository
-
     - echo "=== Configurando SSH PRE ==="
     - apt-get update -y
     - apt-get install -y openssh-client
@@ -28,17 +24,26 @@ deploy_backend_PRE:
     - ssh-keyscan -p 2222 5.34.148.92 >> ~/.ssh/known_hosts
     - chmod 600 ~/.ssh/known_hosts
 
-    - echo "=== Compilando ==="
-    - mvn clean package -DskipTests -U
+    - echo "=== Nombre de la cookie de sesión de PRE ==="
+    # PRE y PRO comparten IP y las cookies no distinguen puerto: con el mismo nombre,
+    # entrar en uno cerraría la sesión del otro. Se empaqueta solo en el jar de PRE.
+    - echo "server.servlet.session.cookie.name=AURA_SESSION_PRE" > src/main/resources/application-local.properties
+
+    - echo "=== Compilando y pasando los tests (si falla alguno no se despliega) ==="
+    - mvn -B clean package
 
     - echo "=== Verificando JAR ==="
     - ls -la target/*.jar
 
     - echo "=== Backup ==="
-    - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || true"
+    # Copia del jar actual; solo se guardan las 5 últimas (antes se acumulaban sin fin)
+    - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || true; find /tmp -maxdepth 1 -type f -name 'aura.jar.backup.*' -printf '%T@ %p\n' | sort -rn | tail -n +6 | cut -d' ' -f2- | xargs -d '\n' -r rm -f --"
 
     - echo "=== Copiando JAR ==="
-    - scp -P 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar
+    # Se sube con otro nombre y se cambia de golpe: el backend en marcha nunca lee un
+    # jar a medio escribir
+    - scp -P 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar.nuevo
+    - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "mv -f /tmp/aura.jar.nuevo /tmp/aura.jar"
 
     - echo "=== Ejecutando despliegue ==="
     - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "bash /home/babenza/deploy_backend.sh"
@@ -53,10 +58,6 @@ deploy_backend_PRO:
     - main
 
   script:
-    - echo "=== Limpiando Maven ==="
-    - rm -rf .m2/repository
-    - mvn dependency:purge-local-repository
-
     - echo "=== Configurando SSH PRO ==="
     - apt-get update -y
     - apt-get install -y openssh-client
@@ -68,17 +69,21 @@ deploy_backend_PRO:
     - ssh-keyscan 5.34.148.92 >> ~/.ssh/known_hosts
     - chmod 600 ~/.ssh/known_hosts
 
-    - echo "=== Compilando ==="
-    - mvn clean package -DskipTests -U
+    - echo "=== Compilando y pasando los tests (si falla alguno no se despliega) ==="
+    - mvn -B clean package
 
     - echo "=== Verificando JAR ==="
     - ls -la target/*.jar
 
     - echo "=== Backup ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || true"
+    # Copia del jar actual; solo se guardan las 5 últimas (antes se acumulaban sin fin)
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || true; find /tmp -maxdepth 1 -type f -name 'aura.jar.backup.*' -printf '%T@ %p\n' | sort -rn | tail -n +6 | cut -d' ' -f2- | xargs -d '\n' -r rm -f --"
 
     - echo "=== Copiando JAR ==="
-    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar
+    # Se sube con otro nombre y se cambia de golpe: el backend en marcha nunca lee un
+    # jar a medio escribir
+    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar.nuevo
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "mv -f /tmp/aura.jar.nuevo /tmp/aura.jar"
 
     - echo "=== Ejecutando despliegue ==="
     - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "bash /home/babenza/deploy_backend.sh"

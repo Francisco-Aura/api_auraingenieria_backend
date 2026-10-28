@@ -1,6 +1,7 @@
 package api.aura.mcas;
 
 import api.aura.config.AuraUserFilter;
+import api.aura.config.UsuarioSesion;
 import api.aura.entity.Contrato;
 import api.aura.entity.Usuario;
 import api.aura.repository.ContratoRepository;
@@ -91,7 +92,11 @@ class McasAccesoOperadorTest {
                 .content("{\"contrato\":\"ACC\",\"mcasTipoPrecio\":\"FIJO\"}");
     }
 
+    /** Petición con la sesión iniciada por ese usuario (id real si existe; si no, sesión sin id). */
     private MockHttpServletRequestBuilder como(String usuario, MockHttpServletRequestBuilder peticion) {
-        return peticion.header("X-Aura-Usuario-Nombre", usuario);
+        UsuarioSesion sesion = usuarios.findFirstByNombreIgnoreCase(usuario)
+                .map(u -> new UsuarioSesion(u.getId(), u.getNombre(), u.getNivelAcceso()))
+                .orElse(new UsuarioSesion(null, usuario, null));
+        return peticion.sessionAttr(UsuarioSesion.ATRIBUTO, sesion);
     }
 }

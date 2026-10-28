@@ -28,7 +28,16 @@ public class McasAccessService {
         usuarioIdentificado();
     }
 
+    /**
+     * Usuario de la sesión, releído de la BD para usar su nivel actual (un
+     * administrador degradado pierde el acceso sin esperar a que caduque la
+     * sesión). Por id cuando lo hay; por nombre solo sin sesión (procesos internos).
+     */
     private Usuario usuarioIdentificado() {
+        Integer id = AuraUserHolder.getId();
+        if (id != null)
+            return usuarios.findById(id)
+                    .orElseThrow(() -> new SecurityException("Usuario no autorizado para operar MCAS"));
         String nombre = AuraUserHolder.get();
         if (nombre == null || nombre.isBlank())
             throw new SecurityException("Usuario no identificado para operar MCAS");

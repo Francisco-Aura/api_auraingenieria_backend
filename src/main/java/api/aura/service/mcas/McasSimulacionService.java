@@ -88,7 +88,7 @@ public class McasSimulacionService {
                 && !tipoPrecio.equals(conjunto.getFasePrecio()))
             avisos.add("El contrato es de precio " + tipoPrecio + " y el conjunto es de fase " + conjunto.getFasePrecio() + ".");
         if (c.getFechaInicio() != null && conjunto.getVigenciaDesde() != null) {
-            LocalDate inicio = new java.sql.Date(c.getFechaInicio().getTime()).toLocalDate();
+            LocalDate inicio = api.aura.util.FechaNegocio.aLocalDate(c.getFechaInicio());
             boolean fuera = inicio.isBefore(conjunto.getVigenciaDesde())
                     || (conjunto.getVigenciaHasta() != null && inicio.isAfter(conjunto.getVigenciaHasta()));
             if (fuera)
@@ -108,7 +108,7 @@ public class McasSimulacionService {
         if (res.getResultado() != ResultadoCalculo.Resultado.CALCULADO || res.getImporteTotal() == null)
             return List.of();
         LocalDate primera = c.getMcasFechaPrimeraAplicacion() != null
-                ? new java.sql.Date(c.getMcasFechaPrimeraAplicacion().getTime()).toLocalDate()
+                ? api.aura.util.FechaNegocio.aLocalDate(c.getMcasFechaPrimeraAplicacion())
                 : ctx.getFechaEfectiva();
         List<BigDecimal> cuotas = motor.buildPagos(res.getImporteTotal(),
                 res.getNumeroPagos() != null ? res.getNumeroPagos() : 1);

@@ -39,7 +39,8 @@ public class McasReglasController {
             if (!editable(r)) return ResponseEntity.badRequest().<Object>body(inmutable());
             if (datos.getCodigo() != null && !datos.getCodigo().isBlank()) r.setCodigo(datos.getCodigo().trim());
             r.setNombre(limpio(datos.getNombre())); r.setDescripcion(limpio(datos.getDescripcion()));
-            r.setPrioridad(datos.getPrioridad());
+            // Vacía conserva la que tenía (la columna no admite nulos y daba un error de datos)
+            if (datos.getPrioridad() != null) r.setPrioridad(datos.getPrioridad());
             r.setMetodoCalculo(datos.getMetodoCalculo()); r.setCondicionesJson(datos.getCondicionesJson());
             r.setCalculoJson(datos.getCalculoJson()); r.setPoliticaPagoJson(datos.getPoliticaPagoJson());
             r.setMotivoManual(datos.getMotivoManual()); r.setLocalizadorOrigen(datos.getLocalizadorOrigen());

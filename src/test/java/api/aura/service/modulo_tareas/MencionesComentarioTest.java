@@ -70,4 +70,40 @@ class MencionesComentarioTest {
         verify(notificaciones).notificarMencion(any(), eq(ANA), any());
         verify(notificaciones).notificarMencion(any(), eq(LUIS), any());
     }
+
+    @Test
+    void una_mencion_al_final_de_la_frase_tambien_avisa() {
+        servicio.crearComentario(comentario("Gracias @ANACOMERCIAL."));
+
+        verify(notificaciones).notificarMencion(any(), eq(ANA), any());
+    }
+
+    @Test
+    void un_nombre_con_guion_o_apostrofo_se_menciona_entero() {
+        Usuario joseLuis = Usuario.builder().id(11).nombre("José-Luis O'Brien").build();
+        when(usuarios.findAll()).thenReturn(List.of(ANA, LUIS, joseLuis));
+
+        servicio.crearComentario(comentario("@José-LuisO'Brien revisa esto"));
+
+        verify(notificaciones).notificarMencion(any(), eq(joseLuis), any());
+    }
+
+    @Test
+    void un_correo_en_el_texto_no_es_una_mencion() {
+        servicio.crearComentario(comentario("Escribe a soporte@anacomercial.es"));
+
+        verify(notificaciones, times(0)).notificarMencion(any(), any(), any());
+    }
+
+    @Test
+    void corregir_un_comentario_solo_avisa_a_quien_se_menciona_por_primera_vez() {
+        mt_Comentario existente = mt_Comentario.builder().id(50L).tarea(TAREA).usuarioAutor(LUIS)
+                .comentario("@ANACOMERCIAL revisa").build();
+        when(comentarios.findById(50L)).thenReturn(Optional.of(existente));
+
+        servicio.actualizarComentario(50L, "@ANACOMERCIAL revisa, y @LUISTÉCNICO también", 9);
+
+        verify(notificaciones, times(0)).notificarMencion(any(), eq(ANA), any());
+        verify(notificaciones).notificarMencion(any(), eq(LUIS), any());
+    }
 }
