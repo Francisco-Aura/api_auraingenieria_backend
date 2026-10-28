@@ -3,87 +3,143 @@ image: maven:3.9.6-eclipse-temurin-17
 stages:
   - deploy
 
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  paths:
+    - .m2/repository/
+
+.deploy_backend:
+  stage: deploy
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y openssh-client
+
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    - |
+      if [ -f "$DEPLOY_PRIVATE_KEY" ]; then
+        echo "Usando clave SSH desde variable GitLab tipo File"
+        cp "$DEPLOY_PRIVATE_KEY" ~/.ssh/id_rsa_gitlab
+      else
+        echo "Usando clave SSH desde variable GitLab normal"
+        printf '%s\n' "$DEPLOY_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa_gitlab
+      fi
+
+    - chmod 600 ~/.ssh/id_rsa_gitlab
+
+    - |
+      echo "=== Validando clave SSH ==="
+      ssh-keygen -y -f ~/.ssh/id_rsa_gitlab > /dev/null || {
+        echo "ERROR: La clave privada SSH no es valida"
+        exit 1
+      }
+
+    - |
+      echo "=== Registrando host SSH ==="
+      ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+    - chmod 600 ~/.ssh/known_hosts
+
+    - |
+      echo "=== Probando conexion SSH ==="
+      ssh \
+        -p "$DEPLOY_PORT" \
+        -i ~/.ssh/id_rsa_gitlab \
+        -o BatchMode=yes \
+        -o ConnectTimeout=10 \
+        "babenza@${DEPLOY_HOST}" \
+        "echo SSH_OK && hostname"
+
+  script:
+    - |
+      if [ -n "$SESSION_COOKIE_NAME" ]; then
+        echo "=== Nombre de la cookie de sesion: $SESSION_COOKIE_NAME ==="
+        # DES, PRE y PRO comparten IP y las cookies no distinguen puerto: con el mismo nombre,
+        # entrar en uno cerraria la sesion del otro. Se empaqueta solo en el jar de ese entorno.
+        echo "server.servlet.session.cookie.name=$SESSION_COOKIE_NAME" > src/main/resources/application-local.properties
+      fi
+
+    - echo "=== Compilando backend AURA ==="
+    - mvn -B clean package -DskipTests -U
+
+    - echo "=== Localizando JAR ==="
+    - JAR_FILE="$(find target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | head -1)"
+    - test -n "$JAR_FILE"
+    - ls -lh "$JAR_FILE"
+
+    - echo "=== Copiando JAR ==="
+    - |
+      scp \
+        -P "$DEPLOY_PORT" \
+        -i ~/.ssh/id_rsa_gitlab \
+        "$JAR_FILE" \
+        "babenza@${DEPLOY_HOST}:/tmp/aura.jar"
+
+    - echo "=== Desplegando backend ==="
+    - |
+      ssh \
+        -p "$DEPLOY_PORT" \
+        -i ~/.ssh/id_rsa_gitlab \
+        "babenza@${DEPLOY_HOST}" \
+        "bash /home/babenza/deploy_backend.sh"
+
+
 # ======================================================
-# DESPLIEGUE BACKEND PRE (rama release)
+# DES
+# develop -> Raspberry DES AURA
+# SSH -> 5.34.148.92:2223
+# WEB -> http://5.34.148.92:8081
+# ======================================================
+
+deploy_backend_DES:
+  extends: .deploy_backend
+
+  variables:
+    DEPLOY_HOST: "5.34.148.92"
+    DEPLOY_PORT: "2223"
+    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_DES"
+    SESSION_COOKIE_NAME: "AURA_SESSION_DES"
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+
+# ======================================================
+# PRE
+# release -> Raspberry PRE AURA
 # SSH -> 5.34.148.92:2222
 # ======================================================
+
 deploy_backend_PRE:
-  stage: deploy
-  only:
-    - release
+  extends: .deploy_backend
 
-  script:
-    - echo "=== Configurando SSH PRE ==="
-    - apt-get update -y
-    - apt-get install -y openssh-client
+  variables:
+    DEPLOY_HOST: "5.34.148.92"
+    DEPLOY_PORT: "2222"
+    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_PRE"
+    SESSION_COOKIE_NAME: "AURA_SESSION_PRE"
 
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY_PRE" > ~/.ssh/id_rsa_gitlab
-    - chmod 600 ~/.ssh/id_rsa_gitlab
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "release"'
 
-    - ssh-keyscan -p 2222 5.34.148.92 >> ~/.ssh/known_hosts
-    - chmod 600 ~/.ssh/known_hosts
-
-    - echo "=== Nombre de la cookie de sesión de PRE ==="
-    # PRE y PRO comparten IP y las cookies no distinguen puerto: con el mismo nombre,
-    # entrar en uno cerraría la sesión del otro. Se empaqueta solo en el jar de PRE.
-    - echo "server.servlet.session.cookie.name=AURA_SESSION_PRE" > src/main/resources/application-local.properties
-
-    - echo "=== Compilando y pasando los tests (si falla alguno no se despliega) ==="
-    - mvn -B clean package
-
-    - echo "=== Verificando JAR ==="
-    - ls -la target/*.jar
-
-    - echo "=== Backup ==="
-    # Copia del jar actual; solo se guardan las 5 últimas (antes se acumulaban sin fin)
-    - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || true; find /tmp -maxdepth 1 -type f -name 'aura.jar.backup.*' -printf '%T@ %p\n' | sort -rn | tail -n +6 | cut -d' ' -f2- | xargs -d '\n' -r rm -f --"
-
-    - echo "=== Copiando JAR ==="
-    # Se sube con otro nombre y se cambia de golpe: el backend en marcha nunca lee un
-    # jar a medio escribir
-    - scp -P 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar.nuevo
-    - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "mv -f /tmp/aura.jar.nuevo /tmp/aura.jar"
-
-    - echo "=== Ejecutando despliegue ==="
-    - ssh -p 2222 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "bash /home/babenza/deploy_backend.sh"
 
 # ======================================================
-# DESPLIEGUE BACKEND PRO (rama main)
+# PRO
+# main -> Raspberry PRO AURA
 # SSH -> 5.34.148.92:22
 # ======================================================
+
 deploy_backend_PRO:
-  stage: deploy
-  only:
-    - main
+  extends: .deploy_backend
 
-  script:
-    - echo "=== Configurando SSH PRO ==="
-    - apt-get update -y
-    - apt-get install -y openssh-client
+  variables:
+    DEPLOY_HOST: "5.34.148.92"
+    DEPLOY_PORT: "22"
+    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY"
 
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa_gitlab
-    - chmod 600 ~/.ssh/id_rsa_gitlab
-
-    - ssh-keyscan 5.34.148.92 >> ~/.ssh/known_hosts
-    - chmod 600 ~/.ssh/known_hosts
-
-    - echo "=== Compilando y pasando los tests (si falla alguno no se despliega) ==="
-    - mvn -B clean package
-
-    - echo "=== Verificando JAR ==="
-    - ls -la target/*.jar
-
-    - echo "=== Backup ==="
-    # Copia del jar actual; solo se guardan las 5 últimas (antes se acumulaban sin fin)
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "cp /tmp/aura.jar /tmp/aura.jar.backup.$(date +%Y%m%d_%H%M%S) || true; find /tmp -maxdepth 1 -type f -name 'aura.jar.backup.*' -printf '%T@ %p\n' | sort -rn | tail -n +6 | cut -d' ' -f2- | xargs -d '\n' -r rm -f --"
-
-    - echo "=== Copiando JAR ==="
-    # Se sube con otro nombre y se cambia de golpe: el backend en marcha nunca lee un
-    # jar a medio escribir
-    - scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab target/*.jar babenza@5.34.148.92:/tmp/aura.jar.nuevo
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "mv -f /tmp/aura.jar.nuevo /tmp/aura.jar"
-
-    - echo "=== Ejecutando despliegue ==="
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa_gitlab babenza@5.34.148.92 "bash /home/babenza/deploy_backend.sh"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

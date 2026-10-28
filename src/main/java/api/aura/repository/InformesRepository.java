@@ -391,7 +391,8 @@ public interface InformesRepository extends JpaRepository<Incidencia, Integer> {
                         AND (YEAR(ct2.fecha_baja) IN (1, 1900) OR ct2.fecha_baja IS NULL)
                     ORDER BY ct2.fecha_fin DESC
                     LIMIT 1
-                ) AS tarifaSuministro
+                ) AS tarifaSuministro,
+                TRIM(COALESCE(c.nombre_comercial, '')) AS grupo
             FROM servicios s
             INNER JOIN clientes c ON s.id_cliente = c.id
             LEFT JOIN punto_suministro ps ON ps.ID = s.id_punto_suministro

@@ -55,6 +55,22 @@ class UsuarioLoginTest {
     }
 
     @Test
+    void el_login_devuelve_el_grupo_de_trabajo_solo_si_lo_tiene() throws Exception {
+        UsuarioService servicio = mock(UsuarioService.class);
+        Usuario ingeniera = Usuario.builder().id(4).nombre("Eva").user("eva").pass("clave").nivelAcceso(2).grupo("ingenieria").build();
+        Usuario sinGrupo = Usuario.builder().id(5).nombre("Luis").user("luis").pass("clave").nivelAcceso(2).build();
+        when(servicio.obtenerUsuarioPorNombreUsuarioPass("eva", "clave")).thenReturn(Optional.of(ingeniera));
+        when(servicio.obtenerUsuarioPorNombreUsuarioPass("luis", "clave")).thenReturn(Optional.of(sinGrupo));
+
+        mvc(servicio).perform(login("eva", "clave"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.grupo").value("ingenieria"));
+        mvc(servicio).perform(login("luis", "clave"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.grupo").doesNotExist());
+    }
+
+    @Test
     void credenciales_incorrectas_siguen_devolviendo_401() throws Exception {
         UsuarioService servicio = mock(UsuarioService.class);
         when(servicio.obtenerUsuarioPorNombreUsuarioPass("ana", "mala")).thenReturn(Optional.empty());

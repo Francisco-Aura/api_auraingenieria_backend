@@ -1,6 +1,7 @@
 package api.aura.service.modulo_tareas;
 
 import api.aura.dto.modulo_tareas.NotificacionDTO;
+import api.aura.dto.modulo_tareas.PlanificadorAvisoRequest;
 import api.aura.entity.Usuario;
 import api.aura.entity.modulo_tareas.mt_Notificacion;
 import api.aura.entity.modulo_tareas.mt_Tarea;
@@ -15,6 +16,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +24,9 @@ import java.util.stream.Collectors;
 @Transactional
 @Slf4j
 public class TareaNotificacionService {
+
+    /** Valor de `origen` de las notificaciones que crea el planificador. */
+    public static final String ORIGEN_PLANIFICADOR = "PLANIFICADOR";
 
     private final mt_NotificacionRepository notificacionRepository;
     private final UsuarioRepository usuarioRepository;
@@ -122,6 +127,42 @@ public class TareaNotificacionService {
         crearNotificacion(tarea, tarea.getUsuarioAsignado(), mt_Notificacion.TipoNotificacion.CAMBIO_ESTADO, mensaje);
     }
 
+    /**
+     * Aviso del planificador: una tarea ha terminado y otras quedan listas para empezar. Crea una notificación
+     * para cada usuario del grupo indicado, salvo quien acaba de terminarla. Devuelve cuántas ha creado.
+     */
+    public int notificarDesdePlanificador(PlanificadorAvisoRequest aviso) {
+        String grupo = aviso.getGroup() == null ? "" : aviso.getGroup().trim().toLowerCase(Locale.ROOT);
+        if (grupo.isEmpty() || aviso.getMessage() == null || aviso.getMessage().isBlank()) {
+            return 0;
+        }
+        String mensaje = recortar(aviso.getMessage().trim(), 255);
+        String titulo = recortar(aviso.getTitle(), 255);
+        String enlace = aviso.getLink() == null || aviso.getLink().isBlank() ? null : recortar(aviso.getLink().trim(), 255);
+
+        List<Usuario> destinatarios = usuarioRepository.findByGrupo(grupo).stream()
+                .filter(usuario -> !esQuienTermino(usuario, aviso))
+                .collect(Collectors.toList());
+        destinatarios.forEach(usuario -> crearNotificacionExterna(usuario,
+                mt_Notificacion.TipoNotificacion.PLANIFICADOR, mensaje, titulo, ORIGEN_PLANIFICADOR, enlace));
+        return destinatarios.size();
+    }
+
+    private boolean esQuienTermino(Usuario usuario, PlanificadorAvisoRequest aviso) {
+        if (aviso.getExcludeUserId() != null) {
+            return aviso.getExcludeUserId().equals(usuario.getId());
+        }
+        return aviso.getExcludeUser() != null && usuario.getNombre() != null
+                && usuario.getNombre().trim().equalsIgnoreCase(aviso.getExcludeUser().trim());
+    }
+
+    private static String recortar(String texto, int maximo) {
+        if (texto == null || texto.length() <= maximo) {
+            return texto;
+        }
+        return texto.substring(0, maximo - 1) + "…";
+    }
+
     // Lecturas en solo lectura: el historial de avisos de un usuario crece sin límite y
     // así Hibernate no guarda instantáneas ni revisa cambios de cada aviso al cerrar
     @Transactional(readOnly = true)
@@ -161,12 +202,31 @@ public class TareaNotificacionService {
         if (destinatario == null || destinatario.getId() == null) {
             return;
         }
-        mt_Notificacion notificacion = mt_Notificacion.builder()
+        guardarYEnviar(mt_Notificacion.builder()
                 .tarea(tarea)
                 .usuarioDestino(destinatario)
                 .tipo(tipo)
                 .mensaje(ajustarLongitud(mensaje))
-                .build();
+                .build());
+    }
+
+    /** Notificación que no pertenece a una tarea del módulo (viene de otro sistema, p. ej. el planificador). */
+    private void crearNotificacionExterna(Usuario destinatario, mt_Notificacion.TipoNotificacion tipo,
+            String mensaje, String titulo, String origen, String enlace) {
+        if (destinatario == null || destinatario.getId() == null) {
+            return;
+        }
+        guardarYEnviar(mt_Notificacion.builder()
+                .usuarioDestino(destinatario)
+                .tipo(tipo)
+                .mensaje(mensaje)
+                .titulo(titulo)
+                .origen(origen)
+                .enlace(enlace)
+                .build());
+    }
+
+    private void guardarYEnviar(mt_Notificacion notificacion) {
         notificacionRepository.save(notificacion);
         enviarTrasConfirmar(notificacion);
     }
@@ -211,14 +271,17 @@ public class TareaNotificacionService {
     }
 
     private NotificacionDTO toDto(mt_Notificacion notificacion) {
+        // Las notificaciones de otros sistemas (planificador) no tienen tarea: se muestra su título propio.
+        final mt_Tarea tarea = notificacion.getTarea();
         return NotificacionDTO.builder()
                 .id(notificacion.getId())
-                .tareaId(notificacion.getTarea().getId())
-                .tareaTitulo(notificacion.getTarea().getTitulo())
+                .tareaId(tarea != null ? tarea.getId() : null)
+                .tareaTitulo(tarea != null ? tarea.getTitulo() : notificacion.getTitulo())
                 .tipo(notificacion.getTipo())
                 .mensaje(notificacion.getMensaje())
                 .leida(notificacion.getLeida())
                 .fechaCreacion(notificacion.getFechaCreacion())
+                .enlace(notificacion.getEnlace())
                 .build();
     }
 

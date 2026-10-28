@@ -46,4 +46,12 @@ public class Usuario {
     private String pass;
 
     private Integer nivelAcceso;
+
+    /**
+     * Grupo de trabajo: comercial, ingenieria, administracion o coordinacion (sin tildes ni mayúsculas).
+     * Un usuario está en un solo grupo; null = sin grupo. Lo usa el planificador para avisar a quien tiene
+     * que hacer las tareas siguientes.
+     */
+    @Column(length = 30)
+    private String grupo;
 }

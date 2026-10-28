@@ -16,4 +16,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
         List<Usuario> findByNivelAcceso(Integer nivelAcceso);
 
         Optional<Usuario> findFirstByNombreIgnoreCase(String nombre);
+
+        /** Usuarios de un grupo de trabajo (clave sin tildes, p. ej. "ingenieria"). */
+        List<Usuario> findByGrupo(String grupo);
 }

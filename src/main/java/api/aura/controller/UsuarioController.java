@@ -170,6 +170,10 @@ public class UsuarioController {
             respuesta.put("nombre", u.getNombre());
             respuesta.put("email", u.getEmail());
             respuesta.put("nivelAcceso", u.getNivelAcceso());
+            // Grupo de trabajo (comercial, ingenieria, administracion, coordinacion); los usuarios sin grupo no lo llevan
+            if (u.getGrupo() != null) {
+                respuesta.put("grupo", u.getGrupo());
+            }
 
             return ResponseEntity.ok(respuesta);
         } else {
