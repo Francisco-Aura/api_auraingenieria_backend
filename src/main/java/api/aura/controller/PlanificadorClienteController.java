@@ -91,6 +91,12 @@ public class PlanificadorClienteController {
         nuevo.setCif(cif);
         nuevo.setTelefonoContacto1(recortar(datos.telefono(), 50));
         nuevo.setEmailContacto1(recortar(datos.email(), 150));
+        // La cartera de clientes une dirección, población y provincia en una sola columna: se dejan vacías, no nulas,
+        // para que esa consulta y la pantalla de la cartera no tropiecen con un cliente sin dirección
+        nuevo.setDireccion("");
+        nuevo.setPoblacion("");
+        nuevo.setProvincia("");
+        nuevo.setCodigoPostal("");
         nuevo.setFechaAlta(new Date());
         ClienteDTO creado = clienteService.toDTO(clienteService.crearCliente(nuevo));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ClienteAltaResultado(resumen(creado), true));
