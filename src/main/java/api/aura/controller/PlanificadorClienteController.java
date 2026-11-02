@@ -11,11 +11,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Clientes para el presupuestador del planificador: solo lectura y solo lo imprescindible para elegir uno (id, nombre,
- * nombre comercial y CIF; nada de IBAN, contactos ni claves de telemedida).
+ * Clientes para el presupuestador del planificador: lectura de lo imprescindible para elegir uno (id, nombre,
+ * nombre comercial y CIF; nada de IBAN, contactos ni claves de telemedida) y el alta mínima de un cliente nuevo
+ * (nombre, CIF, teléfono y email) cuando se valida un presupuesto de un cliente potencial. No modifica ni borra
+ * clientes que ya existen.
  *
  * Lo llama el servidor del planificador, no el navegador: exige la misma clave compartida que los avisos
  * (cabecera X-Planificador-Token, variable de entorno PLANIFICADOR_TOKEN). Sin clave configurada queda desactivado.
@@ -60,6 +64,50 @@ public class PlanificadorClienteController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Alta de un cliente nuevo desde el planificador. Si ya hay uno con ese CIF (sin mirar mayúsculas, espacios ni guiones)
+     * no se crea otro: se devuelve el que existe, con `creado` en false.
+     */
+    @PostMapping
+    public ResponseEntity<?> alta(
+            @RequestHeader(value = "X-Planificador-Token", required = false) String token,
+            @RequestBody ClienteAlta datos) {
+        if (!tokenValido(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String nombre = datos.nombre() == null ? "" : datos.nombre().trim();
+        String cif = datos.cif() == null ? "" : datos.cif().trim();
+        if (nombre.isEmpty() || cif.isEmpty() || nombre.length() > 250 || cif.length() > 50) {
+            return ResponseEntity.badRequest().body("Hacen falta el nombre y el CIF del cliente");
+        }
+        String buscado = normalizarCif(cif);
+        List<ClienteDTO> coincidencias = clienteService.buscarClientes(cif, PageRequest.of(0, MAX_RESULTADOS))
+                .getContent().stream().filter(c -> normalizarCif(c.getCif()).equals(buscado)).toList();
+        if (!coincidencias.isEmpty()) {
+            return ResponseEntity.ok(new ClienteAltaResultado(resumen(coincidencias.get(0)), false));
+        }
+        ClienteDTO nuevo = new ClienteDTO();
+        nuevo.setNombre(nombre);
+        nuevo.setCif(cif);
+        nuevo.setTelefonoContacto1(recortar(datos.telefono(), 50));
+        nuevo.setEmailContacto1(recortar(datos.email(), 150));
+        nuevo.setFechaAlta(new Date());
+        ClienteDTO creado = clienteService.toDTO(clienteService.crearCliente(nuevo));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ClienteAltaResultado(resumen(creado), true));
+    }
+
+    private static String normalizarCif(String cif) {
+        return cif == null ? "" : cif.replaceAll("[\\s.-]", "").toUpperCase(Locale.ROOT);
+    }
+
+    private static String recortar(String texto, int max) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        String limpio = texto.trim();
+        return limpio.length() > max ? limpio.substring(0, max) : limpio;
+    }
+
     private static ClienteResumen resumen(ClienteDTO c) {
         return new ClienteResumen(c.getId(), c.getNombre(), c.getNombreComercial(), c.getCif());
     }
@@ -74,5 +122,12 @@ public class PlanificadorClienteController {
     }
 
     public record ClienteResumen(Integer id, String nombre, String nombreComercial, String cif) {
+    }
+
+    /** Lo único que el planificador puede dar de alta de un cliente. */
+    public record ClienteAlta(String nombre, String cif, String telefono, String email) {
+    }
+
+    public record ClienteAltaResultado(ClienteResumen cliente, boolean creado) {
     }
 }
