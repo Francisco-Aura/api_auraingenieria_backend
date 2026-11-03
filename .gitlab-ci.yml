@@ -1,4 +1,3 @@
-```yaml
 image: maven:3.9.6-eclipse-temurin-17
 
 stages:
@@ -94,14 +93,6 @@ cache:
         "gitlab-deploy@${DEPLOY_HOST}" \
         "sudo -n /usr/local/sbin/aura-deploy-backend"
 
-
-# ======================================================
-# DES
-# develop -> Raspberry DES AURA
-# SSH -> 5.34.148.92:2223
-# WEB -> http://5.34.148.92:8081
-# ======================================================
-
 deploy_backend_DES:
   extends: .deploy_backend
 
@@ -113,13 +104,6 @@ deploy_backend_DES:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
 
-
-# ======================================================
-# PRE
-# release -> Raspberry PRE AURA
-# SSH -> 5.34.148.92:2222
-# ======================================================
-
 deploy_backend_PRE:
   extends: .deploy_backend
 
@@ -130,13 +114,6 @@ deploy_backend_PRE:
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "release"'
-
-
-# ======================================================
-# PRO
-# main -> Raspberry PRO AURA
-# SSH -> 5.34.148.92:22
-# ======================================================
 
 deploy_backend_PRO:
   extends: .deploy_backend
