@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
@@ -11,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.HexFormat;
 
 /**
  * Cifrado reversible (AES-256-GCM) de las contraseñas de la tabla Usuarios.
@@ -34,6 +36,8 @@ public class CifradoContrasenas {
     private static final int ETIQUETA_BITS = 128;
 
     private final SecretKeySpec clave;
+    /** Para las huellas de sesión: sacada de la de cifrado, nunca la misma clave para dos cosas. */
+    private final SecretKeySpec claveHuella;
     private final SecureRandom aleatorio = new SecureRandom();
 
     public CifradoContrasenas(@Value("${aura.seguridad.clave-contrasenas}") String claveBase64) {
@@ -41,6 +45,7 @@ public class CifradoContrasenas {
         if (bytes.length != 32)
             throw new IllegalStateException("aura.seguridad.clave-contrasenas debe ser una clave AES de 32 bytes en Base64");
         this.clave = new SecretKeySpec(bytes, "AES");
+        this.claveHuella = new SecretKeySpec(hmac(new SecretKeySpec(bytes, "HmacSHA256"), "aura-huella-sesion"), "HmacSHA256");
     }
 
     public boolean estaCifrada(String guardada) {
@@ -83,6 +88,36 @@ public class CifradoContrasenas {
             return new String(cifrador.doFinal(datos, IV, datos.length - IV), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException | IllegalArgumentException | IndexOutOfBoundsException e) {
             throw new IllegalStateException("Contraseña cifrada ilegible (¿clave distinta?)", e);
+        }
+    }
+
+    /**
+     * Huella corta de una contraseña guardada (nunca la contraseña), para saber si ha
+     * cambiado desde que se abrió una sesión. Sale de la contraseña descifrada: cifrarla
+     * al arrancar, al entrar o volver a cifrarla (cada vez da un texto distinto) no la
+     * cambia, y así no cierra ninguna sesión. Es un HMAC con la clave de la aplicación,
+     * no un hash simple, porque se guarda en los ficheros de sesión: sin la clave no
+     * sirve para adivinar la contraseña probando.
+     */
+    public String huella(String guardada) {
+        if (guardada == null) return "";
+        String plano;
+        try {
+            plano = descifrar(guardada);
+        } catch (IllegalStateException ilegible) {
+            // Con otra clave o dañada: la guardada tal cual, que no cambia mientras no la cambien
+            plano = guardada;
+        }
+        return HexFormat.of().formatHex(hmac(claveHuella, plano), 0, 8);
+    }
+
+    private static byte[] hmac(SecretKeySpec claveHmac, String texto) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(claveHmac);
+            return mac.doFinal(texto.getBytes(StandardCharsets.UTF_8));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(e);
         }
     }
 }

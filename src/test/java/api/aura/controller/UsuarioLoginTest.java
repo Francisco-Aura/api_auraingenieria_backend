@@ -1,8 +1,10 @@
 package api.aura.controller;
 
+import api.aura.config.AuraUserFilter;
 import api.aura.config.GlobalExceptionHandler;
 import api.aura.config.UsuarioSesion;
 import api.aura.entity.Usuario;
+import api.aura.service.CifradoContrasenas;
 import api.aura.service.LoginIntentosService;
 import api.aura.service.UsuarioService;
 import org.junit.jupiter.api.Test;
@@ -29,8 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class UsuarioLoginTest {
 
+    private static final CifradoContrasenas CIFRADO = new CifradoContrasenas("JHGtyIjf8Y0RZgUPC42gSW2BsxozvM1n0mI/df+oBUU=");
+
     private static MockMvc mvc(UsuarioService servicio) {
-        return MockMvcBuilders.standaloneSetup(new UsuarioController(servicio, new LoginIntentosService()))
+        return MockMvcBuilders.standaloneSetup(new UsuarioController(servicio, new LoginIntentosService(), CIFRADO))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -98,6 +102,9 @@ class UsuarioLoginTest {
         assertThat(previa.isInvalid()).isTrue();
         Object enSesion = resultado.getRequest().getSession(false).getAttribute(UsuarioSesion.ATRIBUTO);
         assertThat(enSesion).isEqualTo(new UsuarioSesion(3, "Ana Pérez", 2));
+        // Huella de la contraseña en sí, no de cómo esté guardada: cifrarla después no cierra la sesión
+        assertThat(resultado.getRequest().getSession(false).getAttribute(AuraUserFilter.ATRIBUTO_HUELLA))
+                .isEqualTo(CIFRADO.huella(CIFRADO.cifrar("clave")));
     }
 
     @Test
@@ -120,7 +127,7 @@ class UsuarioLoginTest {
     void sin_sesion_de_administrador_no_se_pueden_crear_ni_cambiar_usuarios() throws Exception {
         UsuarioService servicio = mock(UsuarioService.class);
         when(servicio.obtenerUsuarioPorNombreUsuarioPass(anyString(), anyString())).thenReturn(Optional.empty());
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(new UsuarioController(servicio, new LoginIntentosService()))
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new UsuarioController(servicio, new LoginIntentosService(), CIFRADO))
                 .setControllerAdvice(new api.aura.controller.McasSecurityExceptionHandler(), new GlobalExceptionHandler())
                 .build();
 

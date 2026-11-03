@@ -2,6 +2,7 @@ package api.aura.config;
 
 import api.aura.entity.Usuario;
 import api.aura.repository.UsuarioRepository;
+import api.aura.service.CifradoContrasenas;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,14 +59,16 @@ public class AuraUserFilter extends OncePerRequestFilter {
 
     /** Null en tests que montan el filtro a mano: entonces no se revalida. */
     private final UsuarioRepository usuarios;
+    private final CifradoContrasenas cifrado;
 
     public AuraUserFilter() {
-        this(null);
+        this(null, null);
     }
 
     @Autowired
-    public AuraUserFilter(UsuarioRepository usuarios) {
+    public AuraUserFilter(UsuarioRepository usuarios, CifradoContrasenas cifrado) {
         this.usuarios = usuarios;
+        this.cifrado = cifrado;
     }
 
     @Override
@@ -97,7 +100,7 @@ public class AuraUserFilter extends OncePerRequestFilter {
      * cambios de nombre o de nivel (un administrador degradado deja de serlo ya).
      */
     private UsuarioSesion revalidar(HttpServletRequest request, UsuarioSesion usuario) {
-        if (usuarios == null || usuario == null || usuario.id() == null) return usuario;
+        if (usuarios == null || cifrado == null || usuario == null || usuario.id() == null) return usuario;
         HttpSession sesion = request.getSession(false);
         if (sesion == null) return usuario;
         long ahora = System.currentTimeMillis();
@@ -112,14 +115,14 @@ public class AuraUserFilter extends OncePerRequestFilter {
                 return null;
             }
             Usuario u = actual.get();
-            String huella = huella(u.getPass());
+            String huella = cifrado.huella(u.getPass());
             Object huellaSesion = sesion.getAttribute(ATRIBUTO_HUELLA);
-            if (huellaSesion != null && !huellaSesion.equals(huella)) {
+            if (huellaSesion != null && !huellaSesion.equals(huella) && !esHuellaAntigua(huellaSesion, u.getPass())) {
                 log.info("Sesión cerrada: la contraseña del usuario {} ha cambiado", usuario.id());
                 sesion.invalidate();
                 return null;
             }
-            if (huellaSesion == null) sesion.setAttribute(ATRIBUTO_HUELLA, huella);
+            if (!huella.equals(huellaSesion)) sesion.setAttribute(ATRIBUTO_HUELLA, huella);
             UsuarioSesion vigente = new UsuarioSesion(u.getId(),
                     u.getNombre() == null ? null : u.getNombre().trim(), u.getNivelAcceso());
             if (!vigente.equals(usuario)) sesion.setAttribute(UsuarioSesion.ATRIBUTO, vigente);
@@ -137,10 +140,22 @@ public class AuraUserFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Huella corta de la contraseña guardada (nunca la contraseña): sirve para saber
-     * si ha cambiado desde que se abrió la sesión.
+     * Las sesiones abiertas con la versión anterior guardan otra huella: un SHA-256 de la
+     * contraseña tal como estaba en la BD, en claro o ya cifrada. Si coincide con la de
+     * ahora, la contraseña es la misma (solo ha cambiado cómo se guarda): la sesión sigue
+     * y se queda con la huella nueva.
      */
-    public static String huella(String passGuardada) {
+    private boolean esHuellaAntigua(Object huellaSesion, String guardada) {
+        if (huellaSesion.equals(huellaAntigua(guardada))) return true;
+        try {
+            return huellaSesion.equals(huellaAntigua(cifrado.descifrar(guardada)));
+        } catch (IllegalStateException ilegible) {
+            return false;
+        }
+    }
+
+    /** Huella de la versión anterior (SHA-256 del valor guardado); ver esHuellaAntigua. */
+    static String huellaAntigua(String passGuardada) {
         if (passGuardada == null) return "";
         try {
             byte[] h = MessageDigest.getInstance("SHA-256").digest(passGuardada.getBytes(StandardCharsets.UTF_8));

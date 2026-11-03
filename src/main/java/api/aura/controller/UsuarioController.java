@@ -9,6 +9,7 @@ import api.aura.config.AuraUserFilter;
 import api.aura.config.AuraUserHolder;
 import api.aura.config.UsuarioSesion;
 import api.aura.entity.Usuario;
+import api.aura.service.CifradoContrasenas;
 import api.aura.service.LoginIntentosService;
 import api.aura.service.UsuarioService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,10 +28,12 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
     private final LoginIntentosService intentos;
+    private final CifradoContrasenas cifrado;
 
-    public UsuarioController(UsuarioService usuarioService, LoginIntentosService intentos) {
+    public UsuarioController(UsuarioService usuarioService, LoginIntentosService intentos, CifradoContrasenas cifrado) {
         this.usuarioService = usuarioService;
         this.intentos = intentos;
+        this.cifrado = cifrado;
     }
 
     /** Credenciales del login por POST (cuerpo JSON), para que no viajen en la URL ni en los logs. */
@@ -102,7 +105,7 @@ public class UsuarioController {
         HttpSession sesion = request.getSession(false);
         if (sesion != null && id != null && id.equals(AuraUserHolder.getId())) {
             try {
-                sesion.setAttribute(AuraUserFilter.ATRIBUTO_HUELLA, AuraUserFilter.huella(usuario.getPass()));
+                sesion.setAttribute(AuraUserFilter.ATRIBUTO_HUELLA, cifrado.huella(usuario.getPass()));
             } catch (IllegalStateException sesionCerrada) {
                 // Se cerró mientras tanto: no hay nada que actualizar
             }
@@ -159,7 +162,7 @@ public class UsuarioController {
             intentos.registrarExito(user, ip);
             Usuario u = usuario.get();
             abrirSesion(request, new UsuarioSesion(u.getId(), u.getNombre() == null ? null : u.getNombre().trim(), u.getNivelAcceso()),
-                    AuraUserFilter.huella(u.getPass()));
+                    cifrado.huella(u.getPass()));
             log.info("Login correcto: usuario id {} desde {}", u.getId(), paraLog(ip));
 
             // Construimos un mapa con la información necesaria del usuario.
