@@ -54,7 +54,7 @@ cache:
         "babenza@${DEPLOY_HOST}" \
         "echo SSH_OK && hostname"
 
-script:
+  script:
     - echo "=== Compilando backend AURA ==="
     - mvn -B clean package -DskipTests -U
 
@@ -108,6 +108,7 @@ deploy_backend_DES:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
 
+
 # ======================================================
 # PRE
 # release -> Raspberry PRE AURA
@@ -124,6 +125,7 @@ deploy_backend_PRE:
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "release"'
+
 
 # ======================================================
 # PRO
