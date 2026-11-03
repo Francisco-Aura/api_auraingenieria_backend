@@ -43,6 +43,11 @@ public class SecurityConfig {
      * identifica con su clave en X-Planificador-Token (lo comprueba TareaNotificacionController).
      */
     static final String RUTA_PLANIFICADOR = "/api/notificaciones-tareas/planificador";
+    /**
+     * Clientes para el presupuestador del planificador (búsqueda, consulta y alta mínima): también
+     * los pide su servidor, con la misma clave (la comprueba PlanificadorClienteController).
+     */
+    static final String RUTA_PLANIFICADOR_CLIENTES = "/api/planificador/clientes";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -55,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios/login", "/api/usuarios/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, RUTA_PLANIFICADOR).permitAll()
+                        .requestMatchers(RUTA_PLANIFICADOR_CLIENTES, RUTA_PLANIFICADOR_CLIENTES + "/**").permitAll()
                         .requestMatchers("/error", "/actuator/health", "/actuator/health/**").permitAll()
                         .anyRequest().access(sesionIniciada))
                 .addFilterBefore(new CabeceraAjaxFilter(), AuthorizationFilter.class)
@@ -83,8 +89,8 @@ public class SecurityConfig {
     /**
      * Rechaza con 403 las peticiones que modifican datos sin la cabecera
      * {@code X-Requested-With}. /ws/** queda fuera: SockJS no permite cabeceras
-     * propias y ya exige la sesión. El aviso del planificador también: no viene de un
-     * navegador y exige su propia clave.
+     * propias y ya exige la sesión. El aviso del planificador y su alta de clientes también:
+     * no vienen de un navegador y exigen su propia clave.
      */
     static class CabeceraAjaxFilter extends OncePerRequestFilter {
         @Override
@@ -92,11 +98,15 @@ public class SecurityConfig {
                                         FilterChain chain) throws ServletException, IOException {
             boolean modifica = !METODOS_SEGUROS.contains(request.getMethod().toUpperCase());
             String ruta = request.getRequestURI().substring(request.getContextPath().length());
-            if (modifica && !ruta.startsWith("/ws/") && !ruta.equals(RUTA_PLANIFICADOR) && !cabeceraPropia(request)) {
+            if (modifica && !ruta.startsWith("/ws/") && !delPlanificador(ruta) && !cabeceraPropia(request)) {
                 escribirError(response, HttpServletResponse.SC_FORBIDDEN, "Petición no permitida.");
                 return;
             }
             chain.doFilter(request, response);
+        }
+
+        private static boolean delPlanificador(String ruta) {
+            return ruta.equals(RUTA_PLANIFICADOR) || ruta.equals(RUTA_PLANIFICADOR_CLIENTES);
         }
 
         private static boolean cabeceraPropia(HttpServletRequest request) {
