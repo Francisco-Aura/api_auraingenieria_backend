@@ -73,16 +73,16 @@ cache:
         "babenza@${DEPLOY_HOST}" \
         "echo SSH_OK"
 
-     - echo "=== Copiando JAR ==="
-      - |
-        scp -v \
-          -o ConnectTimeout=10 \
-          -o ServerAliveInterval=10 \
-          -o ServerAliveCountMax=3 \
-          -P "$DEPLOY_PORT" \
-          -i ~/.ssh/id_rsa_gitlab \
-          "$JAR_FILE" \
-          "babenza@${DEPLOY_HOST}:/tmp/aura.jar"
+    - echo "=== Copiando JAR ==="
+    - |
+      scp -v \
+        -o ConnectTimeout=10 \
+        -o ServerAliveInterval=10 \
+        -o ServerAliveCountMax=3 \
+        -P "$DEPLOY_PORT" \
+        -i ~/.ssh/id_rsa_gitlab \
+        "$JAR_FILE" \
+        "babenza@${DEPLOY_HOST}:/tmp/aura.jar"
 
     - echo "=== Desplegando backend ==="
     - |
