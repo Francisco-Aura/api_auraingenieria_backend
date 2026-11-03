@@ -51,8 +51,8 @@ cache:
         -i ~/.ssh/id_rsa_gitlab \
         -o BatchMode=yes \
         -o ConnectTimeout=10 \
-        "babenza@${DEPLOY_HOST}" \
-        "echo SSH_OK && hostname"
+        "gitlab-deploy@${DEPLOY_HOST}" \
+        "echo SSH_OK && hostname && whoami"
 
   script:
     - echo "=== Compilando backend AURA ==="
@@ -63,29 +63,35 @@ cache:
     - test -n "$JAR_FILE"
     - ls -lh "$JAR_FILE"
 
+    - echo "=== Comprobando acceso SSH al servidor ==="
+    - |
+      ssh \
+        -p "$DEPLOY_PORT" \
+        -i ~/.ssh/id_rsa_gitlab \
+        -o BatchMode=yes \
+        -o ConnectTimeout=10 \
+        "gitlab-deploy@${DEPLOY_HOST}" \
+        "echo SSH_OK"
+
     - echo "=== Copiando JAR ==="
     - |
       scp \
+        -o ConnectTimeout=10 \
+        -o ServerAliveInterval=10 \
+        -o ServerAliveCountMax=3 \
         -P "$DEPLOY_PORT" \
         -i ~/.ssh/id_rsa_gitlab \
         "$JAR_FILE" \
-        "babenza@${DEPLOY_HOST}:/tmp/aura.jar"
+        "gitlab-deploy@${DEPLOY_HOST}:/tmp/aura.jar"
 
     - echo "=== Desplegando backend ==="
     - |
       ssh \
         -p "$DEPLOY_PORT" \
         -i ~/.ssh/id_rsa_gitlab \
-        "babenza@${DEPLOY_HOST}" \
-        "bash /home/babenza/deploy_backend.sh"
-
-
-# ======================================================
-# DES
-# develop -> Raspberry DES AURA
-# SSH -> 5.34.148.92:2223
-# WEB -> http://5.34.148.92:8081
-# ======================================================
+        -o BatchMode=yes \
+        "gitlab-deploy@${DEPLOY_HOST}" \
+        "sudo -n /usr/local/sbin/aura-deploy-backend"
 
 deploy_backend_DES:
   extends: .deploy_backend
@@ -98,13 +104,6 @@ deploy_backend_DES:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
 
-
-# ======================================================
-# PRE
-# release -> Raspberry PRE AURA
-# SSH -> 5.34.148.92:2222
-# ======================================================
-
 deploy_backend_PRE:
   extends: .deploy_backend
 
@@ -116,20 +115,13 @@ deploy_backend_PRE:
   rules:
     - if: '$CI_COMMIT_BRANCH == "release"'
 
-
-# ======================================================
-# PRO
-# main -> Raspberry PRO AURA
-# SSH -> 5.34.148.92:22
-# ======================================================
-
 deploy_backend_PRO:
   extends: .deploy_backend
 
   variables:
     DEPLOY_HOST: "5.34.148.92"
     DEPLOY_PORT: "22"
-    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY"
+    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_PRO"
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
