@@ -54,7 +54,7 @@ cache:
         "babenza@${DEPLOY_HOST}" \
         "echo SSH_OK && hostname"
 
-  script:
+script:
     - echo "=== Compilando backend AURA ==="
     - mvn -B clean package -DskipTests -U
 
@@ -62,6 +62,16 @@ cache:
     - JAR_FILE="$(find target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | head -1)"
     - test -n "$JAR_FILE"
     - ls -lh "$JAR_FILE"
+
+    - echo "=== Probando SSH contra DES ==="
+    - |
+      ssh -vvv \
+        -o ConnectTimeout=10 \
+        -o StrictHostKeyChecking=no \
+        -p "$DEPLOY_PORT" \
+        -i ~/.ssh/id_rsa_gitlab \
+        "babenza@${DEPLOY_HOST}" \
+        "echo SSH_OK"
 
     - echo "=== Copiando JAR ==="
     - |
@@ -78,6 +88,7 @@ cache:
         -i ~/.ssh/id_rsa_gitlab \
         "babenza@${DEPLOY_HOST}" \
         "bash /home/babenza/deploy_backend.sh"
+
 
 # ======================================================
 # DES
