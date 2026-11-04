@@ -173,7 +173,7 @@ class McasVistaPreviaTest {
         conjunto(com.getId(), 77, "Iberdrola gestora Nexo");
 
         McasVistaPreviaDTO r = vistaPrevia.calcular(base(com.getId()).put("mcasAmbito", "FUERA")
-                .put("mcasPotenciaCalculo", 10).put("mcasZonaComision", "ZAR"));
+                .put("potencia1", 10).put("mcasZonaComision", "ZAR"));
 
         assertThat(r.getEstado()).isEqualTo(McasVistaPreviaDTO.Estado.CALCULADO);
         assertThat(r.getImporte()).isEqualByComparingTo("57.60");

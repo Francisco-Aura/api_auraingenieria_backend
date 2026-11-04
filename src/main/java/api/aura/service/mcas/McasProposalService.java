@@ -504,9 +504,9 @@ public class McasProposalService {
         if (importeDefinitivo != null) p.setImporteDefinitivo(importeDefinitivo);
         p.setNumeroPagos(pagos);
         // Las propuestas que no pasaron por el motor no tienen primera aplicación:
-        // la del contrato o, si no hay, su fecha de inicio (calendario y servicio).
+        // la fecha de inicio del contrato (calendario y servicio).
         if (p.getFechaPrimeraAplicacion() == null)
-            p.setFechaPrimeraAplicacion(fecha(c.getMcasFechaPrimeraAplicacion(), fecha(c.getFechaInicio(), null)));
+            p.setFechaPrimeraAplicacion(fecha(c.getFechaInicio(), null));
 
         // Reconstruir calendario con importe editado
         BigDecimal imp = p.getImporteDefinitivo() != null ? p.getImporteDefinitivo() : p.getImporteCalculado();
@@ -712,8 +712,6 @@ public class McasProposalService {
         if (c.getMcasFeeEurMwh() != null && c.getMcasFeeUnidad() != null
                 && !List.of("EUR_MWH", "€/MWH").contains(c.getMcasFeeUnidad().trim().toUpperCase()))
             f.add("unidad_fee_EUR_MWH");
-        if (c.getMcasPotenciaCalculo() != null && c.getMcasPotenciaCalculo().signum() < 0)
-            f.add("potencia_no_negativa");
         if (Boolean.TRUE.equals(c.getMcasEsRenovacion())
                 && (c.getMcasTipoRenovacion() == null || c.getMcasTipoRenovacion().isBlank()))
             f.add("tipo_renovacion");
@@ -754,15 +752,10 @@ public class McasProposalService {
                 ? productoRepo.findById(c.getMcasIdProductoComercial()).orElse(null) : null;
         String codigoProducto = producto != null ? producto.getCodigo() : null;
 
-        // Potencia de cálculo: la del contrato o, si no la trae, la mayor contratada
-        // (P1–P6, «potencia P6 o mayor contratada»); no cambia el hash, porque las
-        // potencias ya forman parte de la instantánea.
-        BigDecimal potencia = c.getMcasPotenciaCalculo();
-        String potenciaOrigen = potencia != null ? "CONTRATO" : null;
-        if (potencia == null) {
-            potencia = mayorPotenciaContratada(c);
-            if (potencia != null) potenciaOrigen = "MAYOR_CONTRATADA";
-        }
+        // Potencia de cálculo: siempre la mayor contratada (P1–P6). Desde la reunión del
+        // 04/11/2026 ya no se escribe a mano: un valor antiguo del contrato se ignora.
+        BigDecimal potencia = mayorPotenciaContratada(c);
+        String potenciaOrigen = potencia != null ? "MAYOR_CONTRATADA" : null;
 
         return ContextoCalculo.builder()
                 .idContrato(c.getId())
@@ -886,9 +879,8 @@ public class McasProposalService {
             case REQUIERE_DATOS -> "REQUIERE_DATOS";
         };
         String tipo = tipoEvento(c);
-        LocalDate fechaPrimeraAplicacion = c.getMcasFechaPrimeraAplicacion() != null
-                ? fecha(c.getMcasFechaPrimeraAplicacion(), null)
-                : ctx.getFechaEfectiva();
+        // La primera cuota va siempre en la fecha de inicio del contrato.
+        LocalDate fechaPrimeraAplicacion = ctx.getFechaEfectiva();
         List<String> advertencias = new ArrayList<>(
                 res.getAdvertencias() != null ? res.getAdvertencias() : List.of());
         Integer idRetrocesion = seleccionarRetrocesion(ctx, advertencias);

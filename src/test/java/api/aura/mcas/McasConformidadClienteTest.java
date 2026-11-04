@@ -138,7 +138,7 @@ class McasConformidadClienteTest {
         rango(matriz, 1, "consumo_kwh", "0", false, "5000", true, "100");
         rango(matriz, 1, "potencia_kw", "15", false, "30", true, "100");
 
-        McasPropuesta p = calcular(e, c -> c.consumoAnual(4_000d).mcasPotenciaCalculo(new BigDecimal("10")));
+        McasPropuesta p = calcular(e, c -> c.consumoAnual(4_000d).potencia1(10.0));
 
         assertThat(p.getEstado()).isEqualTo("REQUIERE_REVISION_MANUAL");
         // Al usuario, sin códigos; la regla que lo decidió queda en la traza.
@@ -172,10 +172,10 @@ class McasConformidadClienteTest {
                 .contains("\"potencia_origen\":\"MAYOR_CONTRATADA\"")
                 .contains("\"potencia_calculo_kw\":\"12.5\"");
 
-        // Si el contrato trae potencia de cálculo, manda la del contrato.
+        // Una potencia de cálculo antigua guardada en el contrato ya no cuenta: siempre la mayor.
         McasPropuesta q = calcular(e, c -> c.potencia1(12.5).mcasPotenciaCalculo(new BigDecimal("8")));
-        assertThat(q.getImporteCalculado()).isEqualByComparingTo("88.00");
-        assertThat(q.getTrazaCalculoJson()).contains("\"potencia_origen\":\"CONTRATO\"");
+        assertThat(q.getImporteCalculado()).isEqualByComparingTo("104.80");
+        assertThat(q.getTrazaCalculoJson()).contains("\"potencia_origen\":\"MAYOR_CONTRATADA\"");
     }
 
     @Test

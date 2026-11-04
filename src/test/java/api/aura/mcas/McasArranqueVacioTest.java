@@ -252,11 +252,11 @@ class McasArranqueVacioTest {
                 .put("mcasFeeEurMwh", 12).put("mcasFeeUnidad", "EUR_MWH")
                 .put("mcasIdProductoComercial", idProducto(iris, "PLAN_PERSONALIZADO")), "144.00", "Iris · pymes luz");
         calcula(contratoJson(endesa, "END-1").put("mcasSegmento", "PYME").put("consumoAnual", 35_000)
-                .put("idTarifaLuz", tarifa30).put("mcasPotenciaCalculo", 20), "200.00", "Endesa · pymes 3.0TD");
+                .put("idTarifaLuz", tarifa30).put("potencia1", 20), "200.00", "Endesa · pymes 3.0TD");
         calcula(contratoJson(naturgy, "NAT-1").put("mcasSegmento", "PYME").put("consumoAnual", 50_000),
                 "200.00", "Naturgy · pymes");
         calcula(contratoJson(iberdrola, "IBE-1").put("mcasSegmento", "PYME").put("consumoAnual", 9_000)
-                .put("mcasAmbito", "FUERA").put("mcasZonaComision", "ZBR").put("mcasPotenciaCalculo", 10)
+                .put("mcasAmbito", "FUERA").put("mcasZonaComision", "ZBR").put("potencia1", 10)
                 .put("mcasIdProductoComercial", idProducto(iberdrola, "PLAN_ONLINE")), "90.00", "Iberdrola · fuera de ámbito");
         calcula(contratoJson(iris, "IRIS-2").put("mcasSegmento", "RESIDENCIAL").put("consumoAnual", 3_000),
                 "50.00", "Iris · residencial");
@@ -301,7 +301,7 @@ class McasArranqueVacioTest {
         assertThat(publicada.path("estado").asText()).isEqualTo("PUBLICADO");
 
         Contrato contrato = guardar(contratoJson(iberdrola, "IBE-2").put("mcasSegmento", "PYME").put("consumoAnual", 9_000)
-                .put("mcasAmbito", "FUERA").put("mcasZonaComision", "ZBR").put("mcasPotenciaCalculo", 10)
+                .put("mcasAmbito", "FUERA").put("mcasZonaComision", "ZBR").put("potencia1", 10)
                 .put("mcasIdProductoComercial", idProducto(iberdrola, "PLAN_ONLINE")));
         JsonNode propuesta = get("/api/mcas/propuestas/contrato/" + contrato.getId()).get(0);
         assertThat(propuesta.path("importeAutomatico").decimalValue()).isEqualByComparingTo("90.00");

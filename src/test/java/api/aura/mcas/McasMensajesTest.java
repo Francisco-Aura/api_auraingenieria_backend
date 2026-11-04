@@ -27,7 +27,7 @@ class McasMensajesTest {
         assertThat(McasMensajes.campo("consumo_anual")).isEqualTo("Consumo anual");
         assertThat(McasMensajes.campo("fee")).isEqualTo("FEE del contrato");
         assertThat(McasMensajes.campo("FEE")).isEqualTo("FEE del contrato");
-        assertThat(McasMensajes.campo("potencia_kw")).isEqualTo("Potencia de cálculo");
+        assertThat(McasMensajes.campo("potencia_kw")).isEqualTo("Potencias contratadas (P1 a P6)");
         assertThat(McasMensajes.campo("tipo_precio_FIJO_o_INDEXADO")).isEqualTo("Tipo de precio");
         assertThat(McasMensajes.campo("tipo_suministro_LUZ_o_GAS")).isEqualTo("Tipo de suministro");
         assertThat(McasMensajes.campo("codigo_producto")).isEqualTo("Tarifa de precios (producto)");
@@ -151,12 +151,12 @@ class McasMensajesTest {
     @Test
     void dato_requerido_por_una_tabla() {
         assertThat(McasMensajes.paraOperador("MATRIX_LOOKUP: dato requerido 'potencia_kw'"))
-                .isEqualTo("Falta un dato para calcular la comisión: potencia de cálculo.");
+                .isEqualTo("Falta un dato para calcular la comisión: potencias contratadas (P1 a P6).");
         assertThat(McasMensajes.paraOperador("RANGE_LOOKUP: dato requerido 'zona_comision'"))
                 .isEqualTo("Falta un dato para calcular la comisión: zona de comisión.");
         // La matriz pide a la vez todas las dimensiones que faltan.
         assertThat(McasMensajes.paraOperador("MATRIX_LOOKUP: dato requerido 'consumo_kwh', 'potencia_kw'"))
-                .isEqualTo("Faltan datos para calcular la comisión: consumo anual y potencia de cálculo.");
+                .isEqualTo("Faltan datos para calcular la comisión: consumo anual y potencias contratadas (P1 a P6).");
     }
 
     @Test

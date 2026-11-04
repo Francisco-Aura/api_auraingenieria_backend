@@ -53,9 +53,7 @@ public class McasContratoSnapshotService {
         datos.put("gestora_id", c.getMcasIdGestora());
         datos.put("producto_comercial_id", c.getMcasIdProductoComercial());
         datos.put("zona_comision", c.getMcasZonaComision());
-        datos.put("potencia_calculo_kw", normalizar(c.getMcasPotenciaCalculo()));
         datos.put("numero_pagos", c.getMcasNumeroPagos());
-        datos.put("fecha_primera_aplicacion", fecha(c.getMcasFechaPrimeraAplicacion()));
         datos.put("alta_nueva", c.getMcasAltaNueva());
         datos.put("fecha_ultima_relacion_comercializadora",
                 fecha(c.getMcasFechaUltimaRelacionComercializadora()));

@@ -87,6 +87,7 @@ public class ContratoService {
                 contratoActual.setComentarioRenovacion(contrato.getComentarioRenovacion());
 
                 copiarCamposMcas(contrato, contratoActual);
+                rellenarUltimaRelacion(contratoActual);
 
                 logger.info("Campos del contrato actualizados. Guardando en base de datos...");
                 Contrato guardado = contratoRepository.save(contratoActual);
@@ -128,9 +129,48 @@ public class ContratoService {
             throw new IllegalArgumentException("El contrato debe tener un cliente asociado");
         }
 
+        rellenarUltimaRelacion(contrato);
         Contrato guardado = contratoRepository.save(contrato);
         dispararMcasSiProcede(guardado);
         return guardado;
+    }
+
+    /**
+     * «Última relación con la comercializadora»: ya no se escribe a mano (reunión del
+     * 04/11/2026). Es el final del contrato anterior del mismo punto de suministro si
+     * era con la misma comercializadora: su fecha fin o, si se dio de baja antes, la
+     * de baja. Si el anterior es de otra comercializadora, o no hay, se queda vacía.
+     */
+    void rellenarUltimaRelacion(Contrato contrato) {
+        contrato.setMcasFechaUltimaRelacionComercializadora(null);
+        Integer idPunto = contrato.getPuntoSuministro() != null ? contrato.getPuntoSuministro().getId() : null;
+        Integer comercializadora = contrato.getIdComercializadoraActual();
+        if (idPunto == null || comercializadora == null || comercializadora == 0) return;
+        contratoRepository.findByPuntoSuministroId(idPunto).stream()
+                .filter(otro -> otro.getId() != null && !otro.getId().equals(contrato.getId()))
+                .filter(otro -> esAnterior(otro, contrato))
+                .max(java.util.Comparator.comparing((Contrato otro) -> FechaNegocio.aLocalDate(otro.getFechaInicio()),
+                                java.util.Comparator.nullsFirst(java.util.Comparator.<LocalDate>naturalOrder()))
+                        .thenComparing(Contrato::getId))
+                .filter(anterior -> comercializadora.equals(anterior.getIdComercializadoraActual()))
+                .map(ContratoService::finDeRelacion)
+                .ifPresent(contrato::setMcasFechaUltimaRelacionComercializadora);
+    }
+
+    /** Empezó antes (por fecha de inicio; sin fechas, por orden de alta). */
+    private static boolean esAnterior(Contrato otro, Contrato contrato) {
+        LocalDate suyo = FechaNegocio.aLocalDate(otro.getFechaInicio());
+        LocalDate este = FechaNegocio.aLocalDate(contrato.getFechaInicio());
+        if (suyo != null && este != null) return suyo.isBefore(este);
+        return contrato.getId() == null || otro.getId() < contrato.getId();
+    }
+
+    /** Fecha fin del contrato o, si se dio de baja antes, la de baja. */
+    private static java.util.Date finDeRelacion(Contrato c) {
+        java.util.Date fin = c.getFechaFin();
+        java.util.Date baja = BajaEfectiva.tieneBaja(c.getFechaBaja()) ? c.getFechaBaja() : null;
+        if (baja != null && (fin == null || baja.before(fin))) return baja;
+        return fin;
     }
 
     private void copiarCamposMcas(Contrato origen, Contrato destino) {
@@ -145,12 +185,12 @@ public class ContratoService {
         destino.setMcasIdGestora(origen.getMcasIdGestora());
         destino.setMcasIdProductoComercial(origen.getMcasIdProductoComercial());
         destino.setMcasZonaComision(origen.getMcasZonaComision());
-        destino.setMcasPotenciaCalculo(origen.getMcasPotenciaCalculo());
+        // Ya no se rellenan a mano: la potencia es siempre la mayor contratada y la
+        // primera cuota va en la fecha de inicio (los valores antiguos se borran)
+        destino.setMcasPotenciaCalculo(null);
         destino.setMcasNumeroPagos(origen.getMcasNumeroPagos());
-        destino.setMcasFechaPrimeraAplicacion(origen.getMcasFechaPrimeraAplicacion());
+        destino.setMcasFechaPrimeraAplicacion(null);
         destino.setMcasAltaNueva(origen.getMcasAltaNueva());
-        destino.setMcasFechaUltimaRelacionComercializadora(
-                origen.getMcasFechaUltimaRelacionComercializadora());
     }
 
     private void dispararMcasSiProcede(Contrato contrato) {
@@ -284,6 +324,7 @@ public class ContratoService {
         }
 
         // Guardar nuevo contrato
+        rellenarUltimaRelacion(nuevoContrato);
         Contrato guardado = contratoRepository.save(nuevoContrato);
 
         // Marcar original como vencido (si ya tenía una baja real, se conserva su fecha)

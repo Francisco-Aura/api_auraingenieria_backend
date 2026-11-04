@@ -128,9 +128,7 @@ public class McasSimulacionService {
     private List<McasSimulacionDTO.Cuota> calendario(ResultadoCalculo res, Contrato c, ContextoCalculo ctx) {
         if (res.getResultado() != ResultadoCalculo.Resultado.CALCULADO || res.getImporteTotal() == null)
             return List.of();
-        LocalDate primera = c.getMcasFechaPrimeraAplicacion() != null
-                ? api.aura.util.FechaNegocio.aLocalDate(c.getMcasFechaPrimeraAplicacion())
-                : ctx.getFechaEfectiva();
+        LocalDate primera = ctx.getFechaEfectiva();
         List<BigDecimal> cuotas = motor.buildPagos(res.getImporteTotal(),
                 res.getNumeroPagos() != null ? res.getNumeroPagos() : 1);
         List<McasSimulacionDTO.Cuota> lista = new ArrayList<>();

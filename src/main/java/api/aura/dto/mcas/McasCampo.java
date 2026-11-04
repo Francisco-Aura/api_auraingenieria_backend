@@ -22,7 +22,8 @@ public enum McasCampo {
     TARIFA_ACCESO("Tarifa de acceso"),
     PRODUCTO("Tarifa de precios (producto)", "codigo_producto", "producto_comercial_activo_y_compatible"),
     CONSUMO("Consumo anual", "consumo_kwh", "consumo_mwh", "consumo_anual", "consumo_anual_no_negativo"),
-    POTENCIA("Potencia de cálculo", "potencia_kw", "potencia_no_negativa"),
+    // Siempre la mayor contratada: el usuario la cambia en P1…P6 (pestaña Contrato)
+    POTENCIA("Potencias contratadas (P1 a P6)", "potencia_kw", "potencia_no_negativa"),
     FEE("FEE del contrato", "fee_eur_mwh", "FEE del contrato", "fee_no_negativo", "unidad_fee", "unidad_fee_EUR_MWH"),
     GESTORA("Gestora", "id_gestora");
 

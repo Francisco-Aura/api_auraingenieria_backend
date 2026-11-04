@@ -127,7 +127,7 @@ class McasMotorUsabilidadTest {
         assertThat(r.getResultado()).isEqualTo(ResultadoCalculo.Resultado.REQUIERE_DATOS);
         assertThat(r.getCamposFaltantes()).containsExactly("potencia_kw", "zona_comision");
         assertThat(r.getAdvertencias())
-                .containsExactly("Faltan datos para calcular la comisión: potencia de cálculo y zona de comisión.");
+                .containsExactly("Faltan datos para calcular la comisión: potencias contratadas (P1 a P6) y zona de comisión.");
     }
 
     @Test

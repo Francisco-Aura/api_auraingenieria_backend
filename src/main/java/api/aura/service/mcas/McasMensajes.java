@@ -63,7 +63,7 @@ public final class McasMensajes {
             Map.entry("fee_no_negativo", "FEE del contrato (no puede ser negativo)"),
             Map.entry("unidad_fee", "Unidad del FEE"),
             Map.entry("unidad_fee_eur_mwh", "Unidad del FEE (debe ser €/MWh)"),
-            Map.entry("potencia_no_negativa", "Potencia de cálculo (no puede ser negativa)"),
+            Map.entry("potencia_no_negativa", "Potencias contratadas (no pueden ser negativas)"),
             Map.entry("producto_comercial_activo_y_compatible", "Tarifa de precios (producto) válida para este contrato"),
             Map.entry("numero_pagos_1_a_12", "Número de pagos (entre 1 y 12)"));
 
