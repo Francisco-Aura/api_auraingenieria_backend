@@ -34,7 +34,11 @@ class McasVistaPreviaSinImportesTest {
         assertThat(r.getCalendario()).isEmpty();
         assertThat(r.getRegla()).isNull();
         assertThat(r.getAvisos()).isEmpty();
-        assertThat(r.getCampos()).isEqualTo(CAMPOS);
+        assertThat(r.getCampos()).singleElement().satisfies(c -> {
+            assertThat(c.getClave()).isEqualTo(McasCampo.FEE);
+            assertThat(c.isFalta()).isFalse();
+            assertThat(c.getUsadoPor()).containsExactly("Tabla de comisiones");
+        });
         assertThat(r.getMensaje()).doesNotContain("€")
                 .isEqualTo("Datos de la comisión completos: se calculará al guardar el contrato y la revisará un administrador.");
     }
@@ -56,6 +60,6 @@ class McasVistaPreviaSinImportesTest {
                 .estado(Estado.REQUIERE_DATOS).mensaje(mensaje).campos(CAMPOS).build());
 
         assertThat(r.getMensaje()).isEqualTo(mensaje);
-        assertThat(r.getCampos()).isEqualTo(CAMPOS);
+        assertThat(r.getCampos()).extracting(McasVistaPreviaDTO.Campo::getEtiqueta).containsExactly("FEE del contrato");
     }
 }

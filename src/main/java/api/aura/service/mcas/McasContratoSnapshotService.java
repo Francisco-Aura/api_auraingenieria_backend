@@ -55,8 +55,6 @@ public class McasContratoSnapshotService {
         datos.put("zona_comision", c.getMcasZonaComision());
         datos.put("numero_pagos", c.getMcasNumeroPagos());
         datos.put("alta_nueva", c.getMcasAltaNueva());
-        datos.put("fecha_ultima_relacion_comercializadora",
-                fecha(c.getMcasFechaUltimaRelacionComercializadora()));
 
         try {
             String json = mapper.writeValueAsString(datos);

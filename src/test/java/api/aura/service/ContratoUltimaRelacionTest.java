@@ -83,6 +83,19 @@ class ContratoUltimaRelacionTest {
     }
 
     @Test
+    void en_una_renovacion_cuenta_la_fecha_fin_y_no_la_baja_que_pone_la_propia_renovacion() {
+        Contrato original = contrato(1, IBERDROLA, "2025-11-01", "2026-10-31");
+        original.setFechaBaja(Date.valueOf("2026-09-15")); // día en que se pulsó «Renovar»
+        when(contratos.findByPuntoSuministroId(40)).thenReturn(List.of(original));
+        Contrato renovacion = contrato(2, IBERDROLA, "2026-11-01", "2027-10-31");
+        renovacion.setMcasEsRenovacion(true);
+
+        servicio.rellenarUltimaRelacion(renovacion);
+
+        assertThat(renovacion.getMcasFechaUltimaRelacionComercializadora()).isEqualTo(Date.valueOf("2026-10-31"));
+    }
+
+    @Test
     void los_contratos_posteriores_no_cuentan() {
         Contrato c = nuevo(IBERDROLA,
                 contrato(1, IBERDROLA, "2025-11-01", "2026-10-31"),

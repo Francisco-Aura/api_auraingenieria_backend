@@ -136,10 +136,26 @@ public class ContratoService {
     }
 
     /**
+     * Guarda un contrato cambiado desde otra pantalla (p. ej. el informe de contratos
+     * pendientes de renovación) como si se guardase desde su formulario: recalcula la
+     * última relación con la comercializadora y, si cambia algo de la comisión, MCAS la
+     * vuelve a calcular. Sin esto la propuesta pendiente se quedaba desactualizada.
+     */
+    @Transactional
+    public Contrato guardarCambiosDeOtraPantalla(Contrato contrato) {
+        rellenarUltimaRelacion(contrato);
+        Contrato guardado = contratoRepository.save(contrato);
+        dispararMcasSiProcede(guardado);
+        return guardado;
+    }
+
+    /**
      * «Última relación con la comercializadora»: ya no se escribe a mano (reunión del
      * 04/11/2026). Es el final del contrato anterior del mismo punto de suministro si
      * era con la misma comercializadora: su fecha fin o, si se dio de baja antes, la
      * de baja. Si el anterior es de otra comercializadora, o no hay, se queda vacía.
+     * En una renovación cuenta su fecha fin: la baja del original la pone la propia
+     * renovación (el día en que se renueva) y no es una baja del cliente.
      */
     void rellenarUltimaRelacion(Contrato contrato) {
         contrato.setMcasFechaUltimaRelacionComercializadora(null);
@@ -153,7 +169,7 @@ public class ContratoService {
                                 java.util.Comparator.nullsFirst(java.util.Comparator.<LocalDate>naturalOrder()))
                         .thenComparing(Contrato::getId))
                 .filter(anterior -> comercializadora.equals(anterior.getIdComercializadoraActual()))
-                .map(ContratoService::finDeRelacion)
+                .map(anterior -> finDeRelacion(anterior, Boolean.TRUE.equals(contrato.getMcasEsRenovacion())))
                 .ifPresent(contrato::setMcasFechaUltimaRelacionComercializadora);
     }
 
@@ -165,10 +181,10 @@ public class ContratoService {
         return contrato.getId() == null || otro.getId() < contrato.getId();
     }
 
-    /** Fecha fin del contrato o, si se dio de baja antes, la de baja. */
-    private static java.util.Date finDeRelacion(Contrato c) {
+    /** Fecha fin del contrato o, si se dio de baja antes (y no es por renovarlo), la de baja. */
+    private static java.util.Date finDeRelacion(Contrato c, boolean renovacion) {
         java.util.Date fin = c.getFechaFin();
-        java.util.Date baja = BajaEfectiva.tieneBaja(c.getFechaBaja()) ? c.getFechaBaja() : null;
+        java.util.Date baja = !renovacion && BajaEfectiva.tieneBaja(c.getFechaBaja()) ? c.getFechaBaja() : null;
         if (baja != null && (fin == null || baja.before(fin))) return baja;
         return fin;
     }

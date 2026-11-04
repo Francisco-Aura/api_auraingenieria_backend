@@ -25,7 +25,9 @@ class McasContratoSnapshotServiceTest {
         var segunda = service.capturar(contrato);
 
         assertThat(primera.hash()).hasSize(64).isEqualTo(segunda.hash());
-        assertThat(primera.json()).contains("2026-03-16", "2025-12-01", "EUR_MWH");
+        assertThat(primera.json()).contains("2026-03-16", "EUR_MWH");
+        // La última relación no influye en el cálculo: no cambia la instantánea
+        assertThat(primera.json()).doesNotContain("2025-12-01");
     }
 
     @Test

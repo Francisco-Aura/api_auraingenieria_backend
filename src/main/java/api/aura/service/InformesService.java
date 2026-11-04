@@ -26,6 +26,9 @@ public class InformesService {
     private final TBSectoresRepository sectoresRepository;
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    /** Para guardar los cambios del informe de renovaciones como el formulario del contrato (MCAS incluido). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ContratoService contratoService;
 
     public InformesService(InformesRepository repository, ContratoRepository contratoRepository,
             PuntoSuministroRepository puntoSuministroRepository, ClienteRepository clienteRepository,
@@ -130,7 +133,8 @@ public class InformesService {
             contrato.setIdComercializadoraAnterior(dto.getIdComercializadoraAnterior());
         if (dto.getObservaciones() != null)
             contrato.setObservaciones(dto.getObservaciones());
-        contratoRepository.save(contrato);
+        if (contratoService != null) contratoService.guardarCambiosDeOtraPantalla(contrato);
+        else contratoRepository.save(contrato);
         return dto;
     }
 

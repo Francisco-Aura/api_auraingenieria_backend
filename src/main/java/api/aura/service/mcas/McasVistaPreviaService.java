@@ -128,7 +128,15 @@ public class McasVistaPreviaService {
             case NO_COMISIONABLE -> "Este contrato no genera comisión.";
             default -> dto.getMensaje();
         };
-        return McasVistaPreviaDTO.builder().estado(dto.getEstado()).mensaje(mensaje).campos(dto.getCampos()).build();
+        // Los nombres de las reglas pueden llevar porcentajes («44 % del FEE»): se cambian por uno neutro,
+        // que basta a la pantalla para saber qué datos usa la tabla.
+        List<McasVistaPreviaDTO.Campo> campos = dto.getCampos() == null ? List.of() : dto.getCampos().stream()
+                .map(c -> McasVistaPreviaDTO.Campo.builder().clave(c.getClave()).etiqueta(c.getEtiqueta()).falta(c.isFalta())
+                        .valores(c.getValores())
+                        .usadoPor(c.getUsadoPor() == null || c.getUsadoPor().isEmpty() ? List.of() : List.of("Tabla de comisiones"))
+                        .build())
+                .toList();
+        return McasVistaPreviaDTO.builder().estado(dto.getEstado()).mensaje(mensaje).campos(campos).build();
     }
 
     private McasVistaPreviaDTO conResultado(ResultadoCalculo res, Contrato c, ContextoCalculo ctx, Campos campos) {
