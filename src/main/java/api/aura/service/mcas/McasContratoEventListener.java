@@ -1,5 +1,6 @@
 package api.aura.service.mcas;
 
+import api.aura.entity.mcas.McasPropuesta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * ({@code REQUIRES_NEW}) mediante un {@link TransactionTemplate}, dentro del
  * try/catch, para que ni siquiera un fallo al confirmarla se propague al
  * guardado del contrato.</p>
+ *
+ * <p>Con el interruptor «Aprobación automática» encendido, la propuesta que sale
+ * calculada se aprueba (y crea su servicio) en otra transacción nueva: si la
+ * aprobación falla, la propuesta se queda pendiente de aprobar a mano.</p>
  */
 @Component
 public class McasContratoEventListener {
@@ -50,13 +55,29 @@ public class McasContratoEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onContratoGuardado(McasContratoGuardadoEvent event) {
+        McasPropuesta propuesta;
         try {
-            transaccionNueva.executeWithoutResult(estado ->
+            propuesta = transaccionNueva.execute(estado ->
                     mcasProposalService.triggerDesdeContrato(event.getIdContrato()));
         } catch (Exception e) {
             log.error("MCAS: fallo generando la propuesta del contrato {} "
                     + "(el contrato se guardó correctamente; revisar manualmente)",
                     event.getIdContrato(), e);
+            return;
+        }
+        aprobarSiEsAutomatica(event.getIdContrato(), propuesta);
+    }
+
+    /** Solo las calculadas; el servicio comprueba el interruptor dentro de su transacción. */
+    private void aprobarSiEsAutomatica(Integer idContrato, McasPropuesta propuesta) {
+        if (propuesta == null || propuesta.getId() == null || !"PENDIENTE_VALIDACION".equals(propuesta.getEstado()))
+            return;
+        try {
+            transaccionNueva.executeWithoutResult(estado ->
+                    mcasProposalService.aprobarAutomaticamente(propuesta.getId()));
+        } catch (Exception e) {
+            log.warn("MCAS: no se pudo aprobar automáticamente la propuesta {} del contrato {}; "
+                    + "queda pendiente de aprobar en Comisiones MCAS", propuesta.getId(), idContrato, e);
         }
     }
 }

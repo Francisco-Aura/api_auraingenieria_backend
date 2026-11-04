@@ -75,6 +75,10 @@ public class McasProposalService {
     public static final String FLAG_FIJO         = "MCAS_FIXED_ENABLED";
     public static final String FLAG_INDEXADO     = "MCAS_INDEXED_ENABLED";
     public static final String FLAG_RETROCESION  = "MCAS_RETROCESSION_ENABLED";
+    /** Con este interruptor, la propuesta calculada al guardar el contrato se aprueba sola. */
+    public static final String FLAG_APROBACION_AUTOMATICA = "MCAS_AUTO_APPROVAL_ENABLED";
+    /** Quién figura como aprobador de las propuestas aprobadas solas. */
+    public static final String USUARIO_APROBACION_AUTOMATICA = "Aprobación automática";
 
     /**
      * Indica si el módulo MCAS está habilitado globalmente. Se usa para decidir,
@@ -368,7 +372,28 @@ public class McasProposalService {
 
     @Transactional(noRollbackFor = McasPropuestaDesactualizadaException.class)
     public McasPropuesta aprobar(Long propuestaId) {
-        String usuario = usuario();
+        return aprobarComo(propuestaId, usuario(), false);
+    }
+
+    /**
+     * Aprobación sin validador, tras guardar el contrato, si está encendido el
+     * interruptor «Aprobación automática» (Configuración MCAS). Solo aprueba las
+     * propuestas calculadas (pendientes de validación); con el interruptor apagado
+     * o en otro estado no hace nada y devuelve vacío. Queda auditada como automática.
+     */
+    @Transactional(noRollbackFor = McasPropuestaDesactualizadaException.class)
+    public Optional<McasPropuesta> aprobarAutomaticamente(Long propuestaId) {
+        if (!aprobacionAutomaticaActiva()) return Optional.empty();
+        McasPropuesta p = cargar(propuestaId);
+        if (!"PENDIENTE_VALIDACION".equals(p.getEstado()) || p.getIdServicioCreado() != null) return Optional.empty();
+        return Optional.of(aprobarComo(propuestaId, USUARIO_APROBACION_AUTOMATICA, true));
+    }
+
+    public boolean aprobacionAutomaticaActiva() {
+        return flags.estaActivo(FLAG_APROBACION_AUTOMATICA);
+    }
+
+    private McasPropuesta aprobarComo(Long propuestaId, String usuario, boolean automatica) {
         McasPropuesta p = cargar(propuestaId);
         if (!"PENDIENTE_VALIDACION".equals(p.getEstado()))
             throw new IllegalStateException("Solo se puede aprobar una propuesta pendiente de validación (estado actual: «"
@@ -390,8 +415,9 @@ public class McasProposalService {
         p.setActualizadoPor(usuario); p.setActualizadoEn(LocalDateTime.now());
         p = propuestaRepo.saveAndFlush(p); // la comprobación de versión salta aquí, antes de la auditoría
         auditoria.registrar(p.getId(), idContrato, "PROPUESTA_APROBADA", prev, "FINALIZADO_APROBADO",
-                Map.of("id_servicio", s.getId()), usuario, null);
-        log.info("MCAS propuesta={} APROBADA servicio={}", propuestaId, s.getId());
+                automatica ? Map.of("id_servicio", s.getId(), "automatica", true) : Map.of("id_servicio", s.getId()),
+                usuario, null);
+        log.info("MCAS propuesta={} APROBADA{} servicio={}", propuestaId, automatica ? " (automática)" : "", s.getId());
         return p;
     }
 

@@ -1,5 +1,6 @@
 package api.aura.mcas;
 
+import api.aura.entity.mcas.McasPropuesta;
 import api.aura.service.mcas.McasContratoEventListener;
 import api.aura.service.mcas.McasContratoGuardadoEvent;
 import api.aura.service.mcas.McasProposalService;
@@ -57,6 +58,39 @@ class McasContratoEventListenerTest {
         verify(mcas).triggerDesdeContrato(42);
         verify(transacciones).rollback(any());
         verify(transacciones, never()).commit(any());
+    }
+
+    @Test
+    void la_propuesta_calculada_pasa_por_la_aprobacion_automatica_en_otra_transaccion() {
+        when(mcas.triggerDesdeContrato(5)).thenReturn(propuesta(70L, "PENDIENTE_VALIDACION"));
+
+        listener.onContratoGuardado(new McasContratoGuardadoEvent(5));
+
+        verify(mcas).aprobarAutomaticamente(70L);
+        verify(transacciones, times(2)).getTransaction(any());
+    }
+
+    @Test
+    void sin_calcular_no_se_intenta_aprobar() {
+        when(mcas.triggerDesdeContrato(6)).thenReturn(propuesta(71L, "REQUIERE_DATOS"));
+
+        listener.onContratoGuardado(new McasContratoGuardadoEvent(6));
+
+        verify(mcas, never()).aprobarAutomaticamente(any());
+    }
+
+    @Test
+    void un_fallo_de_la_aprobacion_automatica_no_se_propaga() {
+        when(mcas.triggerDesdeContrato(8)).thenReturn(propuesta(72L, "PENDIENTE_VALIDACION"));
+        when(mcas.aprobarAutomaticamente(72L)).thenThrow(new IllegalStateException("sin modalidad de pago"));
+
+        assertThatCode(() -> listener.onContratoGuardado(new McasContratoGuardadoEvent(8)))
+                .doesNotThrowAnyException();
+        verify(mcas).aprobarAutomaticamente(72L);
+    }
+
+    private static McasPropuesta propuesta(Long id, String estado) {
+        return McasPropuesta.builder().id(id).estado(estado).build();
     }
 
     @Test

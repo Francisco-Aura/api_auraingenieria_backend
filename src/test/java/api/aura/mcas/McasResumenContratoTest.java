@@ -78,6 +78,44 @@ class McasResumenContratoTest {
     @AfterEach
     void moduloActivo() {
         modulos.activar(McasProposalService.FLAG_ENABLED);
+        modulos.desactivar(McasProposalService.FLAG_APROBACION_AUTOMATICA);
+    }
+
+    @Test
+    void sin_ser_administrador_no_ve_el_importe_ni_los_pagos() {
+        Integer id = comercializadoraConFee();
+        McasPropuesta p = calcular(id, c -> c.mcasFeeEurMwh(new BigDecimal("7")).mcasFeeUnidad("EUR_MWH"));
+
+        McasResumenContratoDTO r = resumenes.resumen(p.getIdContrato(), false);
+
+        assertThat(r.getEstado()).isEqualTo("PENDIENTE_VALIDACION");
+        assertThat(r.getImporte()).isNull();
+        assertThat(r.getNumeroPagos()).isNull();
+        assertThat(r.getMensaje()).isEqualTo("Comisión pendiente de aprobar por un administrador.");
+        McasPropuesta aprobada = mcas.aprobar(p.getId());
+        assertThat(resumenes.resumen(aprobada.getIdContrato(), false).getMensaje())
+                .isEqualTo("Comisión aprobada. Se ha creado el servicio de comisión.");
+    }
+
+    @Test
+    void con_la_aprobacion_automatica_encendida_la_propuesta_calculada_se_aprueba_sola() {
+        Integer id = comercializadoraConFee();
+        McasPropuesta p = calcular(id, c -> c.mcasFeeEurMwh(new BigDecimal("7")).mcasFeeUnidad("EUR_MWH"));
+        McasPropuesta sinFee = calcular(id, c -> {});
+
+        // Con el interruptor apagado (lo normal) no hace nada
+        assertThat(mcas.aprobarAutomaticamente(p.getId())).isEmpty();
+        assertThat(propuestas.findById(p.getId()).orElseThrow().getEstado()).isEqualTo("PENDIENTE_VALIDACION");
+
+        modulos.activar(McasProposalService.FLAG_APROBACION_AUTOMATICA);
+        McasPropuesta aprobada = mcas.aprobarAutomaticamente(p.getId()).orElseThrow();
+
+        assertThat(aprobada.getEstado()).isEqualTo("FINALIZADO_APROBADO");
+        assertThat(aprobada.getAprobadoPor()).isEqualTo(McasProposalService.USUARIO_APROBACION_AUTOMATICA);
+        assertThat(aprobada.getIdServicioCreado()).isNotNull();
+        // Las que no están calculadas siguen esperando a un administrador
+        assertThat(mcas.aprobarAutomaticamente(sinFee.getId())).isEmpty();
+        assertThat(propuestas.findById(sinFee.getId()).orElseThrow().getEstado()).isEqualTo("REQUIERE_DATOS");
     }
 
     @Test
