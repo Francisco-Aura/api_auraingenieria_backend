@@ -17,7 +17,8 @@ import java.util.*;
 /**
  * Comisión del contrato para quien lo graba (pestaña del contrato): estado,
  * importe, pagos, qué falta y una frase en usted. Sin traza, códigos de regla,
- * JSON ni usuarios; la ven todos los usuarios identificados.
+ * JSON ni usuarios; la ven todos los usuarios identificados, pero el importe, los
+ * pagos y los avisos del cálculo solo los administradores.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,12 @@ public class McasResumenContratoService {
 
     @Transactional(readOnly = true)
     public McasResumenContratoDTO resumen(Integer idContrato) {
+        return resumen(idContrato, true);
+    }
+
+    /** Sin {@code verImporte} (quien no es administrador): estado y qué falta, sin cantidades. */
+    @Transactional(readOnly = true)
+    public McasResumenContratoDTO resumen(Integer idContrato, boolean verImporte) {
         Contrato contrato = contratos.findById(idContrato)
                 .orElseThrow(() -> new IllegalArgumentException("El contrato no existe"));
         boolean moduloActivo = propuestas.moduloHabilitado();
@@ -43,8 +50,9 @@ public class McasResumenContratoService {
         List<String> codigos = "REQUIERE_DATOS".equals(p.getEstado()) ? camposFaltantes(p) : List.of();
         return McasResumenContratoDTO.builder()
                 .moduloActivo(moduloActivo).hayPropuesta(true).idPropuesta(p.getId()).estado(p.getEstado())
-                .importe(importe).numeroPagos(p.getNumeroPagos()).queFalta(McasMensajes.listaCampos(codigos))
-                .mensaje(mensaje(p, importe, advertencias, codigos))
+                .importe(verImporte ? importe : null).numeroPagos(verImporte ? p.getNumeroPagos() : null)
+                .queFalta(McasMensajes.listaCampos(codigos))
+                .mensaje(mensaje(p, importe, verImporte ? advertencias : List.of(), codigos, verImporte))
                 .actualizadoEn(p.getActualizadoEn() != null ? p.getActualizadoEn() : p.getCreadoEn())
                 .servicioCreado(p.getIdServicioCreado() != null)
                 .build();
@@ -83,16 +91,19 @@ public class McasResumenContratoService {
                 .build();
     }
 
-    private String mensaje(McasPropuesta p, BigDecimal importe, List<String> advertencias, List<String> codigos) {
+    private String mensaje(McasPropuesta p, BigDecimal importe, List<String> advertencias, List<String> codigos,
+                           boolean verImporte) {
         int datos = McasMensajes.listaCampos(codigos).size();
         String primera = advertencias.isEmpty() ? "" : advertencias.get(0);
         String conAviso = primera.isEmpty() ? "" : " " + primera;
         return switch (p.getEstado()) {
             case "PENDIENTE_CALCULO" -> "La comisión se está calculando.";
-            case "PENDIENTE_VALIDACION" -> "Comisión pendiente de aprobar: "
-                    + McasMensajes.importeEnPagos(importe, p.getNumeroPagos()) + ".";
-            case "FINALIZADO_APROBADO", "FINALIZADO_EDITADO" -> "Comisión aprobada: "
-                    + McasMensajes.importeEnPagos(importe, p.getNumeroPagos()) + "."
+            case "PENDIENTE_VALIDACION" -> verImporte
+                    ? "Comisión pendiente de aprobar: " + McasMensajes.importeEnPagos(importe, p.getNumeroPagos()) + "."
+                    : "Comisión pendiente de aprobar por un administrador.";
+            case "FINALIZADO_APROBADO", "FINALIZADO_EDITADO" -> (verImporte
+                    ? "Comisión aprobada: " + McasMensajes.importeEnPagos(importe, p.getNumeroPagos()) + "."
+                    : "Comisión aprobada.")
                     + (p.getIdServicioCreado() != null ? " Se ha creado el servicio de comisión." : "");
             case "REQUIERE_DATOS" -> datos == 0
                     ? (primera.isEmpty() ? "Faltan datos para calcular la comisión." : primera)

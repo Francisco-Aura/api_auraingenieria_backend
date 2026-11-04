@@ -114,6 +114,23 @@ public class McasVistaPreviaService {
         return conResultado(motor.evaluarConjunto(ctx, conjunto.get()), c, ctx, campos);
     }
 
+    /**
+     * Lo que ve quien graba el contrato sin ser administrador: si faltan datos y
+     * cuáles, pero no el importe, los pagos, la regla ni los avisos del cálculo
+     * (reunión del 04/11/2026: la comisión solo la ven los administradores).
+     */
+    public static McasVistaPreviaDTO sinImportes(McasVistaPreviaDTO dto) {
+        if (dto == null) return null;
+        String mensaje = dto.getEstado() == null ? dto.getMensaje() : switch (dto.getEstado()) {
+            case CALCULADO -> "Datos de la comisión completos: se calculará al guardar el contrato y la revisará un administrador.";
+            case YA_TIENE_COMISION -> "Este contrato ya tiene una comisión aprobada. Los cambios del contrato no generan otra comisión.";
+            case REQUIERE_REVISION_MANUAL, ERROR_CALCULO -> "Un administrador revisará la comisión de este contrato en Comisiones MCAS.";
+            case NO_COMISIONABLE -> "Este contrato no genera comisión.";
+            default -> dto.getMensaje();
+        };
+        return McasVistaPreviaDTO.builder().estado(dto.getEstado()).mensaje(mensaje).campos(dto.getCampos()).build();
+    }
+
     private McasVistaPreviaDTO conResultado(ResultadoCalculo res, Contrato c, ContextoCalculo ctx, Campos campos) {
         Estado estado = Estado.valueOf(res.getResultado().name());
         List<String> advertencias = res.getAdvertencias() != null ? res.getAdvertencias() : List.of();

@@ -1,5 +1,6 @@
 package api.aura.controller.mcas;
 
+import api.aura.config.AuraUserHolder;
 import api.aura.config.McasAccesoUsuario;
 import api.aura.controller.SesionActual;
 import api.aura.dto.mcas.*;
@@ -82,7 +83,7 @@ public class McasPropuestasController {
     @McasAccesoUsuario
     @GetMapping("/contrato/{idContrato}/resumen")
     public ResponseEntity<?> resumen(@PathVariable Integer idContrato) {
-        try { return ResponseEntity.ok(resumenes.resumen(idContrato)); }
+        try { return ResponseEntity.ok(resumenes.resumen(idContrato, AuraUserHolder.esAdmin())); }
         catch (IllegalArgumentException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
     }
 
