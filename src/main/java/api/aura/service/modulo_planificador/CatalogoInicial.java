@@ -11,11 +11,13 @@ import api.aura.repository.modulo_planificador.pl_ProveedorRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,10 +51,29 @@ public class CatalogoInicial implements ApplicationRunner {
     private final pl_ProveedorRepository proveedores;
     private final pl_MetaRepository meta;
     private final ObjectMapper json;
+    private final PlatformTransactionManager transacciones;
 
+    /**
+     * Si algo falla (tablas sin crear, datos raros) se anota en el registro y el arranque sigue: el catálogo es un extra y no puede impedir
+     * que arranque el resto de la intranet.
+     */
     @Override
-    @Transactional
-    public void run(ApplicationArguments args) throws IOException {
+    public void run(ApplicationArguments args) {
+        try {
+            // Todo en una sola transacción: o se carga entero o no se carga nada (y se reintenta en el siguiente arranque)
+            new TransactionTemplate(transacciones).executeWithoutResult(estado -> {
+                try {
+                    sembrar();
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            });
+        } catch (Exception e) {
+            LoggerFactory.getLogger("planificador").error("No se pudo cargar el catálogo inicial del Planificador: {}", e.toString());
+        }
+    }
+
+    void sembrar() throws IOException {
         sembrarEquipos();
         sembrarMarcas();
         sembrarProveedores();
