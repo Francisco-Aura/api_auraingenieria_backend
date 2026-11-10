@@ -1,0 +1,58 @@
+{
+ "fields": {
+  "potencia_kwp": {
+   "value": "51.6",
+   "source": "Propuesta técnica (pág. 2): Propuesta Técnica · Autoconsumo · 51,6 kWp · 80 · No · 2",
+   "confidence": "alta"
+  },
+  "paneles_uds": {
+   "value": "80",
+   "source": "Propuesta técnica (pág. 2): Propuesta Técnica · Autoconsumo · 51,6 kWp · 80 · No · 2",
+   "confidence": "alta"
+  },
+  "inversor_uds": {
+   "value": "2",
+   "source": "Propuesta técnica (pág. 2): Propuesta Técnica · Autoconsumo · 51,6 kWp · 80 · No · 2",
+   "confidence": "alta"
+  },
+  "importe_total": {
+   "value": "38700",
+   "source": "Propuesta económica (pág. 4): 38.700,00€",
+   "confidence": "media"
+  }
+ },
+ "project": {
+  "company": {
+   "value": "Solar Vega",
+   "source": "Nombre de la empresa: Solar Vega, S.L.U.",
+   "confidence": "alta"
+  },
+  "locality": {
+   "value": "Lorca",
+   "source": "Dirección: Avda. Juan Carlos I, nº 120, 30800 Lorca (Murcia)",
+   "confidence": "media"
+  },
+  "name": {
+   "value": "Instalación Solar Vega Lorca",
+   "source": "Empresa y localidad del presupuesto",
+   "confidence": "media"
+  }
+ },
+ "missing": [
+  "paneles_modelo",
+  "inversor_modelo",
+  "estructura"
+ ],
+ "notes": [
+  "La propuesta técnica indica que no lleva baterías.",
+  "Hay varios importes en el presupuesto; se ha tomado el mayor. Compruébalo antes de crear el proyecto.",
+  "El importe del presupuesto va sin IVA.",
+  "Forma de pago: 30 / 40 / 20 / 10 %, como en el contrato modelo.",
+  "El tipo de estructura va marcado con una X en el presupuesto, pero no se ha podido determinar cuál: indícalo a mano."
+ ],
+ "client": {
+  "name": "Solar Vega, S.L.U.",
+  "address": "Avda. Juan Carlos I, nº 120, 30800 Lorca (Murcia)"
+ },
+ "extras": {}
+}
