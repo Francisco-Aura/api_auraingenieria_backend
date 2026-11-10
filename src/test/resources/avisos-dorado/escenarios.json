@@ -1,0 +1,4387 @@
+{
+ "terminada": {
+  "entrada": {
+   "proyectos": [
+    {
+     "id": "p1",
+     "nombre": "Instalación Solar Vega Lorca",
+     "eliminado": false
+    }
+   ],
+   "tareas": [
+    {
+     "id": "t1",
+     "proyecto": "p1",
+     "nombre": "Redactar contrato",
+     "departamento": "ADMINISTRACIÓN",
+     "posicion": 1,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "done",
+     "dependeDe": [],
+     "avisadas": [
+      "t8"
+     ],
+     "marcas": []
+    },
+    {
+     "id": "t2",
+     "proyecto": "p1",
+     "nombre": "Pedir material",
+     "departamento": "INGENIERÍA",
+     "posicion": 3,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t3",
+     "proyecto": "p1",
+     "nombre": "Preparar facturación",
+     "departamento": "ADMINISTRACIÓN/COORDINACIÓN",
+     "posicion": 2,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t4",
+     "proyecto": "p1",
+     "nombre": "Visita técnica",
+     "departamento": "COMERCIAL",
+     "posicion": 4,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1",
+      "t5"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t5",
+     "proyecto": "p1",
+     "nombre": "Estudio previo",
+     "departamento": "INGENIERÍA",
+     "posicion": 5,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t6",
+     "proyecto": "p1",
+     "nombre": "Sin grupo",
+     "departamento": "",
+     "posicion": 6,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t7",
+     "proyecto": "p1",
+     "nombre": "Ya empezada",
+     "departamento": "INGENIERÍA",
+     "posicion": 7,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "doing",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t8",
+     "proyecto": "p1",
+     "nombre": "Ya avisada",
+     "departamento": "INGENIERÍA",
+     "posicion": 8,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    }
+   ],
+   "pasos": [
+    {
+     "accion": "terminada",
+     "tarea": "t1",
+     "actor": "Ana",
+     "actorId": 7
+    },
+    {
+     "accion": "terminada",
+     "tarea": "t1",
+     "actor": "Ana",
+     "actorId": 7
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "administracion",
+      "groupName": "Administración",
+      "excludeUserId": 7,
+      "excludeUser": "Ana",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Preparar facturación».",
+      "link": "proyecto=p1&tarea=t3",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t3",
+        "name": "Preparar facturación"
+       }
+      ],
+      "finishedBy": "Ana"
+     },
+     {
+      "source": "planificador",
+      "group": "coordinacion",
+      "groupName": "Coordinación",
+      "excludeUserId": 7,
+      "excludeUser": "Ana",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Preparar facturación».",
+      "link": "proyecto=p1&tarea=t3",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t3",
+        "name": "Preparar facturación"
+       }
+      ],
+      "finishedBy": "Ana"
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": 7,
+      "excludeUser": "Ana",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Pedir material».",
+      "link": "proyecto=p1&tarea=t2",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t2",
+        "name": "Pedir material"
+       }
+      ],
+      "finishedBy": "Ana"
+     }
+    ],
+    "resumen": null,
+    "tareas": {
+     "t1": {
+      "avisadas": [
+       "t8",
+       "t3",
+       "t2"
+      ],
+      "marcas": []
+     },
+     "t2": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t3": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t4": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t5": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t8": {
+      "avisadas": [],
+      "marcas": []
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Administración: ya puede empezar «Preparar facturación»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Coordinación: ya puede empezar «Preparar facturación»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Ingeniería: ya puede empezar «Pedir material»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana",
+      "proyecto": "p1"
+     }
+    ],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [],
+    "resumen": null,
+    "tareas": {
+     "t1": {
+      "avisadas": [
+       "t8",
+       "t3",
+       "t2"
+      ],
+      "marcas": []
+     },
+     "t2": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t3": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t4": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t5": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t8": {
+      "avisadas": [],
+      "marcas": []
+     }
+    },
+    "actividad": [],
+    "precioAvisado": null
+   }
+  ]
+ },
+ "terminada_anonima": {
+  "entrada": {
+   "proyectos": [
+    {
+     "id": "p1",
+     "nombre": "Instalación Solar Vega Lorca",
+     "eliminado": false
+    }
+   ],
+   "tareas": [
+    {
+     "id": "t1",
+     "proyecto": "p1",
+     "nombre": "Redactar contrato",
+     "departamento": "ADMINISTRACIÓN",
+     "posicion": 1,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "done",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t2",
+     "proyecto": "p1",
+     "nombre": "Pedir material",
+     "departamento": "ingenieria",
+     "posicion": 3,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    }
+   ],
+   "pasos": [
+    {
+     "accion": "terminada",
+     "tarea": "t1",
+     "actor": "Sin identificar",
+     "actorId": null
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Alguien ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Pedir material».",
+      "link": "proyecto=p1&tarea=t2",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t2",
+        "name": "Pedir material"
+       }
+      ],
+      "finishedBy": null
+     }
+    ],
+    "resumen": null,
+    "tareas": {
+     "t1": {
+      "avisadas": [
+       "t2"
+      ],
+      "marcas": []
+     },
+     "t2": {
+      "avisadas": [],
+      "marcas": []
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Ingeniería: ya puede empezar «Pedir material»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Sin identificar",
+      "proyecto": "p1"
+     }
+    ],
+    "precioAvisado": null
+   }
+  ]
+ },
+ "terminada_fallo": {
+  "entrada": {
+   "proyectos": [
+    {
+     "id": "p1",
+     "nombre": "Instalación Solar Vega Lorca",
+     "eliminado": false
+    }
+   ],
+   "tareas": [
+    {
+     "id": "t1",
+     "proyecto": "p1",
+     "nombre": "Redactar contrato",
+     "departamento": "ADMINISTRACIÓN",
+     "posicion": 1,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "done",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t2",
+     "proyecto": "p1",
+     "nombre": "Pedir material",
+     "departamento": "INGENIERÍA",
+     "posicion": 3,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "t3",
+     "proyecto": "p1",
+     "nombre": "Preparar facturación",
+     "departamento": "ADMINISTRACIÓN/COORDINACIÓN",
+     "posicion": 2,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    }
+   ],
+   "pasos": [
+    {
+     "accion": "terminada",
+     "tarea": "t1",
+     "actor": "Ana",
+     "actorId": 7,
+     "fallan": [
+      "coordinacion"
+     ]
+    },
+    {
+     "accion": "terminada",
+     "tarea": "t1",
+     "actor": "Ana",
+     "actorId": 7
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "administracion",
+      "groupName": "Administración",
+      "excludeUserId": 7,
+      "excludeUser": "Ana",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Preparar facturación».",
+      "link": "proyecto=p1&tarea=t3",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t3",
+        "name": "Preparar facturación"
+       }
+      ],
+      "finishedBy": "Ana"
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": 7,
+      "excludeUser": "Ana",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Pedir material».",
+      "link": "proyecto=p1&tarea=t2",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t2",
+        "name": "Pedir material"
+       }
+      ],
+      "finishedBy": "Ana"
+     }
+    ],
+    "resumen": null,
+    "tareas": {
+     "t1": {
+      "avisadas": [
+       "t2"
+      ],
+      "marcas": []
+     },
+     "t2": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t3": {
+      "avisadas": [],
+      "marcas": []
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Administración: ya puede empezar «Preparar facturación»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "status",
+      "resumen": "No se pudo avisar a Coordinación",
+      "tarea": "Redactar contrato",
+      "detalle": "La intranet respondió 500",
+      "actor": "Ana",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Ingeniería: ya puede empezar «Pedir material»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana",
+      "proyecto": "p1"
+     }
+    ],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "administracion",
+      "groupName": "Administración",
+      "excludeUserId": 7,
+      "excludeUser": "Ana",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Preparar facturación».",
+      "link": "proyecto=p1&tarea=t3",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t3",
+        "name": "Preparar facturación"
+       }
+      ],
+      "finishedBy": "Ana"
+     },
+     {
+      "source": "planificador",
+      "group": "coordinacion",
+      "groupName": "Coordinación",
+      "excludeUserId": 7,
+      "excludeUser": "Ana",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya puede empezar «Preparar facturación».",
+      "link": "proyecto=p1&tarea=t3",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "t3",
+        "name": "Preparar facturación"
+       }
+      ],
+      "finishedBy": "Ana"
+     }
+    ],
+    "resumen": null,
+    "tareas": {
+     "t1": {
+      "avisadas": [
+       "t2",
+       "t3"
+      ],
+      "marcas": []
+     },
+     "t2": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "t3": {
+      "avisadas": [],
+      "marcas": []
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Administración: ya puede empezar «Preparar facturación»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Coordinación: ya puede empezar «Preparar facturación»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana",
+      "proyecto": "p1"
+     }
+    ],
+    "precioAvisado": null
+   }
+  ]
+ },
+ "terminada_larga": {
+  "entrada": {
+   "proyectos": [
+    {
+     "id": "p1",
+     "nombre": "Instalación Solar Vega Lorca",
+     "eliminado": false
+    }
+   ],
+   "tareas": [
+    {
+     "id": "t1",
+     "proyecto": "p1",
+     "nombre": "Redactar contrato",
+     "departamento": "ADMINISTRACIÓN",
+     "posicion": 0,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "done",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l1",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 1 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 1,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l2",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 2 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 2,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l3",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 3 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 3,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l4",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 4 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 4,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l5",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 5 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 5,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l6",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 6 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 6,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l7",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 7 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 7,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l8",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 8 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 8,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l9",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 9 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 9,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l10",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 10 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 10,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l11",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 11 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 11,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l12",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 12 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 12,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l13",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 13 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 13,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "l14",
+     "proyecto": "p1",
+     "nombre": "Preparar la documentación técnica número 14 del expediente",
+     "departamento": "INGENIERÍA",
+     "posicion": 14,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "n1",
+     "proyecto": "p1",
+     "nombre": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+     "departamento": "COMERCIAL",
+     "posicion": 20,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "n2",
+     "proyecto": "p1",
+     "nombre": "Otra tarea comercial",
+     "departamento": "COMERCIAL",
+     "posicion": 21,
+     "inicio": "2026-11-29",
+     "fin": "2026-12-01",
+     "estado": "todo",
+     "dependeDe": [
+      "t1"
+     ],
+     "avisadas": [],
+     "marcas": []
+    }
+   ],
+   "pasos": [
+    {
+     "accion": "terminada",
+     "tarea": "t1",
+     "actor": "Ana María de la Santísima Trinidad",
+     "actorId": 7
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": 7,
+      "excludeUser": "Ana María de la Santísima Trinidad",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana María de la Santísima Trinidad ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya pueden empezar: «Preparar la documentación técnica número 1 del expediente» y 13 más.",
+      "link": "proyecto=p1&tarea=l1",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "l1",
+        "name": "Preparar la documentación técnica número 1 del expediente"
+       },
+       {
+        "id": "l2",
+        "name": "Preparar la documentación técnica número 2 del expediente"
+       },
+       {
+        "id": "l3",
+        "name": "Preparar la documentación técnica número 3 del expediente"
+       },
+       {
+        "id": "l4",
+        "name": "Preparar la documentación técnica número 4 del expediente"
+       },
+       {
+        "id": "l5",
+        "name": "Preparar la documentación técnica número 5 del expediente"
+       },
+       {
+        "id": "l6",
+        "name": "Preparar la documentación técnica número 6 del expediente"
+       },
+       {
+        "id": "l7",
+        "name": "Preparar la documentación técnica número 7 del expediente"
+       },
+       {
+        "id": "l8",
+        "name": "Preparar la documentación técnica número 8 del expediente"
+       },
+       {
+        "id": "l9",
+        "name": "Preparar la documentación técnica número 9 del expediente"
+       },
+       {
+        "id": "l10",
+        "name": "Preparar la documentación técnica número 10 del expediente"
+       },
+       {
+        "id": "l11",
+        "name": "Preparar la documentación técnica número 11 del expediente"
+       },
+       {
+        "id": "l12",
+        "name": "Preparar la documentación técnica número 12 del expediente"
+       },
+       {
+        "id": "l13",
+        "name": "Preparar la documentación técnica número 13 del expediente"
+       },
+       {
+        "id": "l14",
+        "name": "Preparar la documentación técnica número 14 del expediente"
+       }
+      ],
+      "finishedBy": "Ana María de la Santísima Trinidad"
+     },
+     {
+      "source": "planificador",
+      "group": "comercial",
+      "groupName": "Comercial",
+      "excludeUserId": 7,
+      "excludeUser": "Ana María de la Santísima Trinidad",
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Ana María de la Santísima Trinidad ha terminado «Redactar contrato» (Instalación Solar Vega Lorca). Ya pueden empezar: «NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN…» y 1 más.",
+      "link": "proyecto=p1&tarea=n1",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "finishedTaskId": "t1",
+      "finishedTaskName": "Redactar contrato",
+      "nextTasks": [
+       {
+        "id": "n1",
+        "name": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
+       },
+       {
+        "id": "n2",
+        "name": "Otra tarea comercial"
+       }
+      ],
+      "finishedBy": "Ana María de la Santísima Trinidad"
+     }
+    ],
+    "resumen": null,
+    "tareas": {
+     "t1": {
+      "avisadas": [
+       "l1",
+       "l2",
+       "l3",
+       "l4",
+       "l5",
+       "l6",
+       "l7",
+       "l8",
+       "l9",
+       "l10",
+       "l11",
+       "l12",
+       "l13",
+       "l14",
+       "n1",
+       "n2"
+      ],
+      "marcas": []
+     },
+     "l1": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l2": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l3": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l4": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l5": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l9": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l10": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l12": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l13": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "l14": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "n1": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "n2": {
+      "avisadas": [],
+      "marcas": []
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Ingeniería: ya pueden empezar «Preparar la documentación técnica número 1 del expediente», «Preparar la documentación técnica número 2 del expediente», «Preparar la documentación técnica número 3 del expediente», «Preparar la documentación técnica número 4 del expediente», «Preparar la documentación técnica número 5 del expediente», «Preparar la documentación técnica número 6 del expediente», «Preparar la documentación técnica número 7 del expediente», «Preparar la documentación técnica número 8 del expediente», «Preparar la documentación técnica número 9 del expediente», «Preparar la documentación técnica número 10 del expediente», «Preparar la documentación técnica número 11 del expediente», «Preparar la documentación técnica número 12 del expediente», «Preparar la documentación técnica número 13 del expediente», «Preparar la documentación técnica número 14 del expediente»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana María de la Santísima Trinidad",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "status",
+      "resumen": "Avisó a Comercial: ya pueden empezar «NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN», «Otra tarea comercial»",
+      "tarea": "Redactar contrato",
+      "detalle": "Por haber terminado «Redactar contrato»",
+      "actor": "Ana María de la Santísima Trinidad",
+      "proyecto": "p1"
+     }
+    ],
+    "precioAvisado": null
+   }
+  ]
+ },
+ "vencimientos": {
+  "entrada": {
+   "proyectos": [
+    {
+     "id": "p1",
+     "nombre": "Instalación Solar Vega Lorca",
+     "eliminado": false
+    },
+    {
+     "id": "p2",
+     "nombre": "Nave «Frutas» Murcia",
+     "eliminado": false
+    },
+    {
+     "id": "p3",
+     "nombre": "Proyecto borrado",
+     "eliminado": true
+    }
+   ],
+   "tareas": [
+    {
+     "id": "v1",
+     "proyecto": "p1",
+     "nombre": "Enviar oferta",
+     "departamento": "INGENIERÍA",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v2",
+     "proyecto": "p1",
+     "nombre": "Pedir permisos",
+     "departamento": "INGENIERÍA",
+     "posicion": 2,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "doing",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v3",
+     "proyecto": "p1",
+     "nombre": "Revisar planos",
+     "departamento": "INGENIERÍA",
+     "posicion": 3,
+     "inicio": "2026-11-03",
+     "fin": "2026-11-05",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v4",
+     "proyecto": "p1",
+     "nombre": "Cerrar compras",
+     "departamento": "INGENIERÍA",
+     "posicion": 4,
+     "inicio": "2026-11-01",
+     "fin": "2026-11-03",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v5",
+     "proyecto": "p1",
+     "nombre": "Tarea abandonada",
+     "departamento": "INGENIERÍA",
+     "posicion": 5,
+     "inicio": "2026-10-18",
+     "fin": "2026-10-20",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v6",
+     "proyecto": "p1",
+     "nombre": "Futura",
+     "departamento": "INGENIERÍA",
+     "posicion": 6,
+     "inicio": "2026-11-08",
+     "fin": "2026-11-10",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v7",
+     "proyecto": "p1",
+     "nombre": "Ya hecha",
+     "departamento": "INGENIERÍA",
+     "posicion": 7,
+     "inicio": "2026-10-30",
+     "fin": "2026-11-01",
+     "estado": "done",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v8",
+     "proyecto": "p1",
+     "nombre": "Pausada",
+     "departamento": "INGENIERÍA",
+     "posicion": 8,
+     "inicio": "2026-10-30",
+     "fin": "2026-11-01",
+     "estado": "paused",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v9",
+     "proyecto": "p1",
+     "nombre": "Facturar el primer pago",
+     "departamento": "ADMINISTRACIÓN/COORDINACIÓN",
+     "posicion": 9,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v10",
+     "proyecto": "p1",
+     "nombre": "Sin departamento",
+     "departamento": "",
+     "posicion": 10,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v11",
+     "proyecto": "p3",
+     "nombre": "De un proyecto borrado",
+     "departamento": "INGENIERÍA",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v12",
+     "proyecto": "p2",
+     "nombre": "Montar la estructura",
+     "departamento": "Ingeniería",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v13",
+     "proyecto": "p2",
+     "nombre": "Visitar al cliente",
+     "departamento": "COMERCIAL",
+     "posicion": 2,
+     "inicio": "2026-11-02",
+     "fin": "2026-11-04",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    }
+   ],
+   "equipos": [],
+   "pasos": [
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-06",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-06",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-07",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-09",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-20",
+     "soloMarcar": false
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "administracion",
+      "groupName": "Administración",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Hoy vence «Facturar el primer pago» (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v9",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v9",
+        "name": "Facturar el primer pago"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "coordinacion",
+      "groupName": "Coordinación",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Hoy vence «Facturar el primer pago» (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v9",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v9",
+        "name": "Facturar el primer pago"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Vencen: «Enviar oferta», «Pedir permisos», «Revisar planos» (venció el 05/11) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v1",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v1",
+        "name": "Enviar oferta"
+       },
+       {
+        "id": "v2",
+        "name": "Pedir permisos"
+       },
+       {
+        "id": "v3",
+        "name": "Revisar planos"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Sigue con retraso: «Cerrar compras» (3 días) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v4",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v4",
+        "name": "Cerrar compras"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "comercial",
+      "groupName": "Comercial",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Nave «Frutas» Murcia",
+      "message": "Vencen: «Visitar al cliente» (venció el 04/11) (Nave «Frutas» Murcia).",
+      "link": "proyecto=p2&tarea=v13",
+      "projectId": "p2",
+      "projectName": "Nave «Frutas» Murcia",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v13",
+        "name": "Visitar al cliente"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Nave «Frutas» Murcia",
+      "message": "Hoy vence «Montar la estructura» (Nave «Frutas» Murcia).",
+      "link": "proyecto=p2&tarea=v12",
+      "projectId": "p2",
+      "projectName": "Nave «Frutas» Murcia",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v12",
+        "name": "Montar la estructura"
+       }
+      ]
+     }
+    ],
+    "resumen": {
+     "sent": 6,
+     "tasks": 7,
+     "marked": 1,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Administración: vencen hoy «Facturar el primer pago»",
+      "tarea": "Facturar el primer pago",
+      "detalle": "«Facturar el primer pago»",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Coordinación: vencen hoy «Facturar el primer pago»",
+      "tarea": "Facturar el primer pago",
+      "detalle": "«Facturar el primer pago»",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Enviar oferta» (con otras)",
+      "tarea": "Enviar oferta",
+      "detalle": "«Enviar oferta»",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Pedir permisos» (con otras)",
+      "tarea": "Pedir permisos",
+      "detalle": "«Pedir permisos»",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Revisar planos» (con otras)",
+      "tarea": "Revisar planos",
+      "detalle": "«Revisar planos» (venció el 05/11)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: siguen retrasadas «Cerrar compras»",
+      "tarea": "Cerrar compras",
+      "detalle": "«Cerrar compras» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Comercial: vencen hoy «Visitar al cliente»",
+      "tarea": "Visitar al cliente",
+      "detalle": "«Visitar al cliente» (venció el 04/11)",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Montar la estructura»",
+      "tarea": "Montar la estructura",
+      "detalle": "«Montar la estructura»",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     }
+    ],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "comercial",
+      "groupName": "Comercial",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Nave «Frutas» Murcia",
+      "message": "Sigue con retraso: «Visitar al cliente» (3 días) (Nave «Frutas» Murcia).",
+      "link": "proyecto=p2&tarea=v13",
+      "projectId": "p2",
+      "projectName": "Nave «Frutas» Murcia",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v13",
+        "name": "Visitar al cliente"
+       }
+      ]
+     }
+    ],
+    "resumen": {
+     "sent": 1,
+     "tasks": 1,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04",
+       "late3:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Comercial: siguen retrasadas «Visitar al cliente»",
+      "tarea": "Visitar al cliente",
+      "detalle": "«Visitar al cliente» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     }
+    ],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "administracion",
+      "groupName": "Administración",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Sigue con retraso: «Facturar el primer pago» (3 días) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v9",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v9",
+        "name": "Facturar el primer pago"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "coordinacion",
+      "groupName": "Coordinación",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Sigue con retraso: «Facturar el primer pago» (3 días) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v9",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v9",
+        "name": "Facturar el primer pago"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Siguen con retraso: «Enviar oferta» (3 días), «Pedir permisos» (3 días), «Revisar planos» (4 días) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v1",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v1",
+        "name": "Enviar oferta"
+       },
+       {
+        "id": "v2",
+        "name": "Pedir permisos"
+       },
+       {
+        "id": "v3",
+        "name": "Revisar planos"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Nave «Frutas» Murcia",
+      "message": "Sigue con retraso: «Montar la estructura» (3 días) (Nave «Frutas» Murcia).",
+      "link": "proyecto=p2&tarea=v12",
+      "projectId": "p2",
+      "projectName": "Nave «Frutas» Murcia",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v12",
+        "name": "Montar la estructura"
+       }
+      ]
+     }
+    ],
+    "resumen": {
+     "sent": 4,
+     "tasks": 5,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05",
+       "late3:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04",
+       "late3:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Administración: siguen retrasadas «Facturar el primer pago»",
+      "tarea": "Facturar el primer pago",
+      "detalle": "«Facturar el primer pago» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Coordinación: siguen retrasadas «Facturar el primer pago»",
+      "tarea": "Facturar el primer pago",
+      "detalle": "«Facturar el primer pago» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: siguen retrasadas «Enviar oferta» (con otras)",
+      "tarea": "Enviar oferta",
+      "detalle": "«Enviar oferta» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: siguen retrasadas «Pedir permisos» (con otras)",
+      "tarea": "Pedir permisos",
+      "detalle": "«Pedir permisos» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: siguen retrasadas «Revisar planos» (con otras)",
+      "tarea": "Revisar planos",
+      "detalle": "«Revisar planos» (4 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: siguen retrasadas «Montar la estructura»",
+      "tarea": "Montar la estructura",
+      "detalle": "«Montar la estructura» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     }
+    ],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Sigue con retraso: «Futura» (10 días) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v6",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v6",
+        "name": "Futura"
+       }
+      ]
+     }
+    ],
+    "resumen": {
+     "sent": 1,
+     "tasks": 1,
+     "marked": 1,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05",
+       "late3:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-10",
+       "late3:2026-11-10"
+      ]
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06",
+       "late3:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04",
+       "late3:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: siguen retrasadas «Futura»",
+      "tarea": "Futura",
+      "detalle": "«Futura» (10 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     }
+    ],
+    "precioAvisado": null
+   }
+  ]
+ },
+ "vencimientos_fallo": {
+  "entrada": {
+   "proyectos": [
+    {
+     "id": "p1",
+     "nombre": "Instalación Solar Vega Lorca",
+     "eliminado": false
+    },
+    {
+     "id": "p2",
+     "nombre": "Nave «Frutas» Murcia",
+     "eliminado": false
+    },
+    {
+     "id": "p3",
+     "nombre": "Proyecto borrado",
+     "eliminado": true
+    }
+   ],
+   "tareas": [
+    {
+     "id": "v1",
+     "proyecto": "p1",
+     "nombre": "Enviar oferta",
+     "departamento": "INGENIERÍA",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v2",
+     "proyecto": "p1",
+     "nombre": "Pedir permisos",
+     "departamento": "INGENIERÍA",
+     "posicion": 2,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "doing",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v3",
+     "proyecto": "p1",
+     "nombre": "Revisar planos",
+     "departamento": "INGENIERÍA",
+     "posicion": 3,
+     "inicio": "2026-11-03",
+     "fin": "2026-11-05",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v4",
+     "proyecto": "p1",
+     "nombre": "Cerrar compras",
+     "departamento": "INGENIERÍA",
+     "posicion": 4,
+     "inicio": "2026-11-01",
+     "fin": "2026-11-03",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v5",
+     "proyecto": "p1",
+     "nombre": "Tarea abandonada",
+     "departamento": "INGENIERÍA",
+     "posicion": 5,
+     "inicio": "2026-10-18",
+     "fin": "2026-10-20",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v6",
+     "proyecto": "p1",
+     "nombre": "Futura",
+     "departamento": "INGENIERÍA",
+     "posicion": 6,
+     "inicio": "2026-11-08",
+     "fin": "2026-11-10",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v7",
+     "proyecto": "p1",
+     "nombre": "Ya hecha",
+     "departamento": "INGENIERÍA",
+     "posicion": 7,
+     "inicio": "2026-10-30",
+     "fin": "2026-11-01",
+     "estado": "done",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v8",
+     "proyecto": "p1",
+     "nombre": "Pausada",
+     "departamento": "INGENIERÍA",
+     "posicion": 8,
+     "inicio": "2026-10-30",
+     "fin": "2026-11-01",
+     "estado": "paused",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v9",
+     "proyecto": "p1",
+     "nombre": "Facturar el primer pago",
+     "departamento": "ADMINISTRACIÓN/COORDINACIÓN",
+     "posicion": 9,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v10",
+     "proyecto": "p1",
+     "nombre": "Sin departamento",
+     "departamento": "",
+     "posicion": 10,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v11",
+     "proyecto": "p3",
+     "nombre": "De un proyecto borrado",
+     "departamento": "INGENIERÍA",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v12",
+     "proyecto": "p2",
+     "nombre": "Montar la estructura",
+     "departamento": "Ingeniería",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v13",
+     "proyecto": "p2",
+     "nombre": "Visitar al cliente",
+     "departamento": "COMERCIAL",
+     "posicion": 2,
+     "inicio": "2026-11-02",
+     "fin": "2026-11-04",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    }
+   ],
+   "equipos": [],
+   "pasos": [
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-06",
+     "soloMarcar": false,
+     "fallan": [
+      "ingenieria"
+     ]
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-07",
+     "soloMarcar": false
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "administracion",
+      "groupName": "Administración",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Hoy vence «Facturar el primer pago» (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v9",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v9",
+        "name": "Facturar el primer pago"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "coordinacion",
+      "groupName": "Coordinación",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Hoy vence «Facturar el primer pago» (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v9",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v9",
+        "name": "Facturar el primer pago"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "comercial",
+      "groupName": "Comercial",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Nave «Frutas» Murcia",
+      "message": "Vencen: «Visitar al cliente» (venció el 04/11) (Nave «Frutas» Murcia).",
+      "link": "proyecto=p2&tarea=v13",
+      "projectId": "p2",
+      "projectName": "Nave «Frutas» Murcia",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v13",
+        "name": "Visitar al cliente"
+       }
+      ]
+     }
+    ],
+    "resumen": {
+     "sent": 3,
+     "tasks": 2,
+     "marked": 1,
+     "failed": 3,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Administración: vencen hoy «Facturar el primer pago»",
+      "tarea": "Facturar el primer pago",
+      "detalle": "«Facturar el primer pago»",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Coordinación: vencen hoy «Facturar el primer pago»",
+      "tarea": "Facturar el primer pago",
+      "detalle": "«Facturar el primer pago»",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "No se pudo avisar a Ingeniería del vencimiento",
+      "tarea": "",
+      "detalle": "La intranet respondió 500",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "No se pudo avisar a Ingeniería del vencimiento",
+      "tarea": "",
+      "detalle": "La intranet respondió 500",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Comercial: vencen hoy «Visitar al cliente»",
+      "tarea": "Visitar al cliente",
+      "detalle": "«Visitar al cliente» (venció el 04/11)",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "No se pudo avisar a Ingeniería del vencimiento",
+      "tarea": "",
+      "detalle": "La intranet respondió 500",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     }
+    ],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Vencen: «Enviar oferta» (venció el 06/11), «Pedir permisos» (venció el 06/11), «Revisar planos» (venció el 05/11) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v1",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v1",
+        "name": "Enviar oferta"
+       },
+       {
+        "id": "v2",
+        "name": "Pedir permisos"
+       },
+       {
+        "id": "v3",
+        "name": "Revisar planos"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Instalación Solar Vega Lorca",
+      "message": "Sigue con retraso: «Cerrar compras» (4 días) (Instalación Solar Vega Lorca).",
+      "link": "proyecto=p1&tarea=v4",
+      "projectId": "p1",
+      "projectName": "Instalación Solar Vega Lorca",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v4",
+        "name": "Cerrar compras"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Nave «Frutas» Murcia",
+      "message": "Vencen: «Montar la estructura» (venció el 06/11) (Nave «Frutas» Murcia).",
+      "link": "proyecto=p2&tarea=v12",
+      "projectId": "p2",
+      "projectName": "Nave «Frutas» Murcia",
+      "kind": "vencimiento",
+      "nextTasks": [
+       {
+        "id": "v12",
+        "name": "Montar la estructura"
+       }
+      ]
+     },
+     {
+      "source": "planificador",
+      "group": "comercial",
+      "groupName": "Comercial",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Nave «Frutas» Murcia",
+      "message": "Sigue con retraso: «Visitar al cliente» (3 días) (Nave «Frutas» Murcia).",
+      "link": "proyecto=p2&tarea=v13",
+      "projectId": "p2",
+      "projectName": "Nave «Frutas» Murcia",
+      "kind": "retraso",
+      "nextTasks": [
+       {
+        "id": "v13",
+        "name": "Visitar al cliente"
+       }
+      ]
+     }
+    ],
+    "resumen": {
+     "sent": 4,
+     "tasks": 6,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04",
+       "late3:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Enviar oferta» (con otras)",
+      "tarea": "Enviar oferta",
+      "detalle": "«Enviar oferta» (venció el 06/11)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Pedir permisos» (con otras)",
+      "tarea": "Pedir permisos",
+      "detalle": "«Pedir permisos» (venció el 06/11)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Revisar planos» (con otras)",
+      "tarea": "Revisar planos",
+      "detalle": "«Revisar planos» (venció el 05/11)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: siguen retrasadas «Cerrar compras»",
+      "tarea": "Cerrar compras",
+      "detalle": "«Cerrar compras» (4 días)",
+      "actor": "Planificador",
+      "proyecto": "p1"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Ingeniería: vencen hoy «Montar la estructura»",
+      "tarea": "Montar la estructura",
+      "detalle": "«Montar la estructura» (venció el 06/11)",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     },
+     {
+      "tipo": "schedule",
+      "resumen": "Avisó a Comercial: siguen retrasadas «Visitar al cliente»",
+      "tarea": "Visitar al cliente",
+      "detalle": "«Visitar al cliente» (3 días)",
+      "actor": "Planificador",
+      "proyecto": "p2"
+     }
+    ],
+    "precioAvisado": null
+   }
+  ]
+ },
+ "vencimientos_solo_marcar": {
+  "entrada": {
+   "proyectos": [
+    {
+     "id": "p1",
+     "nombre": "Instalación Solar Vega Lorca",
+     "eliminado": false
+    },
+    {
+     "id": "p2",
+     "nombre": "Nave «Frutas» Murcia",
+     "eliminado": false
+    },
+    {
+     "id": "p3",
+     "nombre": "Proyecto borrado",
+     "eliminado": true
+    }
+   ],
+   "tareas": [
+    {
+     "id": "v1",
+     "proyecto": "p1",
+     "nombre": "Enviar oferta",
+     "departamento": "INGENIERÍA",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v2",
+     "proyecto": "p1",
+     "nombre": "Pedir permisos",
+     "departamento": "INGENIERÍA",
+     "posicion": 2,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "doing",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v3",
+     "proyecto": "p1",
+     "nombre": "Revisar planos",
+     "departamento": "INGENIERÍA",
+     "posicion": 3,
+     "inicio": "2026-11-03",
+     "fin": "2026-11-05",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v4",
+     "proyecto": "p1",
+     "nombre": "Cerrar compras",
+     "departamento": "INGENIERÍA",
+     "posicion": 4,
+     "inicio": "2026-11-01",
+     "fin": "2026-11-03",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v5",
+     "proyecto": "p1",
+     "nombre": "Tarea abandonada",
+     "departamento": "INGENIERÍA",
+     "posicion": 5,
+     "inicio": "2026-10-18",
+     "fin": "2026-10-20",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v6",
+     "proyecto": "p1",
+     "nombre": "Futura",
+     "departamento": "INGENIERÍA",
+     "posicion": 6,
+     "inicio": "2026-11-08",
+     "fin": "2026-11-10",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v7",
+     "proyecto": "p1",
+     "nombre": "Ya hecha",
+     "departamento": "INGENIERÍA",
+     "posicion": 7,
+     "inicio": "2026-10-30",
+     "fin": "2026-11-01",
+     "estado": "done",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v8",
+     "proyecto": "p1",
+     "nombre": "Pausada",
+     "departamento": "INGENIERÍA",
+     "posicion": 8,
+     "inicio": "2026-10-30",
+     "fin": "2026-11-01",
+     "estado": "paused",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v9",
+     "proyecto": "p1",
+     "nombre": "Facturar el primer pago",
+     "departamento": "ADMINISTRACIÓN/COORDINACIÓN",
+     "posicion": 9,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v10",
+     "proyecto": "p1",
+     "nombre": "Sin departamento",
+     "departamento": "",
+     "posicion": 10,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v11",
+     "proyecto": "p3",
+     "nombre": "De un proyecto borrado",
+     "departamento": "INGENIERÍA",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v12",
+     "proyecto": "p2",
+     "nombre": "Montar la estructura",
+     "departamento": "Ingeniería",
+     "posicion": 1,
+     "inicio": "2026-11-04",
+     "fin": "2026-11-06",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    },
+    {
+     "id": "v13",
+     "proyecto": "p2",
+     "nombre": "Visitar al cliente",
+     "departamento": "COMERCIAL",
+     "posicion": 2,
+     "inicio": "2026-11-02",
+     "fin": "2026-11-04",
+     "estado": "todo",
+     "dependeDe": [],
+     "avisadas": [],
+     "marcas": []
+    }
+   ],
+   "equipos": [],
+   "pasos": [
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-06",
+     "soloMarcar": true
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-06",
+     "soloMarcar": false
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 9,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {
+     "v1": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v2": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v3": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-05"
+      ]
+     },
+     "v4": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-03",
+       "late3:2026-11-03"
+      ]
+     },
+     "v5": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-10-20",
+       "late3:2026-10-20"
+      ]
+     },
+     "v6": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v7": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v8": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v9": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v10": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v11": {
+      "avisadas": [],
+      "marcas": []
+     },
+     "v12": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-06"
+      ]
+     },
+     "v13": {
+      "avisadas": [],
+      "marcas": [
+       "due:2026-11-04"
+      ]
+     }
+    },
+    "actividad": [],
+    "precioAvisado": null
+   }
+  ]
+ },
+ "precios": {
+  "entrada": {
+   "proyectos": [],
+   "tareas": [],
+   "equipos": [],
+   "pasos": [
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-01",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-15",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-16",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-17",
+     "soloMarcar": false
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Precios del inventario",
+      "message": "Toca revisar los precios de los productos del inventario: la última revisión fue el 01/10/2026 (hace 15 días).",
+      "link": "revisar=precios",
+      "projectId": null,
+      "projectName": "Inventario",
+      "kind": "revision-precios",
+      "nextTasks": []
+     }
+    ],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 1,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-01"
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-01"
+   }
+  ]
+ },
+ "precios_revisados": {
+  "entrada": {
+   "proyectos": [],
+   "tareas": [],
+   "equipos": [
+    {
+     "id": "e1",
+     "revisado": "2026-10-20"
+    },
+    {
+     "id": "e2",
+     "revisado": "2026-10-10"
+    },
+    {
+     "id": "e3",
+     "revisado": null
+    }
+   ],
+   "pasos": [
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-04",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-05",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-05",
+     "soloMarcar": false
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-11-06",
+     "soloMarcar": false,
+     "fallan": [
+      "ingenieria"
+     ]
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Precios del inventario",
+      "message": "Toca revisar los precios de los productos del inventario: la última revisión fue el 20/10/2026 (hace 15 días).",
+      "link": "revisar=precios",
+      "projectId": null,
+      "projectName": "Inventario",
+      "kind": "revision-precios",
+      "nextTasks": []
+     }
+    ],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 1,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-20"
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-20"
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-20"
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-20"
+   }
+  ]
+ },
+ "precios_fallo": {
+  "entrada": {
+   "proyectos": [],
+   "tareas": [],
+   "equipos": [
+    {
+     "id": "e1",
+     "revisado": "2026-10-01"
+    }
+   ],
+   "pasos": [
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-16",
+     "soloMarcar": false,
+     "fallan": [
+      "ingenieria"
+     ]
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-17",
+     "soloMarcar": false
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 1
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": null
+   },
+   {
+    "avisos": [
+     {
+      "source": "planificador",
+      "group": "ingenieria",
+      "groupName": "Ingeniería",
+      "excludeUserId": null,
+      "excludeUser": null,
+      "title": "Planificador · Precios del inventario",
+      "message": "Toca revisar los precios de los productos del inventario: la última revisión fue el 01/10/2026 (hace 16 días).",
+      "link": "revisar=precios",
+      "projectId": null,
+      "projectName": "Inventario",
+      "kind": "revision-precios",
+      "nextTasks": []
+     }
+    ],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 1,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-01"
+   }
+  ]
+ },
+ "precios_solo_marcar": {
+  "entrada": {
+   "proyectos": [],
+   "tareas": [],
+   "equipos": [
+    {
+     "id": "e1",
+     "revisado": "2026-10-01"
+    }
+   ],
+   "pasos": [
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-20",
+     "soloMarcar": true
+    },
+    {
+     "accion": "vencimientos",
+     "hoy": "2026-10-21",
+     "soloMarcar": false
+    }
+   ]
+  },
+  "salida": [
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 1,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-01"
+   },
+   {
+    "avisos": [],
+    "resumen": {
+     "sent": 0,
+     "tasks": 0,
+     "marked": 0,
+     "failed": 0,
+     "price_review_sent": 0,
+     "price_review_marked": 0,
+     "price_review_failed": 0
+    },
+    "tareas": {},
+    "actividad": [],
+    "precioAvisado": "2026-10-01"
+   }
+  ]
+ },
+ "_mensajes": [
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya puede empezar «Tarea 0 xxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»"
+   ],
+   "esperado": "Hoy vence «Tarea 0 xxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»"
+   ],
+   "esperado": "Sigue con retraso: «Tarea 0 xxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya puede empezar «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Hoy vence «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Sigue con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya puede empezar «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Hoy vence «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Sigue con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxx",
+    "Tarea 1 xxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx» (venció el 05/11) (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11) (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 1 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 1 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxx",
+    "Tarea 1 xxxxxxxx",
+    "Tarea 2 xxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxx»"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx»",
+    "«Tarea 2 xxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 2 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 2 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 2 más (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxx",
+    "Tarea 1 xxxxxxxx",
+    "Tarea 2 xxxxxxxx",
+    "Tarea 3 xxxxxxxx",
+    "Tarea 4 xxxxxxxx",
+    "Tarea 5 xxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx», «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx»."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxx»",
+    "«Tarea 3 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxx»",
+    "«Tarea 5 xxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx» (venció el 05/11), «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx» (venció el 05/11) (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx»",
+    "«Tarea 2 xxxxxxxx»",
+    "«Tarea 3 xxxxxxxx»",
+    "«Tarea 4 xxxxxxxx»",
+    "«Tarea 5 xxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx», «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 3 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 3 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 3 más (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 5 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 5 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 5 más (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxx",
+    "Tarea 1 xxxxxxxx",
+    "Tarea 2 xxxxxxxx",
+    "Tarea 3 xxxxxxxx",
+    "Tarea 4 xxxxxxxx",
+    "Tarea 5 xxxxxxxx",
+    "Tarea 6 xxxxxxxx",
+    "Tarea 7 xxxxxxxx",
+    "Tarea 8 xxxxxxxx",
+    "Tarea 9 xxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx», «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx», «Tarea 6 xxxxxxxx», «Tarea 7 xxxxxxxx» y 2 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxx»",
+    "«Tarea 3 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxx»",
+    "«Tarea 5 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 6 xxxxxxxx»",
+    "«Tarea 7 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 8 xxxxxxxx»",
+    "«Tarea 9 xxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx» (venció el 05/11), «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx» (venció el 05/11), «Tarea 6 xxxxxxxx» y 3 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx»",
+    "«Tarea 2 xxxxxxxx»",
+    "«Tarea 3 xxxxxxxx»",
+    "«Tarea 4 xxxxxxxx»",
+    "«Tarea 5 xxxxxxxx»",
+    "«Tarea 6 xxxxxxxx»",
+    "«Tarea 7 xxxxxxxx»",
+    "«Tarea 8 xxxxxxxx»",
+    "«Tarea 9 xxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx», «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx», «Tarea 6 xxxxxxxx», «Tarea 7 xxxxxxxx», «Tarea 8 xxxxxxxx», «Tarea 9 xxxxxxxx» (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 7 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 7 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 7 más (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 9 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 9 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 9 más (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxx",
+    "Tarea 1 xxxxxxxx",
+    "Tarea 2 xxxxxxxx",
+    "Tarea 3 xxxxxxxx",
+    "Tarea 4 xxxxxxxx",
+    "Tarea 5 xxxxxxxx",
+    "Tarea 6 xxxxxxxx",
+    "Tarea 7 xxxxxxxx",
+    "Tarea 8 xxxxxxxx",
+    "Tarea 9 xxxxxxxx",
+    "Tarea 10 xxxxxxxx",
+    "Tarea 11 xxxxxxxx",
+    "Tarea 12 xxxxxxxx",
+    "Tarea 13 xxxxxxxx",
+    "Tarea 14 xxxxxxxx",
+    "Tarea 15 xxxxxxxx",
+    "Tarea 16 xxxxxxxx",
+    "Tarea 17 xxxxxxxx",
+    "Tarea 18 xxxxxxxx",
+    "Tarea 19 xxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx», «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx», «Tarea 6 xxxxxxxx», «Tarea 7 xxxxxxxx» y 12 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxx»",
+    "«Tarea 3 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxx»",
+    "«Tarea 5 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 6 xxxxxxxx»",
+    "«Tarea 7 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 8 xxxxxxxx»",
+    "«Tarea 9 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 10 xxxxxxxx»",
+    "«Tarea 11 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 12 xxxxxxxx»",
+    "«Tarea 13 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 14 xxxxxxxx»",
+    "«Tarea 15 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 16 xxxxxxxx»",
+    "«Tarea 17 xxxxxxxx» (venció el 05/11)",
+    "«Tarea 18 xxxxxxxx»",
+    "«Tarea 19 xxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx» (venció el 05/11), «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx» (venció el 05/11), «Tarea 6 xxxxxxxx» y 13 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxx»",
+    "«Tarea 1 xxxxxxxx»",
+    "«Tarea 2 xxxxxxxx»",
+    "«Tarea 3 xxxxxxxx»",
+    "«Tarea 4 xxxxxxxx»",
+    "«Tarea 5 xxxxxxxx»",
+    "«Tarea 6 xxxxxxxx»",
+    "«Tarea 7 xxxxxxxx»",
+    "«Tarea 8 xxxxxxxx»",
+    "«Tarea 9 xxxxxxxx»",
+    "«Tarea 10 xxxxxxxx»",
+    "«Tarea 11 xxxxxxxx»",
+    "«Tarea 12 xxxxxxxx»",
+    "«Tarea 13 xxxxxxxx»",
+    "«Tarea 14 xxxxxxxx»",
+    "«Tarea 15 xxxxxxxx»",
+    "«Tarea 16 xxxxxxxx»",
+    "«Tarea 17 xxxxxxxx»",
+    "«Tarea 18 xxxxxxxx»",
+    "«Tarea 19 xxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxx», «Tarea 1 xxxxxxxx», «Tarea 2 xxxxxxxx», «Tarea 3 xxxxxxxx», «Tarea 4 xxxxxxxx», «Tarea 5 xxxxxxxx», «Tarea 6 xxxxxxxx», «Tarea 7 xxxxxxxx», «Tarea 8 xxxxxxxx» y 11 más (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 16 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 18 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 17 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 16 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 18 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11), «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 17 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 16 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 18 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx», «Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 17 más (Proyecto A)."
+  },
+  {
+   "tipo": "terminada",
+   "quien": "Ana",
+   "terminada": "Redactar contrato",
+   "proyecto": "Proyecto A",
+   "nombres": [
+    "Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 16 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 18 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Tarea 19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ],
+   "esperado": "Ana ha terminado «Redactar contrato» (Proyecto A). Ya pueden empezar: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 19 más."
+  },
+  {
+   "tipo": "due",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 16 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)",
+    "«Tarea 18 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» (venció el 05/11)"
+   ],
+   "esperado": "Vencen: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 19 más (Proyecto A)."
+  },
+  {
+   "tipo": "late",
+   "proyecto": "Proyecto A",
+   "textos": [
+    "«Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 16 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 18 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»",
+    "«Tarea 19 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx»"
+   ],
+   "esperado": "Siguen con retraso: «Tarea 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx» y 19 más (Proyecto A)."
+  }
+ ],
+ "_grupos": {
+  "ADMINISTRACIÓN/COORDINACIÓN": [
+   "administracion",
+   "coordinacion"
+  ],
+  "Ingeniería": [
+   "ingenieria"
+  ],
+  " comercial / COMERCIAL ": [
+   "comercial"
+  ],
+  "": [],
+  "Dirección técnica": [
+   "direcciontecnica"
+  ],
+  "ÁREA 51/ñandú": [
+   "area51",
+   "nandu"
+  ]
+ },
+ "_nombres": {
+  "administracion": "Administración",
+  "ingenieria": "Ingeniería",
+  "coordinacion": "Coordinación",
+  "comercial": "Comercial",
+  "direcciontecnica": "Direcciontecnica",
+  "xYz": "Xyz"
+ }
+}
