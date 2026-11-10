@@ -256,33 +256,19 @@ class PresupuestosContratoTest {
     }
 
     @Test
-    void validarUnClientePotencialLoDaDeAltaEnLaIntranetYVinculaLasVariantes() throws Exception {
-        when(clientes.crear(any(), any(), any(), any())).thenReturn(Map.of("id", 77, "name", "Casa Pérez SL", "trade_name", "Casa Pérez", "cif", "B123"));
+    void validarUnClientePotencialNoLoDaDeAltaEnLaIntranet() throws Exception {
+        // Desconectado como en el Planificador actual: sigue siendo potencial y no se pide el CIF ni se llama a la intranet
+        when(clientes.crear(any(), any(), any(), any())).thenThrow(new IllegalStateException("no debería llamarse"));
         String cuerpo = "{\"name\":\"Casa\",\"customer_kind\":\"potencial\",\"data\":{\"customer\":{\"name\":\"Casa Pérez\",\"phone\":\"600\"},\"lines\":[]}}";
         String a = leer(ana(post(BASE + "/budgets"), cuerpo).andExpect(status().isCreated())).get("id").asText();
         ana(post(BASE + "/budgets/" + a + "/send"), null).andExpect(status().isOk());
         String b = leer(ana(post(BASE + "/budgets/" + a + "/variant"), null).andExpect(status().isCreated())).get("id").asText();
-        // Sin CIF no se puede dar de alta
-        jefe(post(BASE + "/budgets/" + a + "/validate"), null).andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.detail").value("Falta el CIF del cliente: hace falta para darlo de alta en la intranet."));
-        jefe(post(BASE + "/budgets/" + a + "/validate"), "{\"cif\":\"B123\"}").andExpect(status().isOk())
-                .andExpect(jsonPath("$.customer_kind").value("existente")).andExpect(jsonPath("$.customer_id").value(77));
+        jefe(post(BASE + "/budgets/" + a + "/validate"), null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("validado")).andExpect(jsonPath("$.customer_kind").value("potencial"));
         JsonNode variante = leer(mvc.perform(get(BASE + "/budgets/" + b)));
-        assertEquals("existente", variante.get("customer_kind").asText());
-        assertEquals(77, variante.get("customer_id").asInt());
-        assertEquals("Casa Pérez SL", variante.get("data").get("customer").get("name").asText());
+        assertEquals("potencial", variante.get("customer_kind").asText());
         assertEquals("descartado", variante.get("status").asText());
-    }
-
-    @Test
-    void siFallaElAltaDelClienteNoSeValida() throws Exception {
-        String cuerpo = "{\"customer_kind\":\"potencial\",\"data\":{\"customer\":{\"name\":\"X\",\"cif\":\"B1\"}}}";
-        String a = leer(ana(post(BASE + "/budgets"), cuerpo).andExpect(status().isCreated())).get("id").asText();
-        ana(post(BASE + "/budgets/" + a + "/send"), null).andExpect(status().isOk());
-        when(clientes.crear(any(), any(), any(), any())).thenThrow(new IllegalStateException("Este servidor no tiene conexión con la intranet."));
-        jefe(post(BASE + "/budgets/" + a + "/validate"), null).andExpect(status().isBadGateway())
-                .andExpect(jsonPath("$.detail").value("No se ha podido dar de alta al cliente: Este servidor no tiene conexión con la intranet."));
-        assertEquals("enviado", leer(mvc.perform(get(BASE + "/budgets/" + a))).get("status").asText());
+        org.mockito.Mockito.verify(clientes, org.mockito.Mockito.never()).crear(any(), any(), any(), any());
     }
 
     @Test
@@ -408,7 +394,7 @@ class PresupuestosContratoTest {
         JsonNode lista = leer(mvc.perform(get(BASE + "/budgets/" + id + "/proposals")).andExpect(status().isOk()));
         assertEquals(2, lista.get(0).get("version").asInt());
         assertEquals(1, lista.get(1).get("version").asInt());
-        assertTrue(lista.get(0).has("missing_warranties"));
+        assertFalse(lista.get(0).has("missing_warranties"));
         JsonNode b = leer(mvc.perform(get(BASE + "/budgets/" + id)));
         assertEquals("aprobada", b.get("proposal_status").asText());
         assertEquals(2, b.get("proposal_version").asInt());
@@ -440,7 +426,7 @@ class PresupuestosContratoTest {
     }
 
     @Test
-    void laListaDePropuestasAvisaDeLasGarantiasQueFaltanEnElInventario() throws Exception {
+    void laListaDePropuestasYaNoBloqueaLaDescargaPorGarantiasQueFaltan() throws Exception {
         jdbc.update("INSERT INTO pl_equipos (id, posicion, categoria, partida, marca, modelo, proveedor, unidad, precio_unitario, "
                 + "por_modulo, cantidad_defecto, atributos, notas, muestra, stock, stock_minimo, ficha_tecnica, ofertas) "
                 + "VALUES ('m1', 1, 'modulos', 'modulos', 'AIKO', '615', '', 'ud', 1, FALSE, 1, '{\"garantia_anos\":\"12 años\"}' FORMAT JSON, '', FALSE, 0, 0, '', '[]' FORMAT JSON),"
@@ -450,10 +436,10 @@ class PresupuestosContratoTest {
         ana(post(BASE + "/budgets/" + id + "/send"), null).andExpect(status().isOk());
         jefe(post(BASE + "/budgets/" + id + "/validate"), null).andExpect(status().isOk());
         ana(post(BASE + "/budgets/" + id + "/proposals"), null).andExpect(status().isCreated());
-        JsonNode faltan = leer(mvc.perform(get(BASE + "/budgets/" + id + "/proposals"))).get(0).get("missing_warranties");
-        assertEquals(2, faltan.size());
-        assertEquals("la garantía de producción del módulo AIKO 615", faltan.get(0).asText());
-        assertEquals("la garantía del inversor HUAWEI SUN2000", faltan.get(1).asText());
+        // La regla de garantías está desactivada: la lista no avisa de nada y la presentación se descarga igualmente
+        JsonNode primera = leer(mvc.perform(get(BASE + "/budgets/" + id + "/proposals"))).get(0);
+        assertFalse(primera.has("missing_warranties"));
+        mvc.perform(get(BASE + "/proposals/" + primera.get("id").asText() + "/html")).andExpect(status().isOk());
     }
 
     // -------------------------------------------------------------------- clientes

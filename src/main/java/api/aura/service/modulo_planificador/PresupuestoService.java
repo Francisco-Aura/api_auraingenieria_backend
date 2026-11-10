@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PresupuestoService {
 
+    /** Desconectado: al validar, un cliente potencial ya NO se da de alta en la intranet (sigue siendo potencial en el presupuesto). */
+    static final boolean REGISTRAR_CLIENTES_POTENCIALES = false;
+
     private static final int MAX_DATOS = 1_500_000;
     private static final Pattern ID_VALIDO = Pattern.compile("^[A-Za-z0-9-]{8,64}$");
     private static final int NIVEL_ADMIN = 1;
@@ -224,7 +227,7 @@ public class PresupuestoService {
         if (otros.stream().anyMatch(o -> "validado".equals(o.getEstado()))) {
             throw new ErrorApi(HttpStatus.CONFLICT, "Esta oferta ya tiene un presupuesto validado.");
         }
-        if ("potencial".equals(b.getClienteTipo())) {
+        if (REGISTRAR_CLIENTES_POTENCIALES && "potencial".equals(b.getClienteTipo())) {
             List<pl_Presupuesto> toda = new ArrayList<>();
             toda.add(b);
             toda.addAll(otros);

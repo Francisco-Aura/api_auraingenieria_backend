@@ -103,7 +103,6 @@ public class EquipoService {
         cambios.add(ofertas.isEmpty() ? "supplier" : "offers");
         sincronizarOfertas(e, cambios);
         if (e.getPrecioUnitario() > 0) {
-            e.setPrecioRevisadoEl(LocalDate.now());  // poner un precio es revisarlo
             anotarPrecio(e);
         }
         equipos.save(e);
@@ -144,7 +143,7 @@ public class EquipoService {
             e.setMuestra(false);  // un precio puesto a mano ya no es el dato de prueba
         }
         if (e.getPrecioUnitario() != precioAntes || !ofertasAntes.equals(firmaOfertas(e.getOfertas()))) {
-            e.setPrecioRevisadoEl(LocalDate.now());  // cambiar un precio es revisarlo
+            // Cambiar un precio NO lo da por revisado: solo cuenta la revisión explícita («Precios revisados»)
             anotarPrecio(e);
         }
         equipos.save(e);
