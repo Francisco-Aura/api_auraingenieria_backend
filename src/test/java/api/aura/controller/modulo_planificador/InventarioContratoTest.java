@@ -226,14 +226,15 @@ class InventarioContratoTest {
     }
 
     @Test
-    void altaConPrecioCreaLaOfertaDelPrincipalDaPorRevisadoYAnotaElHistorial() throws Exception {
+    void altaConPrecioCreaLaOfertaDelPrincipalYAnotaElHistorialSinDarloPorRevisado() throws Exception {
         proveedor("SUMEBA");
         String id = equipo("{\"category\":\"contadores\",\"group\":\"electricidad\",\"supplier\":\"SUMEBA\",\"unit_price\":12.5}");
         JsonNode e = leer(mvc.perform(get(BASE + "/equipment")).andExpect(status().isOk())).get("items").get(0);
         assertEquals(1, e.get("offers").size());
         assertEquals("SUMEBA", e.get("offers").get(0).get("supplier").asText());
         assertEquals(12.5, e.get("offers").get(0).get("price").asDouble());
-        assertEquals(LocalDate.now().toString(), e.get("price_reviewed_at").asText());
+        // Poner un precio no es revisarlo: solo cuenta la revisión explícita («Precios revisados»)
+        assertTrue(e.get("price_reviewed_at").isNull());
         JsonNode h = leer(mvc.perform(get(BASE + "/equipment/" + id + "/price-history")).andExpect(status().isOk()));
         assertEquals(1, h.size());
         assertEquals(12.5, h.get(0).get("price").asDouble());

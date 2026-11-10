@@ -36,16 +36,13 @@ public class PropuestaService {
     private final PropuestaHtml propuestaHtml;
     private final PropuestaPptx propuestaPptx;
 
-    /** Las propuestas de un presupuesto, de la más reciente a la más antigua, con las garantías que faltan en el inventario. */
+    /** Las propuestas de un presupuesto, de la más reciente a la más antigua. */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> listar(String presupuestoId) {
-        pl_Presupuesto b = presupuestos.buscar(presupuestoId);
-        List<String> faltan = garantiasQueFaltan(b);
+        presupuestos.buscar(presupuestoId);
         List<Map<String, Object>> salida = new ArrayList<>();
         for (pl_Propuesta p : propuestas.findByPresupuestoIdOrderByVersionDesc(presupuestoId)) {
-            Map<String, Object> fila = dto(p);
-            fila.put("missing_warranties", faltan);
-            salida.add(fila);
+            salida.add(dto(p));
         }
         return salida;
     }
@@ -139,8 +136,8 @@ public class PropuestaService {
     }
 
     /**
-     * Las garantías que faltan en el inventario para los equipos del presupuesto (módulo, inversor y batería): sin ellas la
-     * presentación saldría con tarjetas vacías y no se deja descargar.
+     * Las garantías que faltan en el inventario para los equipos del presupuesto (módulo, inversor y batería): hoy la regla
+     * está desactivada (la descarga ya no se bloquea si faltan) y se conserva por si se reactiva.
      */
     List<String> garantiasQueFaltan(pl_Presupuesto b) {
         Map<String, pl_Equipo> porId = equipos.findAll().stream().collect(Collectors.toMap(pl_Equipo::getId, e -> e));
