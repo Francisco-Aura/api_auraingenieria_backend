@@ -1,0 +1,261 @@
+{
+ "normal": {
+  "entrada": {
+   "localidad": "LORCA",
+   "festivos_extra": [
+    "09-08"
+   ],
+   "empresas": [
+    {
+     "empresa": "UNO, S.L.",
+     "cif": "B1",
+     "ccc": "30/1",
+     "centro_trabajo": "Calle 1"
+    },
+    {
+     "empresa": "DOS, S.A.",
+     "cif": "A2",
+     "ccc": "30/2",
+     "centro_trabajo": "Calle 2",
+     "localidad": "MURCIA"
+    }
+   ]
+  },
+  "localidad": "LORCA",
+  "empresas": [
+   {
+    "texto": "UNO, S.L.",
+    "empresa": "UNO, S.L.",
+    "cif": "B1",
+    "ccc": "30/1",
+    "centro_trabajo": "Calle 1",
+    "localidad": ""
+   },
+   {
+    "texto": "DOS, S.A.",
+    "empresa": "DOS, S.A.",
+    "cif": "A2",
+    "ccc": "30/2",
+    "centro_trabajo": "Calle 2",
+    "localidad": "MURCIA"
+   }
+  ],
+  "festivos_2026": [
+   "2026-01-01",
+   "2026-01-06",
+   "2026-04-03",
+   "2026-05-01",
+   "2026-08-15",
+   "2026-09-08",
+   "2026-10-12",
+   "2026-11-01",
+   "2026-12-06",
+   "2026-12-08",
+   "2026-12-25"
+  ]
+ },
+ "duplicadas": {
+  "entrada": {
+   "empresas": [
+    {
+     "empresa": "IGUAL, S.L.",
+     "cif": "B1",
+     "ccc": "30/1",
+     "centro_trabajo": "Sede Lorca"
+    },
+    {
+     "empresa": "IGUAL, S.L.",
+     "cif": "B1",
+     "ccc": "30/2",
+     "centro_trabajo": "Sede Murcia"
+    },
+    {
+     "empresa": "OTRA",
+     "cif": "B3",
+     "ccc": "30/3",
+     "centro_trabajo": "Calle 3"
+    }
+   ]
+  },
+  "localidad": "LORCA",
+  "empresas": [
+   {
+    "texto": "IGUAL, S.L. (Sede Lorca)",
+    "empresa": "IGUAL, S.L.",
+    "cif": "B1",
+    "ccc": "30/1",
+    "centro_trabajo": "Sede Lorca",
+    "localidad": ""
+   },
+   {
+    "texto": "IGUAL, S.L. (Sede Murcia)",
+    "empresa": "IGUAL, S.L.",
+    "cif": "B1",
+    "ccc": "30/2",
+    "centro_trabajo": "Sede Murcia",
+    "localidad": ""
+   },
+   {
+    "texto": "OTRA",
+    "empresa": "OTRA",
+    "cif": "B3",
+    "ccc": "30/3",
+    "centro_trabajo": "Calle 3",
+    "localidad": ""
+   }
+  ],
+  "festivos_2026": [
+   "2026-01-01",
+   "2026-01-06",
+   "2026-04-03",
+   "2026-05-01",
+   "2026-08-15",
+   "2026-10-12",
+   "2026-11-01",
+   "2026-12-06",
+   "2026-12-08",
+   "2026-12-25"
+  ]
+ },
+ "incompletas": {
+  "entrada": {
+   "empresas": [
+    {
+     "empresa": "SIN CIF",
+     "cif": "",
+     "ccc": "30/1",
+     "centro_trabajo": "X"
+    },
+    {
+     "empresa": "  ESPACIOS  ",
+     "cif": " B9 ",
+     "ccc": " 30/9 ",
+     "centro_trabajo": " Calle 9 ",
+     "localidad": "  "
+    },
+    {
+     "empresa": "NUMEROS",
+     "cif": 5,
+     "ccc": "30/5",
+     "centro_trabajo": "Y"
+    },
+    "no es un objeto",
+    null,
+    {
+     "empresa": "SIN CENTRO",
+     "cif": "B4",
+     "ccc": "30/4"
+    }
+   ]
+  },
+  "localidad": "LORCA",
+  "empresas": [
+   {
+    "texto": "ESPACIOS",
+    "empresa": "ESPACIOS",
+    "cif": "B9",
+    "ccc": "30/9",
+    "centro_trabajo": "Calle 9",
+    "localidad": ""
+   },
+   {
+    "texto": "NUMEROS",
+    "empresa": "NUMEROS",
+    "cif": "5",
+    "ccc": "30/5",
+    "centro_trabajo": "Y",
+    "localidad": ""
+   }
+  ],
+  "festivos_2026": [
+   "2026-01-01",
+   "2026-01-06",
+   "2026-04-03",
+   "2026-05-01",
+   "2026-08-15",
+   "2026-10-12",
+   "2026-11-01",
+   "2026-12-06",
+   "2026-12-08",
+   "2026-12-25"
+  ]
+ },
+ "empresas_no_lista": {
+  "entrada": {
+   "empresas": {
+    "a": 1
+   }
+  },
+  "localidad": "LORCA",
+  "empresas": [],
+  "festivos_2026": [
+   "2026-01-01",
+   "2026-01-06",
+   "2026-04-03",
+   "2026-05-01",
+   "2026-08-15",
+   "2026-10-12",
+   "2026-11-01",
+   "2026-12-06",
+   "2026-12-08",
+   "2026-12-25"
+  ]
+ },
+ "sin_empresas": {
+  "entrada": {},
+  "localidad": "LORCA",
+  "empresas": [],
+  "festivos_2026": [
+   "2026-01-01",
+   "2026-01-06",
+   "2026-04-03",
+   "2026-05-01",
+   "2026-08-15",
+   "2026-10-12",
+   "2026-11-01",
+   "2026-12-06",
+   "2026-12-08",
+   "2026-12-25"
+  ]
+ },
+ "festivos_extra_mal": {
+  "entrada": {
+   "festivos_extra": "09-08",
+   "empresas": []
+  },
+  "localidad": "LORCA",
+  "empresas": [],
+  "festivos_2026": [
+   "2026-01-01",
+   "2026-01-06",
+   "2026-04-03",
+   "2026-05-01",
+   "2026-08-15",
+   "2026-10-12",
+   "2026-11-01",
+   "2026-12-06",
+   "2026-12-08",
+   "2026-12-25"
+  ]
+ },
+ "localidad_vacia": {
+  "entrada": {
+   "localidad": "",
+   "empresas": []
+  },
+  "localidad": "LORCA",
+  "empresas": [],
+  "festivos_2026": [
+   "2026-01-01",
+   "2026-01-06",
+   "2026-04-03",
+   "2026-05-01",
+   "2026-08-15",
+   "2026-10-12",
+   "2026-11-01",
+   "2026-12-06",
+   "2026-12-08",
+   "2026-12-25"
+  ]
+ }
+}
