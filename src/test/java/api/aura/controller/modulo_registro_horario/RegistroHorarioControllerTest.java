@@ -2,10 +2,13 @@ package api.aura.controller.modulo_registro_horario;
 
 import api.aura.config.RegistroHorarioExceptionHandler;
 import api.aura.service.modulo_registro_horario.EmpresasConfig;
+import api.aura.service.modulo_registro_horario.firma.FirmaService;
+import api.aura.service.modulo_registro_horario.firma.TrabajosPesados;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -16,6 +19,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +46,8 @@ class RegistroHorarioControllerTest {
         Path archivo = carpeta.resolve("empresas.json");
         Files.writeString(archivo, EMPRESAS);
         mvc = MockMvcBuilders
-                .standaloneSetup(new RegistroHorarioController(new EmpresasConfig(new ObjectMapper(), archivo.toString())))
+                .standaloneSetup(new RegistroHorarioController(new EmpresasConfig(new ObjectMapper(), archivo.toString()),
+                        new FirmaService(new TrabajosPesados())))
                 .setControllerAdvice(new RegistroHorarioExceptionHandler())
                 .build();
     }
@@ -95,5 +100,46 @@ class RegistroHorarioControllerTest {
         mvc.perform(get("/api/registro-horario/festivos/abc"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.detail", not("")));
+    }
+
+    private byte[] oro(String nombre) throws Exception {
+        try (var in = getClass().getResourceAsStream("/registro-horario-oro/firma/" + nombre)) {
+            return in.readAllBytes();
+        }
+    }
+
+    @Test
+    void extraerFirmaDevuelveUnPngTransparenteSinCache() throws Exception {
+        var foto = new MockMultipartFile("imagen", "foto.jpg", "image/jpeg", oro("foto1.jpg"));
+        var respuesta = mvc.perform(multipart("/api/registro-horario/firma/extraer").file(foto)
+                        .param("sensibilidad", "0.5").param("vista", "true"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/png"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Cache-Control", "no-store"))
+                .andReturn().getResponse().getContentAsByteArray();
+        // los PNG no salen byte a byte iguales (otro codificador): se compara la imagen
+        var obtenida = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(respuesta));
+        var esperada = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(oro("foto1_s50_v.png")));
+        org.junit.jupiter.api.Assertions.assertEquals(esperada.getWidth(), obtenida.getWidth());
+        org.junit.jupiter.api.Assertions.assertEquals(esperada.getHeight(), obtenida.getHeight());
+        for (int y = 0; y < esperada.getHeight(); y++) {
+            for (int x = 0; x < esperada.getWidth(); x++) {
+                org.junit.jupiter.api.Assertions.assertEquals(esperada.getRGB(x, y), obtenida.getRGB(x, y));
+            }
+        }
+    }
+
+    @Test
+    void extraerFirmaRechazaLoQueNoEsUnaImagenOUnaSensibilidadFueraDeRango() throws Exception {
+        var basura = new MockMultipartFile("imagen", "x.jpg", "image/jpeg", "basura".getBytes());
+        mvc.perform(multipart("/api/registro-horario/firma/extraer").file(basura))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(content().json("{\"detail\":\"No se pudo leer la imagen. Usa un PNG o un JPG.\"}", true));
+        var foto = new MockMultipartFile("imagen", "foto.jpg", "image/jpeg", oro("foto1.jpg"));
+        mvc.perform(multipart("/api/registro-horario/firma/extraer").file(foto).param("sensibilidad", "2"))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(multipart("/api/registro-horario/firma/extraer"))
+                .andExpect(status().isUnprocessableEntity());
     }
 }

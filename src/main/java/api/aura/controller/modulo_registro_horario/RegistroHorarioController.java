@@ -5,13 +5,22 @@ import api.aura.dto.modulo_registro_horario.EmpresasRespuesta;
 import api.aura.dto.modulo_registro_horario.FestivosRespuesta;
 import api.aura.service.modulo_registro_horario.CalendarioFestivos;
 import api.aura.service.modulo_registro_horario.EmpresasConfig;
+import api.aura.service.modulo_registro_horario.firma.FirmaService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +35,7 @@ import java.util.Map;
 public class RegistroHorarioController {
 
     private final EmpresasConfig empresas;
+    private final FirmaService firma;
 
     @GetMapping("/health")
     public Map<String, Boolean> salud() {
@@ -47,5 +57,18 @@ public class RegistroHorarioController {
         List<String> fechas = CalendarioFestivos.festivosDelAnio(anio, empresas.festivosExtra()).stream()
                 .map(LocalDate::toString).toList();
         return new FestivosRespuesta(anio, fechas);
+    }
+
+    /** Separa la firma de la foto o escaneo subido. Devuelve un PNG con fondo transparente (sin guardar nada). */
+    @PostMapping(value = "/firma/extraer", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> extraerFirma(@RequestParam("imagen") MultipartFile imagen,
+                                               @RequestParam(value = "sensibilidad", defaultValue = "0.5") double sensibilidad,
+                                               @RequestParam(value = "vista", defaultValue = "false") boolean vista)
+            throws IOException {
+        if (!(sensibilidad >= 0 && sensibilidad <= 1)) {
+            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, "Hay un dato no válido.");
+        }
+        byte[] png = firma.extraerPng(imagen.getBytes(), sensibilidad, vista);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_PNG).body(png);
     }
 }
