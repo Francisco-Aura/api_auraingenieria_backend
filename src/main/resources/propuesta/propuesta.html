@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta · Aura Ingeniería Energética</title>
+<style>
+:root { --y: #fed600; --g: #9d9ea1; --ink: #1f1f21; --label: #8a8b8e; }
+* { box-sizing: border-box; margin: 0; }
+b, strong { font-weight: 600; }
+html, body { height: 100%; background: #e9eaec; font-family: Inter, "Segoe UI", Arial, sans-serif; color: var(--ink); overflow: hidden; }
+.deck { position: fixed; inset: 0; }
+.stage { width: 1123px; height: 794px; position: absolute; left: 50%; top: calc(50% - 15px); margin: -397px 0 0 -561.5px; background: #fff; overflow: hidden; transform-origin: center; box-shadow: 0 10px 40px rgba(0,0,0,.18); }
+.slide { position: absolute; inset: 0; isolation: isolate; opacity: 0; visibility: hidden; transition: opacity .55s ease, visibility .55s; padding: 70px 80px; }
+.slide.active { opacity: 1; visibility: visible; }
+
+/* Entradas: cada elemento con .in aparece escalonado según su --i cuando su diapositiva está activa */
+.in { opacity: 0; }
+.slide.active .in { animation: rise .75s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * .13s + .2s); }
+.slide.active .in.pop { animation-name: pop; }
+.slide.active .in.fade { animation-name: fade; }
+.slide.active .in.grow { animation-name: grow; transform-origin: left center; }
+@keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes grow { from { opacity: 1; transform: scaleX(0); } to { opacity: 1; transform: none; } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* Fondo de las páginas interiores: medios círculos amarillos arriba a la derecha y la marca abajo */
+.deco { position: absolute; inset: 0; pointer-events: none; z-index: -1; }
+.suns { position: absolute; inset: 0; width: 100%; height: 100%; }
+.slide.active .sg { animation: float 7s ease-in-out infinite; }
+.slide.active .sg.b { animation-delay: -3s; } .slide.active .sg.c { animation-delay: -1.5s; }
+.mark { position: absolute; right: 52px; bottom: 40px; width: 92px; }
+
+/* Títulos: palabra en gris y otra sobre barra amarilla */
+.kick { font-size: 17px; color: var(--label); margin-bottom: 4px; }
+h2 { font-size: 46px; line-height: 1.12; font-weight: 700; color: var(--g); letter-spacing: -.5px; }
+h2 .hl { display: inline-block; background: var(--y); color: #fff; padding: 0 12px; margin-left: 4px; }
+.sub { font-size: 18px; color: var(--label); margin-top: 14px; }
+
+/* Portada: foto a la derecha, el resto es texto */
+.cover { padding: 0; background: #fff; }
+.cphoto { position: absolute; right: 0; top: 0; height: 794px; width: auto; }
+.clogo { position: absolute; left: 70px; top: 112px; width: 370px; }
+.crule { position: absolute; left: 56px; top: 292px; width: 142px; height: 3px; background: var(--y); }
+.ckick { position: absolute; left: 56px; top: 312px; font-size: 22px; font-weight: 700; color: var(--y); }
+.ctitle { position: absolute; left: 52px; top: 358px; font-size: 76px; line-height: .98; font-weight: 700; letter-spacing: -2px; color: var(--g); }
+.ctitle span { color: var(--y); }
+.csub { position: absolute; left: 62px; top: 548px; font-size: 22px; color: var(--label); }
+.cover .who { position: absolute; left: 62px; top: 616px; padding-left: 14px; border-left: 3px solid var(--y); }
+.cover .who b { display: block; font-size: 17px; color: #6d6e71; margin-bottom: 6px; }
+.cover .who span { font-size: 15px; color: var(--label); }
+.cweb { position: absolute; left: 470px; top: 690px; display: flex; align-items: center; gap: 10px; background: var(--y); padding: 7px 16px 7px 12px; font-size: 27px; font-weight: 700; color: var(--g); box-shadow: 5px 5px 0 var(--g); }
+.cweb img { width: 30px; }
+.web img { width: 38px; }
+
+/* Llave en mano */
+.lead { font-size: 40px; line-height: 1.2; font-weight: 700; color: var(--g); max-width: 560px; margin-top: 30px; }
+.lead em { font-style: normal; background: var(--y); color: #fff; padding: 0 8px; }
+.turn { margin-top: 36px; max-width: 520px; font-size: 18px; line-height: 1.6; color: var(--label); }
+.turn b { color: var(--ink); display: block; font-size: 20px; margin-bottom: 6px; }
+
+/* Paso a paso */
+.steps5 { display: flex; gap: 14px; margin-top: 54px; align-items: flex-end; height: 420px; }
+.steps5 > div { flex: 1; border-radius: 6px 6px 0 0; padding: 22px 14px; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; text-align: center; color: #fff; transform-origin: bottom; }
+.steps5 b.n { font-size: 38px; font-weight: 700; }
+.steps5 span { font-size: 16px; font-weight: 700; line-height: 1.3; }
+.slide.active .steps5 > div.in { animation-name: tall; }
+@keyframes tall { from { opacity: 0; transform: scaleY(.15); } to { opacity: 1; transform: none; } }
+
+/* Proceso: una carretera con su línea central discontinua y los cinco hitos a ambos lados */
+.tlwrap { position: relative; height: 424px; margin-top: 18px; }
+.road { position: absolute; left: 0; right: 0; top: 170px; height: 88px; border-radius: 44px; transform-origin: left center;
+  background:
+    repeating-linear-gradient(90deg, var(--y) 0 44px, transparent 44px 80px) 50% 50% / calc(100% - 150px) 6px no-repeat,
+    linear-gradient(#fff, #fff) 50% 10px / calc(100% - 110px) 2px no-repeat,
+    linear-gradient(#fff, #fff) 50% calc(100% - 10px) / calc(100% - 110px) 2px no-repeat,
+    #7d7e82; }
+.road .cap { position: absolute; top: 12px; width: 64px; height: 64px; border-radius: 50%; background: var(--y); color: #fff; display: grid; place-items: center; font-size: 32px; font-weight: 700; box-shadow: 0 0 0 4px #fff; }
+.road .cap.l { left: 12px; } .road .cap.r { right: 12px; }
+.tl { position: absolute; width: 200px; border: 2px solid var(--y); border-radius: 14px; background: #fff; padding: 12px 10px 14px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,.07); }
+.tl b.n { display: block; color: #e8b800; font-size: 34px; font-weight: 700; line-height: 1.1; }
+.tl b.t { display: block; font-size: 17px; line-height: 1.2; margin-top: 2px; }
+.tl span { display: block; font-size: 13px; color: var(--label); margin-top: 5px; }
+.tl.up { bottom: 288px; } .tl.down { top: 292px; }
+.tl .stem { position: absolute; left: 50%; width: 2px; margin-left: -1px; background: #c3c4c7; }
+.tl.up .stem { top: 100%; height: 50px; } .tl.down .stem { bottom: 100%; height: 50px; }
+.tl .dot { position: absolute; left: 50%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--y); border: 4px solid #fff; box-shadow: 0 0 0 2px #7d7e82; }
+.tl.up .dot { top: calc(100% + 40px); } .tl.down .dot { bottom: calc(100% + 40px); }
+
+/* Filas de datos */
+.rows { margin-top: 64px; }
+.row { display: flex; align-items: baseline; gap: 24px; padding: 16px 0; border-bottom: 1px solid #ececee; font-size: 22px; max-width: 720px; }
+.row i { font-style: normal; color: var(--label); width: 280px; }
+.row b { font-weight: 700; }
+
+/* Tarjetas de equipos */
+.cards { margin-top: 48px; display: grid; gap: 22px; max-width: 760px; }
+.card { position: relative; border: 2px solid var(--g); border-radius: 14px; padding: 20px 28px 20px 40px; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 14px; background: var(--y); border-radius: 12px 0 0 12px; }
+.card i { font-style: normal; font-size: 16px; color: var(--label); }
+.card b { display: block; font-size: 24px; margin-top: 4px; }
+
+/* Estructura */
+.opts { margin-top: 56px; display: flex; gap: 16px; }
+.opt { flex: 1; height: 250px; border: 2px solid var(--g); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 14px; font-weight: 700; font-size: 18px; color: var(--label); }
+.opt.on { background: var(--y); border-color: var(--y); color: var(--ink); }
+.opt small { font-size: 14px; font-weight: 700; }
+
+/* Garantías */
+.war { margin-top: 58px; display: flex; gap: 28px; }
+.war > div { flex: 1; }
+.war .big { font-size: 78px; font-weight: 700; color: var(--y); line-height: 1; }
+.war .yr { font-size: 20px; font-weight: 700; color: var(--g); margin: 6px 0 20px; }
+.war b { display: block; font-size: 18px; margin-bottom: 8px; }
+.war p { font-size: 14px; line-height: 1.5; color: var(--label); }
+
+/* Económica */
+.eco-top { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; }
+.total { text-align: right; }
+.total i { font-style: normal; font-size: 28px; font-weight: 700; color: var(--g); }
+.total .amount { font-size: 62px; font-weight: 700; line-height: 1.1; margin-top: 6px; }
+.total .line { height: 3px; background: var(--y); margin: 8px 0 8px auto; width: 380px; transform-origin: right; }
+.total small { font-size: 16px; color: var(--label); }
+.pay-title { font-size: 20px; color: var(--label); margin: 8px 0 20px; }
+.pays { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 40px; }
+.pay { display: flex; gap: 20px; align-items: center; }
+.pay .pc { width: 86px; height: 86px; border-radius: 16px; display: grid; place-items: center; font-size: 24px; font-weight: 700; flex: none; }
+.pay:nth-child(odd) .pc { background: var(--y); color: var(--ink); }
+.pay:nth-child(even) .pc { background: var(--g); color: #fff; }
+.pay b { display: block; font-size: 19px; }
+.pay span { font-size: 15px; color: var(--label); }
+.pay em { display: block; font-style: normal; font-size: 14px; color: var(--g); margin-top: 2px; }
+
+/* Condiciones */
+.cols3 { margin-top: 30px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.cols3 h4 { font-size: 17px; color: var(--ink); border-bottom: 3px solid var(--y); padding-bottom: 6px; margin-bottom: 10px; }
+.cols3 p { font-size: 11.5px; line-height: 1.45; color: #5f6063; margin-bottom: 7px; }
+.cols3 p b { color: var(--ink); }
+
+/* Equipo y cierre */
+.team { display: flex; gap: 40px; align-items: center; margin-top: 40px; }
+.team img { width: 380px; height: 420px; object-fit: cover; border-radius: 16px; }
+.team p { font-size: 22px; line-height: 1.6; color: var(--label); max-width: 420px; }
+.team p b { color: var(--ink); }
+.close { display: grid; place-items: center; text-align: center; height: 100%; }
+.close h2 { font-size: 58px; }
+.web { display: inline-flex; align-items: center; gap: 12px; margin-top: 30px; background: var(--y); padding: 10px 18px; font-size: 28px; font-weight: 700; color: var(--g); box-shadow: 5px 5px 0 var(--g); }
+
+/* Logo de la empresa del cliente (diapositiva 2) */
+.logo-slot { position: absolute; right: 96px; top: 392px; width: 380px; }
+.logo-box { position: relative; height: 190px; display: grid; place-items: center; border-radius: 16px; border: 2px solid #e3e4e6; background: #fff; }
+.logo-box img { position: absolute; inset: 18px; width: calc(100% - 36px); height: calc(100% - 36px); object-fit: contain; }
+.logo-box.add { border: 2px dashed #cfd0d3; background: #fafafa; color: var(--label); font-size: 16px; font-weight: 700; cursor: pointer; transition: border-color .2s, color .2s; }
+.logo-box.add:hover { border-color: var(--y); color: var(--ink); }
+.logo-tools { margin-top: 8px; font-size: 13px; display: flex; gap: 14px; }
+.logo-tools button { background: none; border: 0; padding: 0; color: var(--label); text-decoration: underline; cursor: pointer; font: inherit; }
+
+/* Sol, haces de luz y placa de la diapositiva 2 (todo en bucle) */
+.art { position: absolute; left: 76px; bottom: 62px; width: 420px; height: 262px; overflow: visible; }
+.art .cl { stroke: #fff; stroke-width: 2; opacity: .8; }
+.art .beam, .art .glow { opacity: .25; }
+.slide.active .art .beam { animation: beam 3.6s ease-in-out infinite; }
+.slide.active .art .glow { animation: glowpulse 3.6s ease-in-out infinite; }
+@keyframes beam { 0%, 100% { opacity: .22; } 50% { opacity: .95; } }
+@keyframes glowpulse { 0%, 100% { opacity: .1; } 50% { opacity: 1; } }
+.art .sunp { transform-box: fill-box; transform-origin: 50% 50%; }
+.slide.active .art .sunp { animation: sunpulse 3.6s ease-in-out infinite; }
+@keyframes sunpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+/* Controles */
+.nav { position: fixed; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; gap: 8px; z-index: 5; }
+.nav button { width: 11px; height: 11px; border-radius: 50%; border: 0; background: #c4c5c8; cursor: pointer; padding: 0; transition: all .25s; }
+.nav button.on { background: var(--y); width: 30px; border-radius: 6px; }
+.bar { position: fixed; left: 0; top: 0; height: 4px; background: var(--y); z-index: 5; transition: width .5s; }
+.hint { position: fixed; right: 14px; bottom: 10px; font-size: 12px; color: #8a8b8e; z-index: 5; }
+
+/* Imprimir o guardar en PDF: una diapositiva por página, sin animaciones */
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media print {
+  @page { size: 297mm 210mm; margin: 0; }
+  html, body { overflow: visible; height: auto; background: #fff; }
+  .deck { position: static; display: block; }
+  .stage { position: static; margin: 0; width: 297mm; height: auto; transform: none !important; box-shadow: none; overflow: visible; }
+  .slide { position: relative; width: 297mm; height: 210mm; opacity: 1; visibility: visible; break-after: page; page-break-after: always; overflow: hidden; transition: none; }
+  .slide:last-child { break-after: auto; page-break-after: auto; }
+  .in { opacity: 1 !important; animation: none !important; }
+  .nav, .bar, .hint, .logo-tools, .logo-box.add { display: none; }
+}
+
+/* Estructura con dibujos */
+.opts2 { margin-top: 56px; display: flex; gap: 18px; }
+.opt2 { flex: 1; text-align: center; padding: 18px 10px 20px; border-radius: 16px; border: 2px solid transparent; }
+.opt2 svg { width: 100%; height: 235px; }
+.opt2 b { display: block; margin-top: 14px; font-size: 17px; line-height: 1.25; color: var(--label); }
+.opt2 small { display: block; margin-top: 8px; font-size: 13px; font-weight: 700; color: #15803d; }
+.opt2.on { border-color: var(--y); background: #fffbe0; }
+.opt2.on b { color: var(--ink); }
+.opt2 .pn { fill: #adb1b3; }
+.opt2 .ps { fill: #9d9ea1; } .opt2 .gr { fill: #dfe3e3; }
+.opt2 .sp { stroke: #fff; stroke-width: 1.8; opacity: .85; }
+.opt2 .dl { stroke: #fff; stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .9; }
+
+/* Garantías sobre fondo negro, con tarjetas altas */
+.slide.dark { background: #000; }
+.slide.dark .kick { color: #d4d4d6; }
+.wcards { margin-top: 36px; display: flex; gap: 16px; height: 440px; }
+.wc { flex: 1; max-width: 340px; border-radius: 20px; padding: 22px 22px 18px; display: flex; flex-direction: column; justify-content: space-between; color: var(--ink); }
+.wc.w1 { background: #fff; border: 2px solid var(--y); }
+.wc.w2 { background: #f4f4f2; border: 1px solid #e6e6e2; }
+.wc.w3 { background: var(--g); color: #fff; }
+.wc.w4 { background: var(--y); }
+.wicon { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; background: rgba(0,0,0,.07); }
+.w1 .wicon { background: #fff3c2; color: #d9a900; } .w3 .wicon { background: rgba(255,255,255,.25); } .w4 .wicon { background: rgba(0,0,0,.1); }
+.wc .big { font-size: 84px; font-weight: 700; line-height: 1; }
+.w1 .big { color: #fdc500; }
+.wc .yr { font-size: 20px; font-weight: 700; margin: 4px 0 18px; opacity: .8; }
+.wc b { display: block; font-size: 19px; margin-bottom: 8px; }
+.wc p { font-size: 13.5px; line-height: 1.5; opacity: .82; }
+.wfoot { border-top: 1px solid rgba(0,0,0,.12); padding-top: 12px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.w1 .wfoot { color: #d9a900; } .w3 .wfoot { border-color: rgba(255,255,255,.3); }
+
+/* Económica con tarjetas */
+.ecotitle { white-space: nowrap; }
+.ecotitle .kick { margin: 0; }
+.total { border-left: 1px solid #dcdde0; padding-left: 40px; }
+.pays2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 26px; margin-top: 4px; }
+.pay2 { position: relative; display: flex; align-items: center; gap: 22px; padding: 22px 24px 22px 32px; background: #fff; border: 1px solid #e3e4e6; border-radius: 18px; box-shadow: 0 8px 22px rgba(0,0,0,.06); }
+.pay2::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 5px; border-radius: 0 5px 5px 0; background: var(--y); }
+.pay2.g::before { background: var(--g); }
+.pay2 .sq { width: 92px; height: 92px; border-radius: 18px; display: grid; place-items: center; font-size: 27px; font-weight: 700; background: var(--y); color: var(--ink); flex: none; }
+.pay2.g .sq { background: var(--g); color: #fff; }
+.pay2 b { display: block; font-size: 19px; }
+.pay2 span { display: block; font-size: 15px; color: var(--label); margin-top: 2px; }
+.pay2 em { display: block; font-style: normal; font-size: 14px; font-weight: 700; color: var(--g); margin-top: 8px; padding-top: 6px; border-top: 1px solid #e8e9eb; }
+
+/* Condiciones en tarjetas */
+.cgrid { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.cgrid.rows3 { margin-top: 14px; }
+.cc { position: relative; background: #fff; border: 1px solid #e3e4e6; border-radius: 16px; padding: 18px 20px 20px; box-shadow: 0 6px 18px rgba(0,0,0,.05); }
+.cc::before { content: ""; position: absolute; left: 20px; right: 20px; top: 0; height: 4px; border-radius: 0 0 4px 4px; background: var(--y); }
+.cicon { width: 46px; height: 46px; border-radius: 12px; background: #fff3c2; color: #c99a00; display: grid; place-items: center; margin-bottom: 12px; }
+.cc b { display: block; font-size: 17px; margin-bottom: 6px; }
+.cc p { font-size: 14px; line-height: 1.5; color: #5f6063; }
+.cgroup { margin-top: 28px; font-size: 15px; font-weight: 700; color: var(--g); letter-spacing: .04em; text-transform: uppercase; }
+.rows3 .cc { padding: 20px 22px 22px; min-height: 186px; }
+.rows3 .cc p { font-size: 14.5px; }
+
+/* Proveedores */
+.logos6 { margin-top: 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.lg { height: 170px; border: 1px solid #e3e4e6; border-radius: 18px; background: #fff; display: grid; place-items: center; padding: 26px 34px; box-shadow: 0 8px 22px rgba(0,0,0,.05); }
+.lg img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+/* Conócenos */
+.about { margin-top: 40px; display: flex; gap: 36px; align-items: flex-start; }
+.aboutl { flex: 1; }
+.aboutl p { font-size: 20px; line-height: 1.6; color: #5f6063; }
+.sect { margin-top: 24px; font-size: 19px; }
+.sect b { display: block; margin-bottom: 10px; }
+.sect ul { list-style: none; padding: 0; }
+.sect li { padding: 7px 0 7px 24px; position: relative; color: var(--label); font-weight: 700; }
+.sect li::before { content: ""; position: absolute; left: 0; top: 16px; width: 10px; height: 10px; border-radius: 3px; background: var(--y); }
+.aboutr { position: relative; width: 330px; flex: none; }
+.aboutr img { width: 100%; height: 330px; object-fit: cover; border-radius: 18px; display: block; }
+.stat { position: absolute; left: -34px; bottom: -22px; background: var(--y); border-radius: 14px; padding: 12px 18px; width: 230px; box-shadow: 0 8px 20px rgba(0,0,0,.12); }
+.stat b { display: block; font-size: 32px; font-weight: 700; }
+.stat span { font-size: 13px; line-height: 1.3; display: block; }
+.stat.s2 { left: auto; right: -20px; bottom: -64px; background: var(--g); color: #fff; width: 210px; }
+.refs { position: absolute; left: 80px; right: 150px; top: 604px; }
+.refs > span { font-size: 17px; font-weight: 700; color: var(--g); }
+.refs > div { margin-top: 14px; display: flex; gap: 20px; align-items: center; }
+.refs img { flex: 1 1 0; min-width: 0; height: 50px; max-width: 112px; object-fit: contain; }
+
+/* Aceptación y firma */
+.acc { margin-top: 26px; max-width: 760px; font-size: 20px; line-height: 1.55; color: var(--label); }
+.sign { margin-top: 44px; display: flex; background: #faf8f4; border: 1px solid #e7e4dc; border-left: 8px solid #f2b705; border-radius: 16px; }
+.signl { flex: 1; padding: 30px 32px; display: flex; gap: 16px; border-right: 1px dashed #d9d6cd; }
+.signl .cicon { background: var(--y); color: var(--ink); flex: none; }
+.signl b { display: block; font-size: 22px; color: var(--g); }
+.signl .who2 { display: block; font-size: 17px; font-weight: 700; margin: 6px 0 10px; }
+.signl p { font-size: 15px; line-height: 1.5; color: var(--label); }
+.signr { flex: 1; padding: 26px 32px; }
+.signr b { display: block; font-size: 18px; color: var(--g); margin-bottom: 12px; }
+.signr .box { height: 200px; border: 2px dashed #d3d4d6; border-radius: 14px; background: #fff; }
+
+/* Instalaciones de referencia */
+.refgrid { margin-top: 56px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.rf { background: #fff; border: 1px solid #e3e4e6; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 22px rgba(0,0,0,.06); }
+.rf img { width: 100%; height: 250px; object-fit: cover; display: block; }
+.rf div { padding: 12px 14px 16px; }
+.rf b { display: block; font-size: 15px; line-height: 1.25; }
+.rf span { display: block; font-size: 14px; color: var(--label); margin-top: 5px; }
+.rf em { display: inline-block; margin-top: 8px; font-style: normal; font-size: 12px; font-weight: 700; background: var(--y); padding: 2px 8px; border-radius: 6px; }
+
+/* Galerías de fotos */
+.gal { margin-top: 36px; display: grid; gap: 16px; height: 460px; }
+.gal.g6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+.gal.g4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+.gal.g8 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); }
+.gal.g5 { grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(2, 1fr); }
+.gal.g5 img { grid-column: span 2; }
+.gal.g5 img:nth-child(n+4) { grid-column: span 3; }
+.gal img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; box-shadow: 0 8px 22px rgba(0,0,0,.12); display: block; min-height: 0; }
+
+/* Cierre con los datos de contacto */
+.endslide { background: radial-gradient(circle at 0% 100%, #ffec5c 0, rgba(255, 236, 92, 0) 58%), #fff; }
+.end { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 26px; }
+.end img { width: 340px; }
+.end h2 { font-size: 46px; }
+.contact { display: flex; gap: 90px; margin-top: 12px; text-align: left; }
+.contact b { display: block; font-size: 17px; color: var(--g); margin-bottom: 6px; }
+.contact span { display: block; font-size: 19px; color: #5f6063; line-height: 1.6; }
+
+/* Propuesta técnica: cifras grandes y especificaciones */
+.kpis { margin-top: 36px; display: grid; grid-template-columns: 1.4fr 1fr 1fr .8fr; gap: 16px; }
+.kpi { background: #fff; border: 1px solid #e3e4e6; border-radius: 18px; padding: 20px 20px 18px; box-shadow: 0 8px 22px rgba(0,0,0,.06); }
+.kpi.y { background: var(--y); border-color: var(--y); }
+.kpi .cicon { margin-bottom: 14px; }
+.kpi.y .cicon { background: rgba(255,255,255,.55); color: var(--ink); }
+.kpi b { display: block; white-space: nowrap; font-size: 40px; line-height: 1.05; font-weight: 700; letter-spacing: -1px; }
+.kpi i { display: block; font-style: normal; font-size: 14px; color: var(--label); margin-top: 8px; }
+.kpi.y i { color: #5a4d00; }
+.specs { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.spec { display: flex; align-items: center; gap: 16px; padding: 14px 18px; border: 1px solid #e3e4e6; border-left: 5px solid var(--y); border-radius: 14px; background: #fff; }
+.spec:last-child:nth-child(odd) { grid-column: span 2; }
+.spec .cicon { margin: 0; flex: none; }
+.spec i { display: block; font-style: normal; font-size: 13px; color: var(--label); }
+.spec b { display: block; font-size: 19px; margin-top: 2px; min-height: 1.2em; }
+.spec em { display: block; font-style: normal; font-size: 13px; color: var(--label); margin-top: 2px; }
+
+/* Fotos ampliables */
+.gal img, .rf img { cursor: zoom-in; transition: transform .25s ease, box-shadow .25s ease; }
+.gal img:hover { transform: scale(1.015); }
+#lb { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(10, 10, 12, .9); }
+#lb.open { display: flex; animation: lbin .2s ease; }
+@keyframes lbin { from { opacity: 0; } to { opacity: 1; } }
+#lb img { width: 97vw; height: 93vh; object-fit: contain; background: transparent; }
+#lb button { position: absolute; border: 0; cursor: pointer; color: #fff; background: rgba(255,255,255,.14); width: 46px; height: 46px; border-radius: 50%; font-size: 28px; line-height: 1; display: grid; place-items: center; }
+#lb button:hover { background: var(--y); color: var(--ink); }
+#lb .lbx { top: 18px; right: 22px; } #lb .lbp { left: 22px; top: 50%; margin-top: -23px; } #lb .lbn { right: 22px; top: 50%; margin-top: -23px; }
+#lb .lbc { position: absolute; bottom: 10px; text-shadow: 0 1px 4px rgba(0,0,0,.8); left: 0; right: 0; text-align: center; color: #d4d4d6; font-size: 14px; }
+@media print { #lb { display: none !important; } }
+
+/* Paso a paso: columnas colgando del borde de arriba, cortadas por un semicírculo blanco */
+.steps .cols { position: absolute; inset: 0; clip-path: path('M0 0H1123V572H1053A715 715 0 0 0 70 572H0Z'); }
+.steps .cwrap { position: absolute; left: 80px; right: 80px; top: 0; height: 620px; display: flex; gap: 16px; }
+.steps .col { flex: 1; padding-top: var(--off); text-align: center; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.steps .col span { font-size: 17px; font-weight: 600; line-height: 1.25; padding: 0 12px; }
+.steps .col b.n { font-size: 40px; font-weight: 700; margin-top: 28px; }
+.slide.active .steps .col.in, .slide.steps.active .col.in { animation-name: unfold; animation-duration: 1s; }
+@keyframes unfold { from { opacity: 1; clip-path: inset(0 0 100% 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+.dtitle { position: absolute; left: 0; right: 0; top: 520px; text-align: center; }
+.dtitle .t1 { font-size: 48px; font-weight: 700; color: var(--g); letter-spacing: -.5px; }
+.dtitle .t2 { margin-top: 6px; }
+.dtitle .hl { display: inline-block; background: var(--y); color: #fff; font-size: 48px; font-weight: 700; padding: 0 14px; }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div class="deck"><div class="stage" id="stage"></div></div>
+<div class="nav" id="nav"></div>
+<div class="hint">← → para moverte · F pantalla completa · pulsa una foto para ampliarla</div>
+
+<!-- Los datos de la propuesta: lo único que cambia de un cliente a otro -->
+<script id="datos" type="application/json">
+{
+  "client": "G.P. LIMITE ANDAMUR",
+  "project": "Nave vieja",
+  "address": "Calle de las Antillas, 1001, Benavente",
+  "kind": "Autoconsumo",
+  "kwp": 51.6,
+  "panels": 80,
+  "panel": "Longi 645 Wp",
+  "inverter": "Huawei Sun2000 50KTL-M5",
+  "inverter_count": 1,
+  "battery": "",
+  "structure": "coplanar",
+  "total": 38700,
+  "payment": [30, 40, 20, 10],
+  "warranty": {"panel_years": 12, "panel_prod_years": 30, "panel_prod_pct": 87.4, "inverter_years": 5, "battery_years": 10, "battery_cycles": 8000, "install_years": 2},
+  "logo": ""
+}
+</script>
+
+<script>
+const D = JSON.parse(document.getElementById('datos').textContent)
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const num = (n, dec = 0) => n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }).replace(/,/g, '_').replace('.', ',').replace(/_/g, '.')
+const eur = (n) => num(n, 2) + ' €'
+// Un sol: segmento de círculo de ancho w y alto h sobre una base plana en (x, y), como el sol amarillo de la marca
+const sun = (x, y, w, h) => {
+  const R = (w * w / 4 + h * h) / (2 * h)
+  return `M${x} ${y} A${R.toFixed(1)} ${R.toFixed(1)} 0 0 1 ${x + w} ${y} Z`
+}
+const suns = `<svg class="suns" viewBox="0 0 1123 794" aria-hidden="true">
+  <g class="sg a"><path d="${sun(797, 147, 360, 99)}" fill="#fff" stroke="#fed600" stroke-width="2"/></g>
+  <g class="sg b"><path d="${sun(935, 226, 354, 84)}" fill="#fff" stroke="#fed600" stroke-width="2"/></g>
+  <g class="sg c"><path d="${sun(892, 183, 305, 108)}" fill="#fed600"/></g></svg>`
+const deco = `<div class="deco">${suns}<img class="mark" src="marca.png" alt=""></div>`
+const title = (gray, hl, sub, kick) => `${kick ? `<div class="kick in" style="--i:0">${kick}</div>` : ''}<h2 class="in" style="--i:1">${gray} <span class="hl">${hl}</span></h2>${sub ? `<div class="sub in" style="--i:2">${sub}</div>` : ''}`
+
+const STRUCT = [['coplanar', 'Coplanar a cubierta'], ['inclinada', 'Estructura inclinada'], ['lastrada', 'Lastrada sin perforación'], ['hincada', 'Postes hincados en terreno'], ['marquesina', 'Marquesina'], ['marquesina_flotante', 'Marquesina flotante']]
+// Las garantías salen del inventario (módulo, inversor y batería del presupuesto); la tarjeta que no tiene dato no se enseña
+const W = D.warranty || {}
+const yrs = (n) => `${n} ${n === 1 ? 'año' : 'años'}`
+const WAR = [
+  [0, W.panel_prod_years > 0 ? W.panel_prod_years : W.panel_years, W.panel_prod_years > 0 ? 'Garantía de producción' : 'Garantía del módulo',
+    [W.panel_years > 0 ? `${yrs(W.panel_years)} de garantía al producto.` : '', W.panel_prod_years > 0 ? `${yrs(W.panel_prod_years)} de garantía de producción${W.panel_prod_pct > 0 ? ` al ${String(W.panel_prod_pct).replace('.', ',')} % de la potencia inicial` : ''}.` : ''].filter(Boolean).join(' '),
+    W.panel_prod_years > 0 ? 'Garantía de producción incluida' : 'Garantía de fabricación'],
+  [1, W.inverter_years, 'Garantía del producto', `${yrs(W.inverter_years)} de garantía del producto sobre el inversor solar, cubriendo defectos de fabricación y fallos técnicos del equipo.`, 'Garantía de fabricación'],
+  [2, W.install_years, 'Garantía de la instalación', `Aura se compromete con el cliente dando una garantía de ${yrs(W.install_years)} a la instalación, que puede verse ampliada por la firma de un contrato de mantenimiento.`, 'Ampliable con mantenimiento'],
+  [3, W.battery_years, 'Garantía de la batería', `${yrs(W.battery_years)} de garantía del sistema de almacenamiento${W.battery_cycles > 0 ? ` con ${num(W.battery_cycles)} ciclos garantizados de carga y descarga` : ''}.`, W.battery_cycles > 0 ? `${num(W.battery_cycles)} ciclos garantizados` : 'Garantía de fabricación'],
+].filter((w) => w[1] > 0)
+const PAY = [['A la firma del contrato', 'Reserva del material'], ['A la recepción del material', 'Inicio de obra'], ['A la colocación de los paneles', 'Avance de obra'], ['A la puesta en marcha', 'Al acabar la instalación']]
+const pcs = D.payment || [30, 40, 20, 10]
+// Los dibujos de la estructura, a la medida de los del modelo: paneles gruesos con sus separaciones (el elegido se pinta de amarillo)
+const pnl = (cx, cy, w, h, rot, seps = 2, dashed = false) =>
+  `<g transform="rotate(${rot} ${cx} ${cy})"><rect class="pn" x="${cx - w / 2}" y="${cy - h / 2}" width="${w}" height="${h}" rx="4"/>` +
+  Array.from({ length: seps }, (_, i) => `<line class="sp" x1="${cx - w / 2 + ((i + 1) * w) / (seps + 1)}" y1="${cy - h / 2 + 3}" x2="${cx - w / 2 + ((i + 1) * w) / (seps + 1)}" y2="${cy + h / 2 - 3}"/>`).join('') +
+  (dashed ? `<line class="dl" x1="${cx - w / 2 + 6}" y1="${cy}" x2="${cx + w / 2 - 6}" y2="${cy}"/>` : '') +
+  '</g>'
+const svg = (dx, dy, body) => `<svg viewBox="0 0 200 160"><g transform="translate(${dx} ${dy})">${body}</g></svg>`
+const DRAW = {
+  // Panel inclinado dentro de un tejado triangular, sobre su base
+  coplanar: svg(0, 0, '<g transform="translate(100 80) scale(.195) translate(-518 -366)"><polygon points="518,57 944,612 92,612" fill="none" stroke="#9d9ea1" stroke-width="7" stroke-linejoin="round"/><rect x="98" y="616" width="842" height="62" rx="8" fill="#c9cbcd" stroke="#aeb0b3" stroke-width="3"/><g transform="rotate(-30 520 346)"><rect class="pn" x="280" y="284" width="480" height="124" rx="12"/><line x1="440" y1="290" x2="440" y2="402" stroke="#fff" stroke-width="9" opacity=".85"/><line x1="600" y1="290" x2="600" y2="402" stroke="#fff" stroke-width="9" opacity=".85"/></g></g>'),
+  // Panel inclinado sobre dos patas de distinta altura, con su línea de eje
+  inclinada: svg(-323, -14, '<rect class="gr" x="348" y="146" width="150" height="9" rx="4"/><rect class="ps" x="374" y="118" width="5" height="30"/><rect class="ps" x="468" y="84" width="5" height="64"/>' + pnl(423, 90, 128, 50, -17, 2, true)),
+  // Panel apoyado en dos bloques de lastre sobre una base
+  lastrada: svg(-622, -20, '<rect class="gr" x="643" y="136" width="160" height="17" rx="5"/><rect class="ps" x="650" y="115" width="24" height="21" rx="3"/><rect class="ps" x="765" y="115" width="32" height="21" rx="3"/>' + pnl(722, 99, 116, 52, -12, 2)),
+  // Panel sobre un travesaño y dos postes hincados en el terreno
+  hincada: svg(-922, -18, '<rect class="gr" x="928" y="144" width="188" height="28"/><rect class="ps" x="988" y="82" width="8" height="70"/><rect class="ps" x="1049" y="82" width="8" height="70"/><rect class="ps" x="976" y="74" width="94" height="9" rx="2"/>' + pnl(1022, 52, 92, 52, -5, 3)),
+  // Panel como cubierta de una marquesina con un coche debajo
+  marquesina: svg(-1222, -18, '<rect class="gr" x="1228" y="152" width="189" height="12"/><rect class="ps" x="1258" y="78" width="8" height="76"/><rect class="ps" x="1378" y="78" width="8" height="76"/><rect class="pn" x="1249" y="35" width="146" height="46" rx="6"/>' + [1285, 1322, 1358].map((x) => `<line class="sp" x1="${x}" y1="38" x2="${x}" y2="78"/>`).join('') + '<path d="M1264 150 C1268 134 1280 126 1296 126 L1346 126 C1364 126 1376 134 1380 150" fill="none" stroke="#9d9ea1" stroke-width="3"/><circle cx="1289" cy="148" r="7" fill="#fff" stroke="#9d9ea1" stroke-width="3"/><circle cx="1355" cy="148" r="7" fill="#fff" stroke="#9d9ea1" stroke-width="3"/>'),
+}
+// (la marquesina flotante) Planta flotante sobre agua: paneles inclinados sobre una plataforma de flotadores
+DRAW.marquesina_flotante = svg(0, 0, '<rect x="4" y="92" width="192" height="62" rx="10" fill="#dbe9f4"/><path d="M12 112 q8 -7 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0" fill="none" stroke="#a9c8de" stroke-width="3" stroke-linecap="round"/><path d="M20 130 q8 -7 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0 t16 0" fill="none" stroke="#a9c8de" stroke-width="3" stroke-linecap="round"/><rect class="ps" x="14" y="80" width="172" height="16" rx="8"/><g stroke="#fff" stroke-width="2" opacity=".8"><line x1="57" y1="82" x2="57" y2="94"/><line x1="100" y1="82" x2="100" y2="94"/><line x1="143" y1="82" x2="143" y2="94"/></g><rect class="ps" x="28" y="72" width="5" height="10"/><rect class="ps" x="83" y="60" width="5" height="22"/><rect class="ps" x="112" y="72" width="5" height="10"/><rect class="ps" x="167" y="60" width="5" height="22"/>' + pnl(58, 51, 78, 34, -10, 3) + pnl(142, 51, 78, 34, -10, 3))
+const IC = {
+  pin: '<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  file: '<path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7"/>',
+  filecheck: '<path d="M6 3h9l4 4v14H6z"/><path d="M9 14l2 2 4-4"/>',
+  pulse: '<path d="M2 12h4l2.5-6 5 12 2.5-6H22"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+  plug: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12h8M12 8v8"/>',
+  batt: '<rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2M6 10v4M10 10v4"/>',
+  roof: '<path d="M3 11l9-7 9 7M5 10v10h14V10"/>',
+  coin: '<circle cx="12" cy="12" r="8"/><path d="M14.5 9.5a3 3 0 1 0 0 5M8.5 11h5M8.5 13h5"/>',
+  ruler: '<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',
+  panel: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/>',
+  bolt: '<path d="M13 2L5 14h6l-1 8 8-12h-6z"/>',
+  wifi: '<path d="M3 9a14 14 0 0 1 18 0M6 12.5a9 9 0 0 1 12 0M9 16a4.5 4.5 0 0 1 6 0"/><circle cx="12" cy="19" r="1"/>',
+  swap: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  check: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 12l2 2 4-4"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  alert: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
+  deal: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>',
+}
+const COND_ALCANCE = [
+  ['pin', 'Replanteo técnico', 'Solución preliminar sujeta a visita presencial para confirmar ubicación de equipos y trazado de cableado.'],
+  ['coin', 'Presupuesto', 'No incluye tasas, impuestos ni obra civil (excavación, zanjas, albañilería). Si se requiere, se presupuestará de forma independiente.'],
+  ['ruler', 'Revisión por ubicación', 'Vinculado estrictamente a las distancias del plano. Cualquier cambio de ubicación implica revisión económica.'],
+  ['panel', 'Cuadros existentes', 'Se asume compatibilidad total. Cualquier modificación en cuadros actuales se facturará como extra.'],
+  ['bolt', 'Red y excedentes', 'El vertido a la red está condicionado al punto de conexión concedido por la distribuidora. Los trabajos de adecuación eléctrica que ésta exija quedan excluidos.'],
+  ['wifi', 'Monitorización', 'El cliente garantizará conexión a internet estable en la zona del inversor. No se incluye extensión de red ni amplificadores Wi-Fi.'],
+]
+const COND_SUMINISTRO = [
+  ['swap', 'Garantía de suministro', 'AURA podrá sustituir equipos por falta de stock siempre que se mantengan o mejoren las especificaciones originales.'],
+  ['shield', 'Medidas de seguridad', 'No se incluyen líneas de vida, redes ni protecciones colectivas especiales de obra.'],
+  ['check', 'Trámites administrativos', 'Incluye legalización ante Industria; excluidas tasas municipales y propias de Industria.'],
+]
+const COND_LEGAL = [
+  ['clock', 'Desarrollo de los trabajos', 'Los retrasos imputables al cliente generarán costes adicionales que le serán repercutidos.'],
+  ['alert', 'Vencimiento por impago', 'El impago de un solo plazo determina el vencimiento de la totalidad de la deuda.'],
+  ['deal', 'Resolución del contrato', 'AURA recuperará los equipos instalados y conservará los importes ya abonados en caso de incumplimiento del cliente.'],
+]
+const condCard = (c, i, base) => `<div class="cc in" style="--i:${base + i}"><span class="cicon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[c[0]]}</svg></span><b>${c[1]}</b><p>${c[2]}</p></div>`
+// Dibujo simbólico de la diapositiva 2: el sol, a la izquierda, proyecta haces de luz paralelos sobre la cara de una placa inclinada, al final de la línea del suelo; en bucle
+const ART = `<svg class="art" viewBox="0 0 320 200" aria-hidden="true">
+  <defs><linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="50" y1="46" x2="200" y2="104"><stop offset="0" stop-color="#fed600" stop-opacity=".9"/><stop offset="1" stop-color="#fed600" stop-opacity=".25"/></linearGradient>
+  <radialGradient id="gg"><stop offset="0" stop-color="#fff8c2" stop-opacity=".95"/><stop offset="1" stop-color="#fed600" stop-opacity="0"/></radialGradient></defs>
+  <g class="in fade" style="--i:5"><rect x="20" y="190" width="280" height="7" rx="3.5" fill="#dfe3e3"/></g>
+  <g class="in fade" style="--i:6"><polygon class="beam" style="animation-delay:0.0s" points="73.9,26.8 70.0,37.1 239.7,102.8 243.7,92.5" fill="url(#bg)"/><polygon class="beam" style="animation-delay:-0.7s" points="76.1,42.7 72.2,53.0 218.7,109.6 222.6,99.4" fill="url(#bg)"/><polygon class="beam" style="animation-delay:-1.4s" points="71.1,55.8 67.1,66.0 197.6,116.5 201.6,106.2" fill="url(#bg)"/><polygon class="beam" style="animation-delay:-2.1s" points="58.8,66.0 54.8,76.3 176.5,123.3 180.5,113.1" fill="url(#bg)"/></g>
+  <g class="in fade" style="--i:3"><g class="sunp"><circle cx="50" cy="46" r="30" fill="#fed600"/></g></g>
+  <g transform="translate(76 -5.7)"><g class="in pop" style="--i:4"><g transform="rotate(-18 125 138)"><clipPath id="pclip"><rect x="40" y="105" width="170" height="66" rx="7"/></clipPath>
+    <rect x="40" y="105" width="170" height="66" rx="7" fill="#adb1b3"/>
+    <line x1="97" y1="109" x2="97" y2="167" class="cl"/><line x1="153" y1="109" x2="153" y2="167" class="cl"/><line x1="44" y1="138" x2="206" y2="138" class="cl"/></g></g>
+  <g class="in fade" style="--i:5"><rect x="188" y="152" width="7" height="44" rx="2" fill="#9d9ea1"/></g></g>
+  <g class="in fade" style="--i:7"><ellipse class="glow" style="animation-delay:0.0s" cx="228.7" cy="95.6" rx="15" ry="6" transform="rotate(-18 228.7 95.6)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-0.7s" cx="207.6" cy="102.4" rx="15" ry="6" transform="rotate(-18 207.6 102.4)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-1.4s" cx="186.5" cy="109.3" rx="15" ry="6" transform="rotate(-18 186.5 109.3)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-2.1s" cx="165.4" cy="116.2" rx="15" ry="6" transform="rotate(-18 165.4 116.2)" fill="url(#gg)"/></g></svg>`
+const GALERIAS = {
+  equipos: ['eq1', 'eq2', 'eq3', 'eq4', 'eq5'],
+  fijacion: ['fx1', 'fx2', 'fx3', 'fx4', 'fx5', 'fx6', 'fx7', 'fx8'],
+  almacenamiento: ['alm1', 'alm2', 'alm3', 'alm4'],
+}
+const galeria = (fotos, base) => `<div class="gal g${fotos.length}">${fotos.map((n, i) => `<img class="in pop" style="--i:${base + i}" src="proyectos/${n}.jpg" alt="">`).join('')}</div>`
+const PROVEEDORES = ['sigenergy', 'fronius', 'aiko', 'jinko', 'longi', 'huawei']
+const CLIENTES = ['jisap', 'jimbofresh', 'jcano', 'primalum', 'peymapiel', 'lario', 'isabelalonso', 'laciezana']
+const SECTORES = ['Sector agrícola', 'Sector ganadero', 'Industria alimentaria', 'Sector industrial', 'Grandes consumidores de energía']
+const REFS = [
+  ['aledo', 'Comunidad de Regantes de Aledo', '525 kWp', '', '2024'],
+  ['arenas', 'Arenas del Valle', '240 kWp', '', '2023'],
+  ['levante', 'Levante Sur', '255 kWp de paneles', '430 kWh de baterías', '2025'],
+  ['ciezana', 'La Ciezana (Venta del Olivo)', '255 kWp', 'con almacenamiento', '2025'],
+  ['lorca2', 'Lorca (Murcia)', '300 kWn', 'Autoconsumo', '2020'],
+]
+const ICON = {
+  box: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M12 11v5M9.5 13.5h5"/>',
+  doc: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  battery: '<rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2M6 10v4M10 10v4"/>',
+}
+
+const slides = [
+  `<section class="slide cover"><img class="cphoto in fade" style="--i:0" src="portada-foto.jpg" alt="">
+    <img class="clogo in" style="--i:1" src="logo-aura.png" alt="Aura Ingeniería Energética">
+    <div class="crule in grow" style="--i:2"></div>
+    <div class="ckick in" style="--i:3">Propuesta técnica - instalación fotovoltaica</div>
+    <h1 class="ctitle in" style="--i:4">Presupuesto de<br><span>autoconsumo</span></h1>
+    <div class="csub in" style="--i:5">Solución energética personalizada</div>
+    <div class="who in fade" style="--i:6"><b>Nombre de la empresa: ${esc(D.client)}${D.project ? ' · ' + esc(D.project) : ''}</b>${D.address ? `<span>Dirección: ${esc(D.address)}</span>` : ''}</div>
+    <div class="cweb in pop" style="--i:7"><img src="marca-gris.png" alt="">auraingenieria.es</div></section>`,
+
+  `<section class="slide">${deco}<div class="lead in" style="--i:0">Te lo ponemos <em>fácil</em> para que no te preocupes de nada durante el proceso.</div>
+    <div class="turn in" style="--i:2"><b>Proyecto llave en mano</b>Producir tu propia energía es una buena decisión, y nosotros hacemos que también sea fácil. Nos ocupamos de todo de principio a fin.</div><div class="logo-slot in pop" style="--i:4" id="logoSlot"></div>${ART}</section>`,
+
+  `<section class="slide steps">${deco}<div class="cols"><div class="cwrap">${[
+      ['search', 'Análisis y solución global', '#fdc500', 210], ['file', 'Ingeniería y diseño a medida', '#fee07a', 120], ['bolt', 'Instalación con equipo propio', '#c9c9cb', 104],
+      ['filecheck', 'Legalización y gestión de ayudas', '#9d9ea1', 120], ['pulse', 'Monitorización y acompañamiento', '#050505', 210],
+    ].map((s, i) => `<div class="col in" style="--i:${i + 1};--off:${s[3]}px;background:${s[2]}"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${IC[s[0]]}</svg><span>${s[1]}</span><b class="n">0${i + 1}</b></div>`).join('')}</div></div>
+    <div class="dtitle in fade" style="--i:7"><div class="t1">Tu transición energética</div><div class="t2"><span class="hl">paso a paso</span></div></div></section>`,
+
+  `<section class="slide">${deco}${title('Proceso de trabajo de', 'Aura ingeniería energética')}
+    <div class="tlwrap"><div class="road in grow" style="--i:2"><div class="cap l">+</div><div class="cap r">→</div></div>
+    ${[['01', 'Proyecto técnico', 'de la instalación'], ['02', 'Dirección de obra', 'Supervisión técnica'], ['03', 'Trámites y legalización', 'Ayto · Industria · Eléctricas'], ['04', 'Certificado final de obra', 'Acreditación oficial'], ['05', 'Gestión de ayudas', 'Subvenciones y bonificaciones']].map((s, i) => `<div class="tl ${i % 2 ? 'down' : 'up'} in pop" style="--i:${i + 3};left:${(963 * (i + 0.5)) / 5 - 100}px"><b class="n">${s[0]}</b><b class="t">${s[1]}</b><span>${s[2]}</span><i class="stem"></i><i class="dot"></i></div>`).join('')}</div></section>`,
+
+  `<section class="slide">${deco}${title('Propuesta', 'técnica', 'Especificaciones técnicas de tu proyecto')}
+    <div class="kpis">${[
+      ['bolt', 'Potencia pico total', (D.kwp > 0 ? `<b data-count="${D.kwp}" data-dec="2" data-suffix=" kWp"></b>` : '<b></b>'), 'y'],
+      ['panel', 'Módulos fotovoltaicos', (D.panels > 0 ? `<b data-count="${D.panels}"></b>` : '<b></b>'), ''],
+      ['sun', 'Potencia por módulo', (D.panels > 0 && D.kwp > 0 ? `<b data-count="${Math.round((D.kwp * 1000) / D.panels)}" data-suffix=" Wp"></b>` : '<b></b>'), ''],
+      ['plug', 'Inversores', (D.inverter_count > 0 ? `<b data-count="${D.inverter_count}"></b>` : '<b></b>'), ''],
+    ].map((k, i) => `<div class="kpi ${k[3]} in" style="--i:${i + 3}"><span class="cicon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[k[0]]}</svg></span>${k[2]}<i>${k[1]}</i></div>`).join('')}</div>
+    <div class="specs">${[
+      ['sun', 'Tipo de instalación', esc([D.kind || 'Autoconsumo', D.supply].filter(Boolean).join(' · '))],
+      ['panel', 'Módulo', esc(D.panel || ''), esc(D.strings || '')],
+      ['plug', 'Inversor', D.inverter ? `${esc(D.inverter)} · ${D.inverter_count || 1} ${(D.inverter_count || 1) === 1 ? 'unidad' : 'unidades'}` : ''],
+      ['batt', 'Baterías', esc(D.battery || 'No incluidas')],
+      ['roof', 'Estructura', esc((STRUCT.find((s) => s[0] === D.structure) || [0, ''])[1])],
+    ].map((s, i) => `<div class="spec in" style="--i:${i + 7}"><span class="cicon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[s[0]]}</svg></span><div><i>${s[1]}</i><b>${s[2]}</b>${s[3] ? `<em>${s[3]}</em>` : ''}</div></div>`).join('')}</div></section>`,
+
+  `<section class="slide">${deco}${title('Estructura de', 'fijación', '', 'Estructura y soportación')}
+    <div class="opts2">${STRUCT.map((s, i) => `<div class="opt2 in pop ${s[0] === D.structure ? 'on' : ''}" style="--i:${i + 3}">${DRAW[s[0]]}<b>${s[1]}</b>${s[0] === D.structure ? '<small>✓ Incluida en tu propuesta</small>' : ''}</div>`).join('')}</div></section>`,
+
+  `<section class="slide">${deco}<div class="kick in" style="--i:0">Propuesta técnica - instalación fotovoltaica</div><h2 class="in" style="--i:1">Garantías de la <span class="hl">instalación</span></h2>
+    <div class="wcards">${WAR.map((w, n) => `<div class="wc w${w[0] + 1} in" style="--i:${n + 3}"><span class="wicon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[['box', 'doc', 'shield', 'battery'][w[0]]]}</svg></span><div class="wbody"><div class="big" data-count="${w[1]}"></div><div class="yr">${w[1] === 1 ? 'año' : 'años'}</div><b>${w[2]}</b><p>${w[3]}</p></div><div class="wfoot">✓ ${w[4]}</div></div>`).join('')}</div></section>`,
+
+  `<section class="slide">${deco}${title('Nuestros principales', 'proveedores', '', 'Equipos y partners')}
+    <div class="logos6">${PROVEEDORES.map((n, i) => `<div class="lg in pop" style="--i:${i + 3}"><img src="logos/${n}.png" alt="${n}"></div>`).join('')}</div></section>`,
+
+  `<section class="slide">${deco}${title('¿Quieres', 'conocernos más?')}
+    <div class="about"><div class="aboutl">
+      <p class="in" style="--i:2">Contamos con más de 15 años de experiencia en el sector, lo que nos capacita para dar una solución completa, óptima, eficaz y adaptada a las complejidades que cada proyecto fotovoltaico presenta.</p>
+      <div class="sect in" style="--i:3"><b>Trabajamos con los sectores más exigentes:</b><ul>${SECTORES.map((s) => `<li>${s}</li>`).join('')}</ul></div></div>
+      <div class="aboutr in pop" style="--i:3"><img src="equipo.jpg" alt="Equipo de Aura">
+        <div class="stat"><b data-count="14.5" data-dec="1" data-suffix=" MW"></b><span>instalados en proyectos de autoconsumo</span></div>
+        <div class="stat s2"><b data-count="500" data-prefix="+"></b><span>instalaciones fotovoltaicas puestas en marcha</span></div></div></div>
+    <div class="refs"><span class="in" style="--i:5">Algunos clientes de referencia:</span><div>${CLIENTES.map((n, i) => `<img class="in fade" style="--i:${i + 6}" src="logos/${n}.png" alt="${n}">`).join('')}</div></div></section>`,
+
+  `<section class="slide"><div class="deco"><img class="mark" src="marca.png" alt=""></div>
+    <div class="eco-top"><div class="ecotitle in fade" style="--i:0"><div class="kick">Condiciones económicas</div><h2>Propuesta <span class="hl">económica</span></h2></div>
+    <div class="total"><i class="in" style="--i:2">Importe total</i><div class="amount in" style="--i:3"${D.total > 0 ? ` data-count="${D.total}" data-dec="2" data-suffix=" €"` : ''}></div><div class="line in grow" style="--i:4"></div><small class="in fade" style="--i:5">IVA no incluido</small></div></div>
+    <div class="pay-title in" style="--i:5">Forma de pago</div>
+    <div class="pays2">${PAY.map((p, i) => `<div class="pay2 ${i % 2 ? 'g' : 'y'} in" style="--i:${i + 6}"><div class="sq">${pcs[i]} %</div><div class="tx"><b>${p[0]}</b><span>${p[1]}</span><em>${D.total > 0 ? eur((D.total * pcs[i]) / 100) : ''}</em></div></div>`).join('')}</div></section>`,
+
+  `<section class="slide">${deco}${title('Condiciones', 'del proyecto', 'Gestión y alcance')}<div class="cgrid">${COND_ALCANCE.map((c, i) => condCard(c, i, 3)).join('')}</div></section>`,
+
+  `<section class="slide">${deco}${title('Garantía y', 'marco legal', 'Suministro, trámites y condiciones del contrato')}<div class="cgroup in" style="--i:3">Garantía de suministro y trámites</div><div class="cgrid rows3">${COND_SUMINISTRO.map((c, i) => condCard(c, i, 4)).join('')}</div><div class="cgroup in" style="--i:7">Marco legal</div><div class="cgrid rows3">${COND_LEGAL.map((c, i) => condCard(c, i, 8)).join('')}</div></section>`,
+
+    `<section class="slide printonly">${deco}${title('Aceptación y', 'firma')}
+    <p class="acc in" style="--i:2">Con la firma de este documento, el cliente manifiesta su conformidad y acepta las condiciones técnicas y económicas detalladas en la presente propuesta de la instalación.</p>
+    <div class="sign in" style="--i:3"><div class="signl"><span class="cicon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC.deal}</svg></span><div><b>Por parte del cliente</b><span class="who2">${esc(D.client)}</span><p>Firma de la empresa en señal de la aceptación de todas las condiciones técnicas, económicas y de garantía recogidas en esta propuesta.</p></div></div>
+      <div class="signr"><b>Firma del cliente</b><div class="box"></div></div></div></section>`,
+
+  `<section class="slide">${deco}${title('Instalaciones de', 'referencia', '', 'Proyectos realizados')}
+    <div class="refgrid">${REFS.map((r, i) => `<div class="rf in" style="--i:${i + 3}"><img src="proyectos/${r[0]}.jpg" alt="${r[1]}"><div><b>${r[1]}</b><span>${[r[2], r[3]].filter(Boolean).join(' · ')}</span>${r[4] ? `<em>${r[4]}</em>` : ''}</div></div>`).join('')}</div></section>`,
+
+  `<section class="slide">${deco}${title('Equipos de', 'referencia', '', 'Proyectos realizados')}${galeria(GALERIAS.equipos, 3)}</section>`,
+
+  `<section class="slide">${deco}${title('Soportes de', 'fijación', '', 'Proyectos realizados')}${galeria(GALERIAS.fijacion, 3)}</section>`,
+
+  `<section class="slide">${deco}${title('Equipos de', 'almacenamiento', '', 'Proyectos realizados')}${galeria(GALERIAS.almacenamiento, 3)}</section>`,
+
+  `<section class="slide endslide">${deco}<div class="end"><img class="in" style="--i:0" src="logo-aura.png" alt="Aura Ingeniería Energética">
+    <h2 class="in" style="--i:2">Gracias por <span class="hl">confiar en nosotros</span></h2>
+    <div class="contact in" style="--i:4"><div><b>Contacto</b><span>contacto@auraingenieria.es</span><span>+34 623 264 523</span></div><div><b>Más información</b><span>www.auraingenieria.es</span></div></div></div></section>`,
+]
+
+const logoKey = 'aura-logo:' + (D.client || '')
+try { if (!D.logo) D.logo = localStorage.getItem(logoKey) || '' } catch (e) { /* sin almacenamiento: el logo dura lo que la página */ }
+const picker = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/svg+xml' })
+function renderLogo() {
+  const slot = document.getElementById('logoSlot')
+  if (!slot) return
+  slot.innerHTML = D.logo
+    ? `<div class="logo-box"><img alt="Logo de ${esc(D.client)}" src="${D.logo}"></div><div class="logo-tools"><button type="button" data-a="change">Cambiar logo</button><button type="button" data-a="remove">Quitar</button></div>`
+    : `<div class="logo-box add" role="button" tabindex="0" data-a="change">+ Añadir el logo de la empresa</div>`
+}
+function setLogo(uri) {
+  D.logo = uri
+  try { uri ? localStorage.setItem(logoKey, uri) : localStorage.removeItem(logoKey) } catch (e) { /* sin almacenamiento */ }
+  renderLogo()
+}
+// Se reduce a un máximo de 700 px de lado (un PNG conserva su transparencia); un SVG se guarda tal cual
+picker.addEventListener('change', () => {
+  const file = picker.files && picker.files[0]
+  picker.value = ''
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (file.type === 'image/svg+xml') return setLogo(String(reader.result))
+    const img = new Image()
+    img.onload = () => {
+      const k = Math.min(1, 700 / Math.max(img.width, img.height))
+      const c = Object.assign(document.createElement('canvas'), { width: Math.round(img.width * k), height: Math.round(img.height * k) })
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
+      setLogo(c.toDataURL(file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png', 0.9))
+    }
+    img.onerror = () => alert('No se ha podido leer esa imagen.')
+    img.src = String(reader.result)
+  }
+  reader.readAsDataURL(file)
+})
+const stage = document.getElementById('stage')
+// Visor de fotos: se amplían al pulsarlas y se recorren las de la misma diapositiva con las flechas
+const lb = document.createElement('div')
+lb.id = 'lb'
+lb.innerHTML = '<button class="lbx" aria-label="Cerrar">×</button><button class="lbp" aria-label="Anterior">‹</button><img alt=""><button class="lbn" aria-label="Siguiente">›</button><div class="lbc"></div>'
+document.body.appendChild(lb)
+const PHOTOS = '.gal img, .rf img'
+let lbList = [], lbI = 0
+function lbShow(i) {
+  lbI = (i + lbList.length) % lbList.length
+  lb.querySelector('img').src = lbList[lbI].currentSrc || lbList[lbI].src
+  lb.querySelector('.lbc').textContent = lbList.length > 1 ? (lbI + 1) + ' / ' + lbList.length : ''
+  lb.querySelector('.lbp').style.display = lb.querySelector('.lbn').style.display = lbList.length > 1 ? '' : 'none'
+  lb.classList.add('open')
+}
+const lbClose = () => lb.classList.remove('open')
+lb.addEventListener('click', (e) => {
+  if (e.target.closest('.lbp')) lbShow(lbI - 1)
+  else if (e.target.closest('.lbn')) lbShow(lbI + 1)
+  else if (e.target.tagName === 'IMG' && lbList.length > 1) lbShow(lbI + 1)
+  else lbClose()
+})
+stage.innerHTML = slides.join('')
+const allSlides = [...stage.querySelectorAll('.slide')]
+const els = allSlides.filter((s) => !s.classList.contains('printonly')) // las que se navegan; las «printonly» solo se imprimen
+const nav = document.getElementById('nav')
+nav.innerHTML = els.map((_, i) => `<button aria-label="Diapositiva ${i + 1}"></button>`).join('')
+const dots = [...nav.children]
+renderLogo()
+stage.addEventListener('click', (e) => {
+  const act = e.target.closest && e.target.closest('#logoSlot [data-a]')
+  if (!act) return
+  e.stopPropagation()
+  if (act.dataset.a === 'change') picker.click()
+  else if (confirm('¿Quitar el logo de esta propuesta?')) setLogo('')
+}, true)
+let cur = -1
+
+const fmtCount = (el, v) => (el.dataset.prefix || '') + num(v, Number(el.dataset.dec || 0)) + (el.dataset.suffix || '')
+function fillCounts() { document.querySelectorAll('[data-count]').forEach((el) => (el.textContent = fmtCount(el, Number(el.dataset.count)))) }
+window.addEventListener('beforeprint', fillCounts)
+function countUp(slide) {
+  slide.querySelectorAll('[data-count]').forEach((el) => {
+    const end = Number(el.dataset.count), dec = Number(el.dataset.dec || 0), suffix = el.dataset.suffix || '', prefix = el.dataset.prefix || ''
+    const fmt = (v) => prefix + num(v, dec) + suffix
+    const t0 = performance.now(), dur = 1300
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3)
+      el.textContent = fmt(end * e)
+      if (p < 1) requestAnimationFrame(tick)
+    }
+    el.textContent = fmt(0)
+    setTimeout(() => requestAnimationFrame(tick), 450)
+  })
+}
+function go(i) {
+  i = Math.max(0, Math.min(els.length - 1, i))
+  if (i === cur) return
+  els.forEach((s, k) => s.classList.toggle('active', k === i))
+  dots.forEach((d, k) => d.classList.toggle('on', k === i))
+  document.getElementById('bar').style.width = ((i + 1) / els.length) * 100 + '%'
+  cur = i
+  countUp(els[i])
+  history.replaceState(null, '', '#' + (i + 1))
+}
+dots.forEach((d, i) => d.addEventListener('click', () => go(i)))
+document.addEventListener('keydown', (e) => {
+  if (lb.classList.contains('open')) {
+    if (e.key === 'Escape') lbClose()
+    else if (e.key === 'ArrowRight') lbShow(lbI + 1)
+    else if (e.key === 'ArrowLeft') lbShow(lbI - 1)
+    e.preventDefault()
+    return
+  }
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(cur + 1) }
+  else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); go(cur - 1) }
+  else if (e.key === 'Home') go(0)
+  else if (e.key === 'End') go(els.length - 1)
+  else if (e.key === 'f' || e.key === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.()
+})
+stage.addEventListener('click', (e) => go(e.clientX < window.innerWidth / 2 ? cur - 1 : cur + 1))
+let sx = null
+stage.addEventListener('touchstart', (e) => (sx = e.touches[0].clientX), { passive: true })
+stage.addEventListener('touchend', (e) => { if (sx !== null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) go(cur + (dx < 0 ? 1 : -1)); sx = null } })
+// Los soles nunca se superponen con el contenido: se miden los textos y cajas de cada diapositiva y, si alguno entra en su zona,
+// se encogen hacia la esquina hasta que dejen de tocarlo; si ni así caben, esa diapositiva se queda sin soles.
+// El contenido de cada diapositiva con título se centra en el espacio que queda entre el título y la marca de abajo, en vez de
+// quedarse pegado arriba: se baja lo justo (máximo 90 px) para que el aire de arriba y el de abajo sean parecidos.
+const MARK_TOP = 684
+function centerContent() {
+  const keep = stage.style.transform
+  stage.style.transform = 'none'
+  allSlides.forEach((slide) => {
+    const kids = [...slide.children].filter((c) => !c.classList.contains('deco'))
+    const title = kids.filter((c) => c.matches('.kick, h2, .sub'))
+    if (!kids.some((c) => c.tagName === 'H2')) return
+    const content = kids.filter((c) => !title.includes(c))
+    if (!content.length) return
+    const abs = (c) => getComputedStyle(c).position === 'absolute'
+    content.forEach((c) => {
+      if (abs(c)) { if (c.dataset.top0 === undefined) c.dataset.top0 = getComputedStyle(c).top; c.style.top = c.dataset.top0 } else c.style.marginTop = ''
+    })
+    const titleBottom = Math.max(...title.map((c) => c.offsetTop + c.offsetHeight))
+    const top = Math.min(...content.map((c) => c.offsetTop))
+    const bottom = Math.max(...content.map((c) => c.offsetTop + c.offsetHeight))
+    const delta = Math.max(0, Math.min(90, (MARK_TOP - bottom - (top - titleBottom)) / 2))
+    if (delta < 4) return
+    const flow = content.filter((c) => !abs(c))
+    if (flow.length) flow[0].style.marginTop = parseFloat(getComputedStyle(flow[0]).marginTop) + delta + 'px'
+    content.filter(abs).forEach((c) => (c.style.top = parseFloat(c.dataset.top0) + delta + 'px'))
+  })
+  stage.style.transform = keep
+}
+const SUN_LEFT = 797, SUN_BOTTOM = 226, SUN_MARGIN = 18, SUN_FLOAT = 12
+function contentRects(slide, base) {
+  const rects = []
+  slide.querySelectorAll('.in').forEach((el) => {
+    if (el.closest('.deco')) return
+    const inline = [...el.children].every((c) => ['inline', 'inline-block'].includes(getComputedStyle(c).display))
+    let list = [el.getBoundingClientRect()]
+    if (inline) {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const parts = [...range.getClientRects()]
+      if (parts.length) list = parts
+    }
+    list.forEach((r) => { if (r.width > 1 && r.height > 1) rects.push({ l: r.left - base.left, t: r.top - base.top, r: r.right - base.left, b: r.bottom - base.top }) })
+  })
+  return rects
+}
+function avoidSuns() {
+  const keep = stage.style.transform
+  stage.style.transform = 'none'
+  // Cada diapositiva pide un tamaño máximo para sus soles; todas usan el menor, para que se vean iguales en toda la presentación
+  const needs = allSlides.map((slide) => {
+    const svg = slide.querySelector('.suns')
+    if (!svg) return null
+    svg.style.display = ''
+    svg.style.transform = ''
+    const rects = contentRects(slide, slide.getBoundingClientRect())
+    const hits = (s) => {
+      const left = 1123 - (1123 - SUN_LEFT) * s - SUN_MARGIN, bottom = SUN_BOTTOM * s + SUN_MARGIN + SUN_FLOAT
+      return rects.some((r) => r.r > left && r.t < bottom)
+    }
+    return { svg, s: [1, 0.85, 0.7, 0.56, 0.44].find((k) => !hits(k)) }
+  }).filter(Boolean)
+  const common = Math.min(...needs.map((n) => (n.s === undefined ? 1 : n.s)))
+  needs.forEach(({ svg, s }) => {
+    if (s === undefined) { svg.style.display = 'none'; return }
+    if (common < 1) { svg.style.transformOrigin = '100% 0'; svg.style.transform = 'scale(' + common + ')' }
+  })
+  stage.style.transform = keep
+}
+function fit() { const k = Math.min(window.innerWidth / 1123, (window.innerHeight - 30) / 794); stage.style.transform = `scale(${k})` }
+window.addEventListener('resize', fit); fit()
+stage.addEventListener('click', (e) => {
+  const photo = e.target.closest && e.target.closest(PHOTOS)
+  if (!photo) return
+  e.stopPropagation()
+  lbList = [...photo.closest('.slide').querySelectorAll(PHOTOS)]
+  lbShow(lbList.indexOf(photo))
+}, true)
+const layout = () => { centerContent(); avoidSuns() }
+layout()
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout)
+fillCounts()
+go(Math.max(0, (parseInt(location.hash.slice(1)) || 1) - 1))
+</script>
+</body>
+</html>

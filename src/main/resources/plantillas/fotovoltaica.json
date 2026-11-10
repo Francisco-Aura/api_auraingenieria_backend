@@ -1,0 +1,850 @@
+{
+  "id": "fotovoltaica",
+  "name": "Instalación fotovoltaica",
+  "source": "Asana: PLANTILLA — Proyecto Instalación Fotovoltaica",
+  "documents": [
+    {
+      "title": "GUÍA DE USO RÁPIDO — Lee esto antes de empezar",
+      "body": "PARA QUÉ SIRVE ESTE SISTEMA\nEvitar errores en facturas, trámites olvidados y llamadas innecesarias  Todo el proyecto vive aquí — nada por WhatsApp ni email.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nTUS TAREAS — CÓMO IDENTIFICARLAS\n━━━━━━━━━━━━━━━━━━━━━━━━\nBusca tu departamento entre corchetes:\n[COMERCIAL] → Sergio\n[INGENIERÍA] → Amparo\n[ADMINISTRACIÓN] → Encarna\n[COORDINACIÓN] → María\n\nSolo haz las tuyas. No hagas las de otros.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nDÓNDE ENCONTRAR CADA COSA\n━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Ficha del Proyecto → datos del cliente, técnicos, comerciales y admin\n📋 Registro de Cambios → cualquier cambio sobre el contrato inicial\n⏱️ Guía de Plazos → tiempos máximos de cada fase\n🚦 Límites de Escalación → qué puedes decidir sin consultar al CEO\n🔗 Enlaces → Dropbox y registro de horas del proyecto\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nQUÉ HACER CUANDO HAY UN PROBLEMA\n━━━━━━━━━━━━━━━━━━━━━━━━\n1. Lee las instrucciones de la tarea\n2. Si no está → comenta en la tarea de Asana\n3. Si es urgente y no hay respuesta en 2h → llama\n4. Consulta los Límites de Escalación para saber a quién"
+    },
+    {
+      "title": "FICHA DEL PROYECTO — Rellenar al abrir",
+      "body": "Responsable: Comercial/Ingeneiria\nRellenar esta ficha completa antes de que nadie empiece a trabajar.\nEs la única fuente de información del proyecto. Todo el equipo debe leerla.\nEn base a la oferta se rellenara la parte técnica.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n1. DATOS DEL CLIENTE/ Si el cliente ya esta en nuestro CRM, los datos se buscaran de ahi.\n━━━━━━━━━━━━━━━━━━━━━━━━\nNombre / Razón social: ___\nNIF / CIF: ___\nDirección fiscal: ___\nTeléfono: ___\nEmail de contacto: ___\nEmail para facturas: ___\nPersona de contacto en obra: ___\nCanal preferido de comunicación: email / WhatsApp\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n2. DATOS DE LA INSTALACIÓN\n━━━━━━━━━━━━━━━━━━━━━━━━\nDirección de la instalación: ___\nCoordenadas:\nReferencia catastral:\nCUPS:\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n3. DATOS DEL PROYECTO\n━━━━━━━━━━━━━━━━━━━━━━━━\nCódigo de proyecto: ___\nFecha de apertura: ___\nPotencia instalada (kWp): ___\nImporte total contrato (sin IVA): € ___\nCondiciones de pago: 30% firma / 40% material / 20% paneles / 10% entrega docs\n¿Lleva subvención? Sí / No → cuál: ___\n¿Vierte excedentes? Sí / No\nFecha estimada inicio obra: ___\nFecha estimada fin obra: ___\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n4. OBSERVACIONES TÉCNICAS-COMERCIAL\n━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ Ingeniería-Comercial: anota aquí todo lo relevante visto en la visita.\n\nTipo de cubierta: teja / chapa / hormigón / plana\n\n• Estado de la cubierta: ___\n• Medidas de Seguridad: ( Linea de vida, tapado de lucerarios etc)\n• Obstáculos detectados (chimeneas, antenas, árboles): ___\n• Acceso a cubierta: fácil / difícil / necesita plataforma elevadora\n• Estado del cuadro eléctrico: ___\n• Condicionantes especiales: ___\n• Batería prevista: Sí / No / En el futuro\n• Otros: ___\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n5. OBSERVACIONES COMERCIALES\n━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ Comercial: anota aquí todo lo relevante del cliente y el acuerdo.\n\n\n• Urgencia: tiene prisa / sin prisa / fecha concreta: ___\n• Descuentos o condiciones pago diferentes.\n• Acuerdos verbales o condiciones especiales: ___\n• Otros: ___\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n6. OBSERVACIONES ADMINISTRATIVAS\n━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ Administración: anota aquí todo lo relevante para facturar correctamente.\n_\n• ¿Factura a nombre de empresa? Sí / No → datos: _____\n• Condiciones de pago especiales: ___\n• Subvención vinculada a factura: Sí / No\n• Otros: ___"
+    },
+    {
+      "title": "ENLACES Y DOCUMENTOS CLAVE DEL PROYECTO",
+      "body": "Centralizar aquí todos los enlaces y referencias importantes:\n\nDROPBOX:\n→ Carpeta del proyecto: [pegar enlace]\n\nREGISTRO DE HORAS:\n→ Proyecto: [indicar nombre]\n\nOTROS:\n→ Presupuesto aceptado: [pegar enlace]\n→ Contrato firmado: [pegar enlace]\n→ Proyecto técnico: [pegar enlace]\n\n→ Añadir cualquier otro enlace relevante que el equipo necesite tener a mano."
+    },
+    {
+      "title": "GUÍA DE PLAZOS — Tiempos máximos por tarea crítica",
+      "body": "PLAZOS DE REFERENCIA DEL PROYECTO\nSi se supera algún plazo → comentar en la tarea afectada y notificar a Coordinación.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFASE 2 — CONTRATO\n━━━━━━━━━━━━━━━━━━━━━━━━\n• Redactar contrato → máximo 3 días desde apertura del expediente\n• Enviar al cliente → mismo día que se redacta\n• Llamar al cliente → mismo día que se envía\n• Contrato firmado recibido → máximo 3 días desde el envío\n• Si no hay respuesta en 2 días → Comercial contacta al cliente\n• Factura 30% → máximo 1 día después de recibir contrato firmado\n━━━━━━━━━━━━━━━━━━━━━━━━\nFASE 3 — PROYECTO TÉCNICO Y LICENCIAS\n━━━━━━━━━━━━━━━━━━━━━━━━\n\n• Proyecto técnico redactado → máximo 7 días desde cobro del anticipo\n• Licencia de obras solicitada → máximo 5 días tras proyecto técnico\n• Plan de Seguridad y apertura centro de trabajo → OBLIGATORIO completar mínimo 48h antes del inicio de obra\n• Si la licencia tarda más de 30 días → notificar al cliente y a Coordinación\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFASE 4 — LOGÍSTICA Y PREOBRA\n━━━━━━━━━━━━━━━━━━━━━━━━\n• Reservar grúa → mínimo 1 semana antes del inicio de obra\n• Confirmar entrega de estructura → mínimo 5 días antes del inicio\n• Confirmar subcontrata → mínimo 5 días antes del inicio\n• Volver a avisar a  logística , subcontrata y obras → mínimo 48h antes del inicio de obra\n• Factura 40% → a la recepción del material\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFASE 5 — EJECUCIÓN\n━━━━━━━━━━━━━━━━━━━━━━━━\n• Registro de Cambios → actualizar máximo 24h tras cualquier cambio\n• Factura 20% → realizar el mismo día que paneles quedan instalados\n• Coordinar OCA → iniciar gestión mínimo 5 días antes del fin de obra\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFASE 6 — LEGALIZACIÓN\n━━━━━━━━━━━━━━━━━━━━━━━━\n• Solicitar CIE/Boletín → máximo 3 días tras puesta en marcha\n• Alta autoconsumo → solicitar el mismo día que obtención del CIE\n• Entrega documentación al cliente → máximo 3 días tras tener toda la documentación\n• Factura 10% → realizar el mismo día de la entrega de documentación\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFASE 7 — CIERRE ECONÓMICO\n━━━━━━━━━━━━━━━━━━━━━━━━\n• Conciliación económica → máximo 15 días desde el último cobro\n• Si no se cobra en 10 días → escalar a Coordinación\n• Cierre del proyecto en Asana → máximo 30 días desde entrega de documentación"
+    },
+    {
+      "title": "REGISTRO DE CAMBIOS — actualiza aquí cada modificación",
+      "body": "Categoría: PRESUPUESTO/CONTRATO\nResponsable: Ingeniería\n\n⚠️ TAREA CRÍTICA — Ingeniería debe actualizar este registro CADA VEZ que haya cualquier cambio sobre el presupuesto inicial, sea del tipo que sea.\n\nREGLA: Ninguna factura se puede emitir si este registro no está actualizado a esa fecha, excepto la primera que se emitirá a la firma del contrato. Ingeniería tiene que poner un comentario con la fecha del día que se tenga que facturar indicando que está actualizado: \"dd/mm/aaaa ACTUALIZADO\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nCONTRATO INICIAL DE REFERENCIA\n━━━━━━━━━━━━━━━━━━━━━━━━\nImporte total contrato (sin IVA): € ___\nEquipos principales contratados:\n• Paneles: ___ uds modelo ___\n• Inversor: ___ modelo ___\n• Estructura: ___\n• Batería (si aplica): ___\nPotencia total (kWp): ___\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nCAMBIOS REGISTRADOS\n━━━━━━━━━━━━━━━━━━━━━━━━\nAñadir un bloque por cada cambio:\n\nCAMBIO 1:\n• Fecha: ___\n• Qué ha cambiado: ___\n• Motivo: ___\n• Impacto económico: + / - € ___\n• Nuevo importe total contrato: € ___\n\nCAMBIO 2:\n• Fecha: ___\n• Qué ha cambiado: ___\n• Motivo: ___\n• Impacto económico: + / - € ___\n• Nuevo importe total contrato: € ___\n\n(Añadir tantos bloques como cambios haya)\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nRESUMEN ACTUALIZADO\n━━━━━━━━━━━━━━━━━━━━━━━━\nImporte contrato original: € ___\nTotal modificaciones: + / - € ___\nIMPORTE TOTAL VIGENTE: € ___\n\nEste importe es el que usan los albaranes de facturación.\nAdministración: consulta siempre este registro antes de emitir cualquier factura."
+    },
+    {
+      "title": "LÍMITES DE ESCALACIÓN — Quién decide qué sin consultar al CEO",
+      "body": "REGLAS DE ESCALACIÓN POR DEPARTAMENTO\nObjetivo: reducir las consultas innecesarias al Sergio\nLeer antes de empezar el proyecto. Aplicar durante toda la ejecución.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nINGENIERÍA puede decidir sin consultar:\n━━━━━━━━━━━━━━━━━━━━━━━━\n     Cambios de material equivalente (mismas prestaciones, mismo precio ± 5%)\n     Ajustes menores de layout que no afectan a la potencia contratada\n     Cambios de proveedor de estructura o cableado sin impacto económico\n     Coordinación de fechas con subcontrata y proveedores\n    Resolución de incidencias técnicas de obra sin impacto económico\n     Comunicar al cliente actualizaciones de estado rutinarias\n\nIngeniería escala a COMERCIAL cuando:\n⚠️ Cualquier cambio que afecte al precio del cliente\n⚠️ Cambio de equipo principal (paneles, inversor, batería) por modelo diferente\n⚠️ Reducción de potencia o prestaciones respecto al contrato\n⚠️ Incidencia grave en obra que pueda afectar al plazo comprometido con el cliente\n\n🔴 El cliente amenaza con cancelar el contrato\n🔴 Desviación de costes superior al 15% del presupuesto\n🔴 Problema técnico sin solución conocida que paraliza la obra\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nADMINISTRACIÓN puede decidir sin consultar:\n━━━━━━━━━━━━━━━━━━━━━━━━\n     Emitir facturas una vez que se haya completado el hito anterior\n     Gestionar cobros y recordatorios hasta 10 días de retraso\n     Procesar pagos a proveedores dentro de las condiciones pactadas\n     Archivar y organizar documentación\n\nAdministración escala a COORDINACIÓN cuando:\n⚠️ Factura no cobrada pasados 10 días del vencimiento\n⚠️ Cliente disputa el importe de una factura\n⚠️ Proveedor reclama un pago con discrepancias\n⚠️ Duda sobre los datos del albarán que Ingeniería no resuelve en 24h\n\nAdministración escala al CEO cuando:\n🔴 Impagado superior a 30 días sin resolución\n🔴 Disputa económica con el cliente que supere €1.000\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nCOORDINACIÓN puede decidir sin consultar:\n━━━━━━━━━━━━━━━━━━━━━━━━\n     Crear y organizar expedientes y carpetas\n     Hacer seguimiento del avance del proyecto y reclamar tareas atrasadas\n     Gestionar recordatorios y seguimientos de cobro hasta 30 días\n     Cerrar proyectos completados en Asana\n\nCoordinación escala al CEO cuando:\n🔴 Cliente insatisfecho que requiere intervención directiva\n🔴 Desviación de plazo superior a 2 semanas respecto al comprometido\n🔴 Proyecto bloqueado por causa externa sin solución (administración, distribuidora...)\n🔴 Cualquier situación que pueda derivar en reclamación legal\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nREGLA GENERAL\n━━━━━━━━━━━━━━━━━━━━━━━━\nSi tienes duda de si escalar → escala. Es mejor una consulta de más que un error de €1.000."
+    },
+    {
+      "title": "Actualización semanal al cliente",
+      "body": "Categoría: LLAMADAS CLIENTE\nResponsable: Ingeniería\nFrecuencia: cada 7 días durante toda la ejecución de obra\n\n⚠️ OBJETIVO: Que el cliente NUNCA tenga que llamar para preguntar cómo va su instalación.\nCada llamada del cliente que no esperábamos = un fallo de comunicación proactiva.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nCONTENIDO MÍNIMO DEL MENSAJE OBRAS GRANDES\n━━━━━━━━━━━━━━━━━━━━━━━━\nCanal: email o WhatsApp (el que prefiera el cliente → ver OBSERVACIONES COMERCIALES)\n\nEstructura del mensaje:\n1. Qué se ha hecho cada 2 días debes de comunicarse con el cliente, es importante ser proactivo y que nos pregunte el cliente.\n2. Qué está previsto para la próxima semana\n3. Si hay alguna incidencia → explicar brevemente y cómo se está resolviendo\n4. Si necesitamos algo del cliente → indicarlo claramente\n\nEjemplo:\n'Buenos días [nombre], te escribimos para contarte cómo va tu instalación.\nEsta semana hemos [acción]. La próxima semana está previsto [acción].\nTodo va según lo planificado. Cualquier duda, estamos a tu disposición.'\n\nEjemplo:\n'Buenos días [nombre], te escribimos para contarte cómo va tu instalación.\nEsta semana hemos [acción]. La próxima semana está previsto [acción].\nTodo va según lo planificado. Cualquier duda, estamos a tu disposición.'\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nREGISTRO\n━━━━━━━━━━━━━━━━━━━━━━━━\nAnotar en los comentarios de esta tarea:\n• Fecha del mensaje: ___\n• Canal usado: ___\n• Resumen de lo comunicado: ___\n• Respuesta del cliente (si la hay): ___\n\nEsta tarea NO se marca como completada. Se usa como registro acumulativo de todas las comunicaciones con el cliente durante la obra."
+    }
+  ],
+  "steps": [
+    {
+      "key": "ficha-proyecto",
+      "name": "Completar 📌 FICHA DEL PROYECTO en OBSERVACIONES",
+      "phase": "FASE 1 — Estudio y oferta comercial",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PRESUPUESTO/CONTRATO\nResponsable: Ingeniería\n\nPRIMERA TAREA DE TODO PROYECTO. Ejecutar en cuanto el presupuesto es aceptado por el cliente.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nACCIONES\n━━━━━━━━━━━━━━━━━━━━━━━━\n• 5. Completar 📌 FICHA DEL PROYECTO en OBSERVACIONES\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n📣 AVISO AL COMPLETAR\n━━━━━━━━━━━━━━━━━━━━━━━━\nCuando marques esta tarea como completada → deja un comentario:\n\"Expediente abierto y ficha completa. Código [XXX]. Administración, puedes empezar el contrato.\"",
+      "checklist": [],
+      "duration": 2,
+      "duration_source": "estimado",
+      "depends_on": [],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [],
+      "uses": []
+    },
+    {
+      "key": "contrato",
+      "dropbox_folder": "01_CONTRATO INSTALACION, MANTENIMIENTO Y OFERTA ECONOMICA",
+      "name": "Redactar contrato con las condiciones del presupuesto cerrado",
+      "phase": "FASE 2 — Contrato y primera factura (30%)",
+      "department": "ADMINISTRACIÓN",
+      "description": "Categoría: PRESUPUESTO/CONTRATO\nResponsable: Administración\n\nCon el presupuesto aceptado, redactar el contrato recogiendo exactamente las condiciones pactadas.\n\nRedactar contrato → máximo 3 días desde apertura del expediente\n• Enviar al cliente → mismo día que se redacta\n• Contrato firmado recibido → máximo 3 días desde el envío\n• Si no hay respuesta en 2 días → Comercial contacta al cliente\n\nEl contrato debe incluir:\n• Datos del cliente (nombre, NIF/CIF, dirección fiscal)\n• Datos de la instalación (dirección, potencia, equipos)\n• Alcance exacto del trabajo\n• Importe total (sin IVA y con IVA)\n• Condiciones de pago: 30% firma / 40% material / 20% paneles / 10% entrega docs\n• Plazos estimados\n• Garantías y penalizaciones\n• Condiciones especiales si las hay\n\n⚠️ Cualquier condición no incluida en el presupuesto → validar con Comercial antes.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\n📣 AVISO AL COMPLETAR\n━━━━━━━━━━━━━━━━━━━━━━━━\nCuando el contrato esté firmado y guardado → deja un comentario:\n\"Contrato firmado recibido y guardado en Dropbox. Facturar primer pago del 30%.\"",
+      "checklist": [
+        "Redactar contrato con condiciones del presupuesto cerrado",
+        "Enviar contrato al cliente para firma",
+        "Contrato firmado recibido y guardado"
+      ],
+      "duration": 6,
+      "duration_source": "plazos",
+      "depends_on": [
+        "ficha-proyecto"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Contrato firmado por el cliente"
+      ],
+      "uses": []
+    },
+    {
+      "key": "factura-30",
+      "dropbox_folder": "05_FACTURAS EMITIDAS",
+      "payment_stage": 0,
+      "name": "Emitir factura anticipo 30% y confirmar cobro — GATE FASE 3",
+      "phase": "FASE 2 — Contrato y primera factura (30%)",
+      "department": "ADMINISTRACIÓN",
+      "description": "Categoría: PRESUPUESTO/CONTRATO\nResponsable: Administración\n\nEjecutar cuando el contrato esté firmado por el cliente.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nCHECKLIST ANTES DE EMITIR\n━━━━━━━━━━━━━━━━━━━━━━━━\n• Contrato firmado recibido\n• Datos fiscales del cliente correctos\n• Tipo de factura: • Única (sin subvención) / • Por lotes (con subvención)\n\nEMITIR FACTURA:\n• Emitir en el programa de facturación\n• Enviar al cliente al email indicado.\n• Adjuntar factura en esta tarea\n\nCOBRO:\n• Anotar fecha de cobro cuando se reciba el pago\n• Adjuntar justificante de transferencia\n• Si no se cobra en 7 días → llamar para que haga el pago\n━━━━━━━━━━━━━━━━━━━━━━━━\n⛔ GATE — INICIO DE FASE 3\n━━━━━━━━━━━━━━━━━━━━━━━━\nLA FASE 3 NO EMPIEZA HASTA QUE ESTA TAREA ESTÉ COMPLETADA.\n\nCobro confirmado → marcar COMPLETADA → Ingeniería arranca Fase 3. Dejar un comentario \"Ingeniería, contrato firmado y factura cobrada, puedes empezar con la fase 3\".\n\nSin cobro confirmado → Fase 3 en espera.",
+      "checklist": [
+        "OPCIÓN A — SIN subvención → Factura total normal",
+        "OPCIÓN B — CON subvención → Factura desglosada por lotes"
+      ],
+      "duration": 1,
+      "duration_source": "plazos",
+      "depends_on": [
+        "contrato"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Factura de anticipo (30%)",
+        "Justificante de transferencia"
+      ],
+      "uses": [
+        "importe_total"
+      ]
+    },
+    {
+      "key": "proyecto-tecnico",
+      "name": "Redactar proyecto técnico completo",
+      "phase": "FASE 3 — Proyecto técnico y licencias",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PROYECTO\nResponsable: Amparo | Supervisión: Sergio\n\nAcciones:\n• Memoria técnica según normativa vigente (RD 244/2019, ITC-BT)\n• Esquema unifilar definitivo\n• Planos de instalación\n• Estudio de sombras y layout definitivo\n• Mediciones y presupuesto técnico\n\n⚠️ IMPORTANTE: Si hay cambios respecto al presupuesto inicial (equipos, potencia, configuración) → indicarlo AQUÍ en registro de cambios antes de continuar. Sergio debe validar.\n\nCuando terminado → marcar COMPLETADA.",
+      "checklist": [
+        "Memoria técnica según normativa vigente (RD 244/2019, ITC-BT)",
+        "Esquema unifilar definitivo",
+        "Planos de instalación",
+        "Estudio de sombras y layout definitivo",
+        "Mediciones y presupuesto técnico"
+      ],
+      "duration": 7,
+      "duration_source": "plazos",
+      "depends_on": [
+        "factura-30"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Proyecto técnico (memoria, esquema unifilar y planos)"
+      ],
+      "uses": [
+        "paneles_uds",
+        "paneles_modelo",
+        "inversor_uds",
+        "inversor_modelo",
+        "estructura",
+        "bateria",
+        "potencia_kwp"
+      ]
+    },
+    {
+      "key": "licencia-obras",
+      "name": "Solicitar licencia de obras / declaración responsable",
+      "phase": "FASE 3 — Proyecto técnico y licencias",
+      "department": "INGENIERÍA",
+      "description": "Categoría: LICENCIAS\nResponsable: Amparo\n\nAcciones:\n• Preparar documentación para el ayuntamiento\n• Presentar solicitud telemática y obtener tasas.\n• Enviar tasas al cliente para que realice el pago.\n• Hacer seguimiento hasta obtener autorización\n• Comunicar al cliente cuando esté concedida\n\nDocumentos a adjuntar:\n• Solicitud presentada (justificante de registro)\n• Justificante pago de tasas\n• Licencia/autorización concedida (cuando llegue)\n\nCuando concedida → marcar COMPLETADA.",
+      "checklist": [
+        "Preparar documentación para el ayuntamiento",
+        "Presentar solicitud telemática y obtener tasas.",
+        "Enviar tasas al cliente para que realice el pago.",
+        "Hacer seguimiento hasta obtener autorización",
+        "Comunicar al cliente cuando esté concedida"
+      ],
+      "duration": 30,
+      "duration_source": "plazos",
+      "depends_on": [
+        "proyecto-tecnico"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Solicitud presentada (justificante de registro)",
+        "Justificante de pago de tasas",
+        "Licencia o autorización concedida"
+      ],
+      "uses": [
+        "potencia_kwp"
+      ]
+    },
+    {
+      "key": "plan-seguridad",
+      "name": "Plan de seguridad y salud + apertura centro de trabajo",
+      "phase": "FASE 3 — Proyecto técnico y licencias",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PLAN DE SEGURIDAD\nResponsable: Amparo\n\nAcciones (se pueden hacer en paralelo con licencias):\n\n• Redactar Plan de Seguridad y Salud\n• Coordinar medidas de seguridad (líneas de vida, tapar lucernarios...)\n• Apertura del centro de trabajo ante la autoridad laboral\n• Coordinación de Seguridad y Salud (designar coordinador si obligatorio)\n• Comunicar a la empresa instaladora los requisitos de PRL\n\nDocumentos a adjuntar:\n• Plan de Seguridad y Salud aprobado\n• Justificante apertura centro de trabajo\n\nCuando completado → marcar COMPLETADA.",
+      "checklist": [
+        "Redactar Plan de Seguridad y Salud",
+        "Coordinar medidas de seguridad (líneas de vida, tapar lucernarios...)",
+        "Apertura del centro de trabajo ante la autoridad laboral",
+        "Coordinación de Seguridad y Salud (designar coordinador si obligatorio)",
+        "Comunicar a la empresa instaladora los requisitos de PRL"
+      ],
+      "duration": 3,
+      "duration_source": "estimado",
+      "depends_on": [
+        "proyecto-tecnico"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Plan de Seguridad y Salud",
+        "Justificante de apertura del centro de trabajo"
+      ],
+      "uses": []
+    },
+    {
+      "key": "pedidos-proveedores",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Solicitar presupuestos a proveedores y realizar pedidos",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: COTIZACIÓN/PROVEEDORES\nResponsable: Amparo\n\nAcciones:\n• Solicitar presupuesto de los distintos materiales de obra.\n• Solicitar cotización a subcontratas de los trabajos a realizar. \n\nDocumentos a adjuntar:\n• Ofertas de proveedores\n\nCuando se decida qué y dónde comprar y contratar → marcar COMPLETADA.",
+      "checklist": [
+        "Solicitar presupuesto de los distintos materiales de obra.",
+        "Solicitar cotización a subcontratas de los trabajos a realizar."
+      ],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "proyecto-tecnico"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Ofertas de proveedores"
+      ],
+      "uses": [
+        "paneles_uds",
+        "paneles_modelo",
+        "inversor_uds",
+        "inversor_modelo",
+        "estructura",
+        "bateria"
+      ]
+    },
+    {
+      "key": "entrega-estructura",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Coordinar entrega de estructura con proveedor",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PEDIDO\nResponsable: Ingeniería\n\nLO PRIMERO que hay que coordinar antes de que nadie vaya a obra.\nLa estructura debe llegar ANTES que la subcontrata para que puedan empezar a montar.\n\n     Proveedor de estructura confirmado: ___\n     Fecha de entrega acordada: ___\n     Dirección de entrega: ___\n     Persona de contacto en obra para recibir: ___\n     Confirmación escrita del proveedor adjunta\n\n⚠️ Si la fecha de entrega cambia → actualizar aquí y notificar a la subcontrata inmediatamente.\n\nCuando entrega confirmada → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "pedidos-proveedores"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Confirmación escrita del proveedor"
+      ],
+      "uses": [
+        "estructura"
+      ]
+    },
+    {
+      "key": "confirmar-subcontrata",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Confirmar fecha de inicio con subcontrata",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: DIRECCIÓN DE OBRA\nResponsable: Ingeniería\n\nCoordinar con la empresa instaladora la fecha exacta de inicio de obra.\nNO confirmar fecha hasta tener la estructura con fecha de entrega cerrada.\n\n     Empresa subcontrata: ___\n     Persona de contacto: ___\n     Fecha de inicio confirmada: ___\n     Nº de operarios previstos: ___\n     Confirmación escrita adjunta\n\nCuando confirmado → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 3,
+      "duration_source": "estimado",
+      "depends_on": [
+        "pedidos-proveedores"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Confirmación escrita de la subcontrata"
+      ],
+      "uses": []
+    },
+    {
+      "key": "entrega-paneles",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Coordinar entrega de paneles",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PEDIDO\nResponsable: Ingeniería\n\nDos opciones según las posibilidades de almacenamiento:\n\n• OPCIÓN A — Almacenamiento previo en obra\nEl cliente tiene espacio seguro para guardarlos antes.\nPedir entrega unos días antes para tenerlos listos cuando llegue la grúa.\n→ Fecha de entrega acordada: ___\n\n• OPCIÓN B — Entrega el mismo día o el día antes de la grúa\nNo hay espacio de almacenamiento o riesgo de robo.\nCoorinar entrega para el mismo día de la grúa o el día anterior.\n→ Fecha de entrega acordada: ___ (mismo día o día antes de la grúa)\n\nPROVEEDOR:\n     Empresa: ___\n     Paneles: ___ uds modelo ___\n     Fecha de entrega confirmada: ___\n     Albarán de entrega → adjuntar cuando llegue el material\n\nCuando pedido confirmado → indicar fecha de confirmación y adjuntar oferta.\n\n⚠️ Cuando llegue el material → verificar cantidad y estado → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "pedidos-proveedores"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Oferta o pedido confirmado",
+        "Albarán de entrega"
+      ],
+      "uses": [
+        "paneles_uds",
+        "paneles_modelo"
+      ]
+    },
+    {
+      "key": "entrega-inversores",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Coordinar entrega de inversores y baterías",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PEDIDO\nResponsable: Ingeniería\n\nDos opciones según las posibilidades de almacenamiento:\n\n• OPCIÓN A — Almacenamiento previo en obra\nEl cliente tiene espacio seguro para guardarlos antes.\nPedir entrega unos días antes para tenerlos listos cuando llegue la grúa.\n→ Fecha de entrega acordada: ___\n\n• OPCIÓN B — Entrega el mismo día o el día antes de la grúa\nNo hay espacio de almacenamiento o riesgo de robo.\nCoorinar entrega para el mismo día de la grúa o el día anterior.\n→ Fecha de entrega acordada: ___ (mismo día o día antes de la grúa)\n\nPROVEEDOR:\n     Empresa: ___\n     Inversores: ___ modelo ___\n     Baterías: ___ modelo ___\n     Fecha de entrega confirmada: ___\n     Albarán de entrega → adjuntar cuando llegue el material\n\nCuando pedido confirmado → indicar fecha de confirmación y adjuntar oferta.\n\n⚠️ Cuando llegue el material → verificar cantidad y estado → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "pedidos-proveedores"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Oferta o pedido confirmado",
+        "Albarán de entrega"
+      ],
+      "uses": [
+        "inversor_uds",
+        "inversor_modelo",
+        "bateria"
+      ]
+    },
+    {
+      "key": "entrega-electrico",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Coordinar entrega de material eléctrico",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PEDIDO\nResponsable: Ingeniería\n\nDos opciones según las posibilidades de almacenamiento:\n\n• OPCIÓN A — Almacenamiento previo en obra\nEl cliente tiene espacio seguro para guardarlos antes.\nPedir entrega unos días antes para tenerlos listos cuando llegue la grúa.\n→ Fecha de entrega acordada: ___\n\n• OPCIÓN B — Entrega el mismo día o el día antes de la grúa\nNo hay espacio de almacenamiento o riesgo de robo.\nCoorinar entrega para el mismo día de la grúa o el día anterior.\n→ Fecha de entrega acordada: ___ (mismo día o día antes de la grúa)\n\nPROVEEDOR:\n     Empresa: ___\n     Cableado CC: _____\n     Cableado AC: _____\n     Protecciones CC: _____\n     Protecciones AC: _____\n     Canalizaciones: ___ \n     Fecha de entrega confirmada: ___\n     Albarán de entrega → adjuntar cuando llegue el material\n\nCuando pedido confirmado → indicar fecha de confirmación y adjuntar oferta.\n\n⚠️ Cuando llegue el material → verificar cantidad y estado → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "pedidos-proveedores"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Oferta o pedido confirmado",
+        "Albarán de entrega"
+      ],
+      "uses": [
+        "potencia_kwp",
+        "inversor_modelo"
+      ]
+    },
+    {
+      "key": "factura-40",
+      "dropbox_folder": "05_FACTURAS EMITIDAS",
+      "payment_stage": 1,
+      "name": "Emitir factura llegada material 40% y confirmar cobro",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "ADMINISTRACIÓN",
+      "description": "Categoría: PRESUPUESTO/CONTRATO\nResponsable: Administración\n\n⚠️ HITO: Llegada del material principal a obra (paneles, inversor, estructura).\nSi falta algún dato → comentar aquí. NO llamar ni WhatsApp.\nSolo ejecutar cuando Ingeniería marque COMPLETADAS las tareas de entrega de estructura y entrega de paneles e inversores\n\n• Albarán de entrega de material recibido y adjunto\n• Material recibido en obra: • Paneles • Inversor • Estructura • Otro: ___\n• REGISTRO DE CAMBIOS revisado — importe vigente correcto\n• ¿Todo el material conforme al pedido? • Sí • No → diferencias: ___\n• Importe: 40% del importe vigente del Registro de Cambios\n• IVA 21% industrial\n• Si hay subvención: emitir por lotes según Opción B.\n\n\nEMITIR:\n• Emitir en el programa de facturación\n• Enviar al cliente al email indicado en Observaciones\n• Adjuntar factura en esta tarea\n\nCOBRO:\n• Anotar fecha de cobro cuando se reciba el pago\n• Adjuntar justificante de transferencia\n• Si no se cobra en 10 días → comentar en esta tarea\n• Marcar COMPLETADA cuando cobrado",
+      "checklist": [
+        "INSTRUCCIONES PARA ADMINISTRACIÓN",
+        "OPCIÓN A — SIN subvención → Factura total normal",
+        "OPCIÓN B — CON subvención → Factura desglosada por lotes"
+      ],
+      "duration": 1,
+      "duration_source": "estimado",
+      "depends_on": [
+        "entrega-estructura",
+        "entrega-paneles",
+        "entrega-inversores",
+        "entrega-electrico"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Albarán de entrega del material",
+        "Factura 40%",
+        "Justificante de transferencia"
+      ],
+      "uses": [
+        "importe_total"
+      ]
+    },
+    {
+      "key": "plataforma-elevadora",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Reservar plataforma elevadora (si cubierta no accesible)",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PEDIDO\nResponsable: Ingeniería\n\nEvaluar en la visita si la cubierta es accesible o no.\n\n¿Necesita plataforma elevadora?\n• NO → marcar COMPLETADA indicando 'No necesaria'\n• SÍ → gestionar:\n\n     Empresa de alquiler contactada: ___\n     Tipo de plataforma necesaria: ___\n     Fecha de inicio alquiler: ___\n     Fecha de fin estimada: ___\n     Coste: € ___ → actualizar Albarán Base\n     Confirmación adjunta\n\nCuando gestionado → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 1,
+      "duration_source": "estimado",
+      "depends_on": [
+        "confirmar-subcontrata"
+      ],
+      "milestone": false,
+      "optional": true,
+      "default_included": false,
+      "deliverables": [
+        "Confirmación de la reserva"
+      ],
+      "uses": []
+    },
+    {
+      "key": "reservar-grua",
+      "dropbox_folder": "02_PROVEEDORES",
+      "name": "Reservar grúa para izado de paneles",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PEDIDO\nResponsable: Ingeniería\n\n⚠️ Reservar con MÍNIMO 1 SEMANA de antelación al inicio de obra.\n\nPASO 1 — Al confirmar fecha de inicio de obra:\n     Contactar empresa de grúa / pluma\n     Reservar fecha aproximada: inicio obra + 3-5 días (tiempo estimado montaje estructura)\n     Tipo de grúa necesaria: ___\n     Coste: € ___ → actualizar Registro de Cambios si aplica\n     Confirmación adjunta\n\nPASO 2 — Durante la obra:\nCuando la subcontrata haya terminado el montaje de estructura → confirmar con ellos la fecha exacta del izado y avisar a la empresa de grúa para afinar el día concreto.\n\nFecha reservada inicialmente: ___\nFecha definitiva confirmada con subcontrata: ___\n\nCuando fecha definitiva confirmada → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 1,
+      "duration_source": "estimado",
+      "depends_on": [
+        "confirmar-subcontrata"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Confirmación de la reserva de grúa"
+      ],
+      "uses": []
+    },
+    {
+      "key": "gate-logistica",
+      "name": "GATE — Logística confirmada, autorizado inicio de obra",
+      "phase": "FASE 4 — Compras, proveedores y coordinación de obra",
+      "department": "",
+      "description": "Categoría: PEDIDO\nResponsable: Ingeniería\n\nAntes de autorizar el inicio de obra verificar que TODO está confirmado:\n\n• Estructura: fecha de entrega confirmada\n• Subcontrata: fecha de inicio confirmada\n• Plataforma elevadora: confirmada o descartada\n• Grúa: reservada con fecha\n• Paneles e inversores: fecha de entrega coordinada con grúa\n• Acceso a la obra comunicado al cliente\n\n⚠️ Si alguno de estos puntos no está confirmado → NO autorizar inicio.\nEsperar a tener todo cerrado antes de dar el OK a la subcontrata.\n\nCuando todo confirmado → marcar COMPLETADA → la subcontrata puede arrancar.",
+      "checklist": [],
+      "duration": 1,
+      "duration_source": "estimado",
+      "depends_on": [
+        "licencia-obras",
+        "plan-seguridad",
+        "entrega-estructura",
+        "confirmar-subcontrata",
+        "entrega-paneles",
+        "entrega-inversores",
+        "entrega-electrico",
+        "reservar-grua",
+        "plataforma-elevadora"
+      ],
+      "milestone": true,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [],
+      "uses": []
+    },
+    {
+      "key": "reunion-arranque",
+      "name": "Reunión de arranque con subcontrata",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "INGENIERÍA",
+      "description": "Categoría: DIRECCIÓN DE OBRA\nResponsable: Ingeniería\n\nAntes de empezar la obra, reunión con el jefe de instalación de la subcontrata.\n\n     Revisar proyecto técnico completo con el jefe de instalación\n     Entregar planos y esquemas\n     Revisar Plan de Seguridad y Salud\n     Confirmar planning de trabajo día a día\n     Verificar que todo el material está o llega en plazo\n     Comunicar al cliente la fecha exacta de inicio\n\nCuando realizada → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 1,
+      "duration_source": "estimado",
+      "depends_on": [
+        "gate-logistica"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [],
+      "uses": []
+    },
+    {
+      "key": "montaje-paneles",
+      "name": "Montaje de estructura e izado y colocación de paneles",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "INGENIERÍA",
+      "description": "Categoría: DIRECCIÓN DE OBRA\nResponsable: Ingeniería (supervisión) + Subcontrata (ejecución)\n\nEsta tarea cubre dos fases consecutivas de la obra:\n\nFASE A — Montaje de estructura soporte:\n     Estructura entregada y en obra\n     Montaje según planos del proyecto\n     Verificar anclajes, nivelación y distancias\n     Fotos del montaje de estructura\n→ Cuando terminada la estructura → confirmar fecha definitiva de grúa con la subcontrata\n\nFASE B — Izado y colocación de paneles con grúa:\n     Grúa en obra y operativa en la fecha acordada\n     Paneles subidos a cubierta\n     Colocados según layout del proyecto\n     Fijación mecánica verificada\n     Fotos de paneles colocados (mínimo 3)\n\n⚠️ Una vez terminada esta tarea → indicar a Administración que emita la factura correspondiente al 20%.\n\nCuando estructura + paneles completados → marcar COMPLETADA.",
+      "checklist": [
+        "FASE A — Montaje de estructura soporte",
+        "FASE B — Izado y colocación de paneles con grúa"
+      ],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "reunion-arranque"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Fotos del montaje de estructura",
+        "Fotos de paneles colocados (mínimo 3)"
+      ],
+      "uses": [
+        "paneles_uds",
+        "paneles_modelo",
+        "estructura"
+      ]
+    },
+    {
+      "key": "factura-20",
+      "dropbox_folder": "05_FACTURAS EMITIDAS",
+      "payment_stage": 2,
+      "name": "Emitir factura estructura y paneles instalados 20% y confirmar cobro",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "ADMINISTRACIÓN",
+      "description": "Categoría: PRESUPUESTO/CONTRATO\nResponsable: Administración\n\nSolo ejecutar cuando la tarea anterior esté completada.\n\n• Confirmación de estructura y paneles instalados recibida\n• REGISTRO DE CAMBIOS revisado — importe vigente correcto\n• Importe: 20% del importe vigente del Registro de Cambios\n• IVA correcto: 21% industrial\n• Si hay subvención: emitir por lotes según Opción B del albarán\n\nEMITIR:\n• Emitir en el programa de facturación\n• Enviar al cliente al email indicado en Observaciones\n• Adjuntar factura en esta tarea\n\nCOBRO:\n• Anotar fecha de cobro cuando se reciba el pago\n• Adjuntar justificante de transferencia\n• Si no se cobra en 7 días → comentar en esta tarea, mencionando a COORDINACIÓN.\n• Marcar COMPLETADA cuando cobrado",
+      "checklist": [
+        "INSTRUCCIONES PARA ADMINISTRACIÓN",
+        "OPCIÓN A — SIN subvención → Factura total normal",
+        "OPCIÓN B — CON subvención → Factura desglosada por lotes"
+      ],
+      "duration": 1,
+      "duration_source": "plazos",
+      "depends_on": [
+        "montaje-paneles"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Factura 20%",
+        "Justificante de transferencia"
+      ],
+      "uses": [
+        "importe_total"
+      ]
+    },
+    {
+      "key": "coordinar-oca",
+      "name": "CRÍTICO — Coordinar OCA antes de liberar a los electricistas",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "",
+      "description": "Categoría: FINAL DE OBRA/OCA\nResponsable: Ingeniería\n\n⚠️ TAREA CRÍTICA — No liberar a los electricistas hasta tener fecha de OCA confirmada o inspección ya realizada.\n\nPor qué es crítico:\nSi la OCA detecta una incidencia después de que los electricistas se hayan ido, hay que organizar un segundo viaje de instalador + ingeniería + OCA. Coste innecesario y retraso en la legalización.\n\nOBJETIVO: que la OCA venga mientras los electricistas todavía están en obra o recién terminada la instalación.\n\nACCIONES:\n     Contactar OCA y solicitar fecha de inspección\n     Coordinar fecha con cliente y con la subcontrata\n     OCA viene → realiza inspección\n\n• INSPECCIÓN FAVORABLE → marcar COMPLETADA → electricistas liberados\n• INSPECCIÓN CON INCIDENCIAS → anotar aquí las incidencias → resolver en el momento → OCA revisa → marcar COMPLETADA cuando resuelta\n\nFecha inspección OCA: ___\nResultado: • Favorable • Con incidencias (detalle: ___)",
+      "checklist": [],
+      "duration": 3,
+      "duration_source": "estimado",
+      "depends_on": [
+        "montaje-paneles"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [],
+      "uses": []
+    },
+    {
+      "key": "cableado",
+      "name": "Cableado DC, cuadros, inversor y conexiones AC",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "INGENIERÍA",
+      "description": "Categoría: DIRECCIÓN DE OBRA\nResponsable: Ingeniería (supervisión) + Subcontrata (ejecución)\n\n     Cableado DC: strings, conectores MC4, protecciones\n     Caja de strings (si aplica)\n     Instalación y fijación del inversor\n     Cableado AC hasta cuadro\n     Cuadro de protecciones AC\n     Puesta a tierra: estructura, marcos paneles e inversor\n     Protectores de sobretensión DC y AC\n     Sistema de monitorización conectado\n\nCualquier duda o incidencia del instalador → anotar en tarea 'Seguimiento de obra'.\n\nCuando completado → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 4,
+      "duration_source": "estimado",
+      "depends_on": [
+        "coordinar-oca"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [],
+      "uses": [
+        "paneles_uds",
+        "inversor_uds",
+        "inversor_modelo",
+        "bateria",
+        "potencia_kwp"
+      ]
+    },
+    {
+      "key": "seguimiento-obra",
+      "name": "Seguimiento de obra y gestión de incidencias",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "INGENIERÍA",
+      "description": "Categoría: DIRECCIÓN DE OBRA\nResponsable: Ingeniería\n\nDurante toda la ejecución, Ingeniería hace seguimiento y resuelve las dudas e incidencias que surgen.\n\nSEGUIMIENTO DIARIO:\n• Llamada / visita con el instalador para ver el avance\n• Resolver dudas técnicas que surjan en obra\n• Documentar en comentarios de esta tarea cualquier incidencia\n\nINCIDENCIAS:\n• Si la incidencia afecta al presupuesto → actualizar REGISTRO DE CAMBIOS inmediatamente\n\nFOTOGRAFÍAS DE AVANCE:\n• Foto al final de cada jornada\n\n⚠️ Tarea permanece abierta durante toda la obra.",
+      "checklist": [],
+      "duration": 12,
+      "duration_source": "estimado",
+      "depends_on": [
+        "reunion-arranque"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [],
+      "uses": []
+    },
+    {
+      "key": "puesta-en-marcha",
+      "name": "Puesta en marcha y seguimiento 48-72h",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "INGENIERÍA",
+      "description": "Categoría: DIRECCIÓN DE OBRA\nResponsable: Ingeniería\n\nUna vez toda la instalación está completada:\n\n     Puesta en marcha del inversor\n     Verificar producción y comunicación con sistema de monitorización\n     Configurar acceso del cliente a la app de monitorización\n     Comprobar funcionamiento correcto durante 48-72h\n     Resolver cualquier incidencia detectada\n     Parte de obra firmado por el cliente\n\nCuando funcionamiento óptimo confirmado → marcar COMPLETADA → arranca Fase 6.",
+      "checklist": [
+        "Puesta en marcha del inversor",
+        "Verificar producción y comunicación con sistema de monitorización",
+        "Configurar acceso del cliente a la app de monitorización",
+        "Comprobar funcionamiento correcto durante 48-72h",
+        "Resolver cualquier incidencia detectada",
+        "Parte de obra firmado por el cliente"
+      ],
+      "duration": 3,
+      "duration_source": "plazos",
+      "depends_on": [
+        "cableado"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Parte de obra firmado por el cliente"
+      ],
+      "uses": [
+        "inversor_modelo",
+        "potencia_kwp"
+      ]
+    },
+    {
+      "key": "revision-material",
+      "name": "Revisión de material y devolución de sobrantes al almacén",
+      "kind": "material",
+      "phase": "FASE 5 — Ejecución de obra y dirección",
+      "department": "COORDINACIÓN",
+      "description": "Categoría: DIRECCIÓN DE OBRA\nResponsable: Coordinación\n\nCon la obra terminada, revisar el material que ha sobrado de la instalación. Solo puede sobrar material de los productos que lleva el presupuesto del proyecto, y como máximo lo que el proyecto emplea de cada uno.\n\nSi sobra algo, registrarlo en esta tarea: se suma al stock del producto en el inventario.",
+      "checklist": [
+        "Revisar el material que ha sobrado de la instalación",
+        "Registrar el sobrante de cada producto (se suma al stock)"
+      ],
+      "duration": 2,
+      "duration_source": "plazos",
+      "depends_on": [
+        "puesta-en-marcha"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [],
+      "uses": []
+    },
+    {
+      "key": "cie",
+      "name": "Registro de Baja Tensión y boletín eléctrico (CIE)",
+      "phase": "FASE 6 — Legalización y trámites",
+      "department": "INGENIERÍA",
+      "description": "Categoría: LEGALIZACIÓN\nResponsable: Ingeniería\n\n     Técnico competente firma el boletín eléctrico (CIE)\n     Presentar ante la Consejería de Industria de la CCAA\n     Obtener sello y número de registro\n     Adjuntar boletín registrado\n\nCuando registrado → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 3,
+      "duration_source": "plazos",
+      "depends_on": [
+        "puesta-en-marcha"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Boletín eléctrico (CIE) registrado"
+      ],
+      "uses": [
+        "potencia_kwp"
+      ]
+    },
+    {
+      "key": "oca-definitivo",
+      "name": "Obtener certificado OCA definitivo",
+      "phase": "FASE 6 — Legalización y trámites",
+      "department": "INGENIERÍA",
+      "description": "Categoría: FINAL DE OBRA/OCA\nResponsable: Ingeniería\n\nLa inspección ya se coordinó durante la obra (Fase 5).\nEsta tarea es para gestionar la documentación final del certificado.\n\n     Certificado OCA favorable recibido\n     Adjuntar certificado en esta tarea\n\nCuando recibido → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "puesta-en-marcha"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Certificado OCA favorable"
+      ],
+      "uses": []
+    },
+    {
+      "key": "final-obra",
+      "name": "Final de obra — tramitar ante ayuntamiento",
+      "phase": "FASE 6 — Legalización y trámites",
+      "department": "INGENIERÍA",
+      "description": "Categoría: FINAL DE OBRA/OCA\nResponsable: Ingeniería\n\n     Redactar certificado final de obra\n     Presentar ante el ayuntamiento con documentación requerida\n     Obtener licencia de primera ocupación si aplica\n     Adjuntar justificante de presentación\n\nCuando presentado → marcar COMPLETADA.",
+      "checklist": [
+        "Redactar certificado final de obra",
+        "Presentar ante el ayuntamiento con documentación requerida",
+        "Obtener licencia de primera ocupación si aplica",
+        "Adjuntar justificante de presentación"
+      ],
+      "duration": 5,
+      "duration_source": "estimado",
+      "depends_on": [
+        "puesta-en-marcha"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Justificante de presentación ante el ayuntamiento"
+      ],
+      "uses": []
+    },
+    {
+      "key": "alta-autoconsumo",
+      "name": "Alta autoconsumo y apertura expediente vertido de excedentes",
+      "phase": "FASE 6 — Legalización y trámites",
+      "department": "INGENIERÍA",
+      "description": "Categoría: LEGALIZACIÓN\nResponsable: Ingeniería\n\n: — Apertura expediente de vertido de excedentes (si aplica)\n• NO vierte excedentes → indicar 'No aplica' y marcar completada\n• SÍ vierte excedentes → gestionar:\n     Solicitar apertura del punto de vertido a la distribuidora\n     Documentación requerida adjunta\n     Seguimiento hasta confirmación\n     Verificar que el autoconsumo aparece correctamente en la próxima factura eléctrica del cliente\n\nCuando ambos trámites resueltos → marcar COMPLETADA.",
+      "checklist": [
+        "Solicitar apertura del punto de vertido a la distribuidora",
+        "Documentación requerida adjunta",
+        "Seguimiento hasta confirmación",
+        "Verificar que el autoconsumo aparece correctamente en la próxima factura eléctrica del cliente"
+      ],
+      "duration": 10,
+      "duration_source": "estimado",
+      "depends_on": [
+        "cie"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Documentación presentada a la distribuidora"
+      ],
+      "uses": [
+        "potencia_kwp"
+      ]
+    },
+    {
+      "key": "subvenciones",
+      "name": "Tramitar subvenciones (si aplica)",
+      "phase": "FASE 6 — Legalización y trámites",
+      "department": "INGENIERÍA",
+      "description": "Categoría: SUBVENCIÓN\nResponsable: Ingeniería\n\n• NO hay subvenciones → indicar 'No aplica' y marcar completada\n• SÍ hay subvenciones → gestionar:\n\n     Subvención solicitada: ___\n     Importe solicitado: € ___\n     Fecha de solicitud: ___\n     Nº de expediente: ___\n     Fecha estimada de resolución: ___\n     Documentación presentada adjunta\n\nActualizar esta tarea con cada avance del expediente.\n\nMarcar COMPLETADA cuando resuelta o definitivamente descartada.",
+      "checklist": [],
+      "duration": 10,
+      "duration_source": "estimado",
+      "depends_on": [
+        "final-obra"
+      ],
+      "milestone": false,
+      "optional": true,
+      "default_included": false,
+      "deliverables": [
+        "Documentación presentada de la subvención"
+      ],
+      "uses": []
+    },
+    {
+      "key": "dossier",
+      "name": "Preparar y Entregar dossier con documentación completa al cliente",
+      "phase": "FASE 6 — Legalización y trámites",
+      "department": "INGENIERÍA",
+      "description": "Categoría: PROYECTO\nResponsable: Ingeniería\n\nPreparar y entregar al cliente dossier completo con toda la documentación del proyecto:\n     Proyecto técnico completo (memoria, planos, esquemas)\n     Certificado OCA favorable\n     Boletín eléctrico / CIE registrado\n     Confirmación alta autoconsumo distribuidora\n     Garantías de equipos (paneles, inversor, estructura)\n     Manuales de uso y mantenimiento\n     Acceso configurado a app de monitorización (usuario + contraseña)\n     Instrucciones básicas de mantenimiento preventivo\n\nForma de entrega: email con acuse de recibo\n\n⚠️ Una vez entregada la documentación y marcada la tarea como COMPLETADA → Administración Emitir FACTURA final del 10% .\n\nCuando entregada y acuse de recibo del cliente → marcar COMPLETADA.",
+      "checklist": [],
+      "duration": 3,
+      "duration_source": "plazos",
+      "depends_on": [
+        "cie",
+        "oca-definitivo",
+        "final-obra",
+        "alta-autoconsumo"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Acuse de recibo del dossier por el cliente"
+      ],
+      "uses": [
+        "paneles_modelo",
+        "inversor_modelo"
+      ]
+    },
+    {
+      "key": "factura-10",
+      "dropbox_folder": "05_FACTURAS EMITIDAS",
+      "payment_stage": 3,
+      "name": "Emitir factura de Entrega documentación 10%",
+      "phase": "FASE 6 — Legalización y trámites",
+      "department": "ADMINISTRACIÓN",
+      "description": "Categoría: PROYECTO\nResponsable: Ingeniería → Administración\n\n⚠️ ULTIMA FACTURA — Administración NO factura hasta que NO esté COMPLETADA la tarea anterior.\nSi falta algún dato → comentar aquí. NO llamar ni WhatsApp.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nVERIFICACION PREVIA\n━━━━━━━━━━━━━━━━━━━━━━━━\n• REGISTRO DE CAMBIOS actualizado a hoy\n• OCA obtenida\n• Boletín BT / CIE registrado\n• Alta autoconsumo confirmada\n• Final de obra presentado\n• Documentación entregada al cliente (adjuntar acuse de recibo)\n• Cliente tiene acceso a monitorización\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nDATOS PARA FACTURAR\n━━━━━━━━━━━━━━━━━━━━━━━━\n→ Datos del cliente: ver OBSERVACIONES — Datos generales\n→ Importe vigente: ver REGISTRO DE CAMBIOS — Importe total vigente\n\nIMPORTE 10% FINAL:\nBase imponible (10% de € ___): € ___\n+ Extras pendientes no facturados (si los hay): € ___\nBase imponible total: € ___\nTotal factura: € ___\n\nCOMPROBACION FINAL:\n30% cobrado: € ___\n40% cobrado: € ___\n20% cobrado: € ___\n10% esta factura: € ___\nTOTAL = Importe vigente del registro: € ___\n\n• Cuadra → emitir\n• No cuadra → comentar aquí antes de emitir\n\n¿Este proyecto tiene subvención?\n• NO → una única factura\n• SÍ → desglosar por lotes (ver subtarea Opción B)",
+      "checklist": [
+        "OPCIÓN A — SIN subvención → Factura total normal",
+        "OPCIÓN B — CON subvención → Factura desglosada por lotes",
+        "INSTRUCCIONES PARA ADMINISTRACIÓN"
+      ],
+      "duration": 1,
+      "duration_source": "plazos",
+      "depends_on": [
+        "dossier"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Factura 10%",
+        "Justificante de transferencia"
+      ],
+      "uses": [
+        "importe_total"
+      ]
+    },
+    {
+      "key": "control-costes",
+      "dropbox_folder": "01_CONTRATO INSTALACION, MANTENIMIENTO Y OFERTA ECONOMICA",
+      "name": "Control de costes: real vs presupuesto",
+      "phase": "FASE 7 — Cierre económico y control de costes",
+      "department": "ADMINISTRACIÓN/COORDINACIÓN",
+      "description": "Categoría: PRESUPUESTO/CONTRATO\nResponsable: Encarna | Revisión: María\n\nCuando las 4 facturas estén cobradas, elaborar resumen económico del proyecto:\n\nINGRESOS:\n• Total facturado al cliente:  ___€ base imponible\n\n\nCOSTES REALES/ VS COSTES INICIALES\n__\n\nRESULTADO:\n• Margen bruto: € ___ ( ___% )\n• Desviación sobre presupuesto inicial: € ___ ( ___% )\n• Motivos de desviación: ___",
+      "checklist": [],
+      "duration": 15,
+      "duration_source": "plazos",
+      "depends_on": [
+        "factura-10"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Resumen económico: real frente a presupuesto"
+      ],
+      "uses": [
+        "importe_total"
+      ]
+    },
+    {
+      "key": "cierre-economico",
+      "name": "Verificación final y cierre económico",
+      "phase": "FASE 7 — Cierre económico y control de costes",
+      "department": "COORDINACIÓN",
+      "description": "Responsable: Coordinación\n\nAntes de cerrar el proyecto verificar:\n\nAdministracion verificar los importes cobrados a Coordinación\n• Factura anticipo 30%: emitida y cobrada\n• Factura llegada material 40%: emitida y cobrada\n• Factura estructura y paneles instalados 20%: emitida y cobrada\n• Factura final 10%: emitida y cobrada\n• Total cobrado = total contrato + extras\n\nTRÁMITES:\n• OCA obtenida\n• Boletín BT registrado\n• Alta autoconsumo confirmada\n• Final de obra presentado\n• Subvenciones gestionadas\n\nDOCUMENTACIÓN:\n• Dossier entregado al cliente\n• Carpeta Dropbox completa y ordenada\n• Registro de horas actualizado\n• Control de costes realizado\n\nSi todo correcto:\n• Marcar proyecto como COMPLETADO en Asana\n• Activar recordatorio revisión anual del cliente (+12 meses)\n• Notificar a Comercial para posible upselling (ampliación, batería, etc.)",
+      "checklist": [],
+      "duration": 3,
+      "duration_source": "estimado",
+      "depends_on": [
+        "control-costes"
+      ],
+      "milestone": false,
+      "optional": false,
+      "default_included": true,
+      "deliverables": [
+        "Carpeta de Dropbox completa y ordenada (enlace)"
+      ],
+      "uses": [
+        "importe_total"
+      ]
+    }
+  ]
+}
