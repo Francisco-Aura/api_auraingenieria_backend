@@ -36,6 +36,7 @@ public class PropuestaService {
     private final PresupuestoService presupuestos;
     private final PropuestaHtml propuestaHtml;
     private final PropuestaPptx propuestaPptx;
+    private final PropuestaPdf propuestaPdf;
 
     /** Las propuestas de un presupuesto, de la más reciente a la más antigua. */
     @Transactional(readOnly = true)
@@ -284,6 +285,19 @@ public class PropuestaService {
                     ("Propuesta " + nombre).replaceAll("[\\\\/:*?\"<>|]+", " ").strip() + ".html");
         } catch (RuntimeException e) {
             throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
+        }
+    }
+
+    /** La propuesta del presupuesto en curso en PDF (la presentación impresa con Chrome). Sin navegador en el servidor: 501 y el cliente cae al cuadro de impresión. */
+    public Documento pdfDeBorrador(PresupuestoGuardarRequest cuerpo) {
+        Documento html = htmlDeBorrador(cuerpo);
+        try {
+            byte[] pdf = propuestaPdf.generar(new String(html.contenido(), java.nio.charset.StandardCharsets.UTF_8));
+            return new Documento(pdf, html.nombre().replaceFirst("\\.html$", ".pdf"));
+        } catch (PropuestaPdf.SinNavegador e) {
+            throw new ErrorApi(HttpStatus.NOT_IMPLEMENTED, e.getMessage());
+        } catch (RuntimeException e) {
+            throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar el PDF: " + e.getMessage());
         }
     }
 

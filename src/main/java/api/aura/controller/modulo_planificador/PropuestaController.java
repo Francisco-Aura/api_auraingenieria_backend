@@ -82,6 +82,12 @@ public class PropuestaController {
         return descarga(propuestaService.htmlDeBorrador(cuerpo), MediaType.parseMediaType("text/html; charset=utf-8"));
     }
 
+    /** La misma propuesta en PDF; 501 si el servidor no tiene Chrome (el cliente ofrece entonces imprimir el HTML). */
+    @PostMapping("/budget/proposal-pdf")
+    public ResponseEntity<byte[]> pdfDelBorrador(@Valid @RequestBody PresupuestoGuardarRequest cuerpo) {
+        return descarga(propuestaService.pdfDeBorrador(cuerpo), MediaType.APPLICATION_PDF);
+    }
+
     private static ResponseEntity<byte[]> descarga(PropuestaService.Documento d, MediaType tipo) {
         String nombre = java.net.URLEncoder.encode(d.nombre(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
         return ResponseEntity.ok().contentType(tipo).header("Content-Disposition", "attachment; filename*=UTF-8''" + nombre).body(d.contenido());
