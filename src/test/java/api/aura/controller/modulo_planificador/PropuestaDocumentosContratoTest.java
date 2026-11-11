@@ -200,12 +200,15 @@ class PropuestaDocumentosContratoTest {
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/html")))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target", "propuesta-pruebas"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target", "propuesta-pruebas", "propuesta-borrador.html"), salida);
         var m = Pattern.compile("<script id=\"datos\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(salida);
         assertTrue(m.find());
         JsonNode datos = json.readTree(m.group(1));
         assertEquals(b.get("datos").get("customer").get("name").asText(), datos.get("client").asText(), "el cliente es el de los datos del presupuesto");
         assertEquals(b.get("total").asDouble(), datos.get("total").asDouble(), 0.001);
         assertEquals("", datos.get("logo").asText(), "sin propuesta no hay logo del cliente");
+        assertTrue(datos.get("warranty").get("panel_prod_years").asDouble() > 0 && datos.get("warranty").get("install_years").asInt() == 2);
         assertEquals(0, propuestas.count(), "no crea ninguna propuesta");
         assertEquals(0, presupuestos.count(), "no guarda el presupuesto");
     }
