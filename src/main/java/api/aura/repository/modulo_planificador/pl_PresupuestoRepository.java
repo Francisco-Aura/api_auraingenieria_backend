@@ -12,4 +12,7 @@ public interface pl_PresupuestoRepository extends JpaRepository<pl_Presupuesto, 
     List<pl_Presupuesto> findByEstado(String estado);
 
     List<pl_Presupuesto> findByOfertaId(String ofertaId);
+
+    /** Los presupuestos de un mismo cliente (un cliente potencial no tiene id: se buscan los que tampoco lo tienen). */
+    List<pl_Presupuesto> findByClienteTipoAndClienteId(String clienteTipo, Integer clienteId);
 }

@@ -76,6 +76,12 @@ class InventarioContratoTest {
     // ------------------------------------------------------------------ marcas
 
     @Test
+    void lasRespuestasPermitenIncrustarseSoloDesdeLaPropiaIntranetParaVerLosPdfEnPantalla() throws Exception {
+        // Con el valor por defecto de Spring (DENY) el navegador no deja ver la ficha técnica dentro de la ventana del producto
+        mvc.perform(get(BASE + "/brands")).andExpect(status().isOk()).andExpect(header().string("X-Frame-Options", "SAMEORIGIN"));
+    }
+
+    @Test
     void marcaSeCreaEnMayusculasSinEspaciosDeMasYNoSePuedeRepetir() throws Exception {
         peticionPost("/brands", "{\"name\":\"  ja   solar \"}")
                 .andExpect(status().isCreated())
