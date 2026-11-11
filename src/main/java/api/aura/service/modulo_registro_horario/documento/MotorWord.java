@@ -397,7 +397,7 @@ public final class MotorWord {
     // ---------------------------------------------------------------- alturas
 
     /** Altura estimada (twips) de un párrafo del cuerpo. */
-    private static int altoParrafo(Element p) {
+    static int altoParrafo(Element p) {
         Element ppr = hijoW(p, "pPr");
         int antes = 0, despues = 0;
         Integer linea = null;
