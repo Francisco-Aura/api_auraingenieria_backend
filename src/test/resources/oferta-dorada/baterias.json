@@ -1,0 +1,73 @@
+{
+ "fields": {
+  "potencia_kwp": {
+   "value": "22.5",
+   "source": "Propuesta técnica (pág. 2): Propuesta Técnica · 22,5 kWp · 40 · Sí · 1",
+   "confidence": "alta"
+  },
+  "paneles_uds": {
+   "value": "40",
+   "source": "Propuesta técnica (pág. 2): Propuesta Técnica · 22,5 kWp · 40 · Sí · 1",
+   "confidence": "alta"
+  },
+  "inversor_uds": {
+   "value": "1",
+   "source": "Propuesta técnica (pág. 2): Propuesta Técnica · 22,5 kWp · 40 · Sí · 1",
+   "confidence": "alta"
+  },
+  "paneles_modelo": {
+   "value": "JA Solar 550 Wp",
+   "source": "Equipos (pág. 3): JA Solar 550 wp · Huawei SUN2000-20KTL · BYD Battery Box 10 kWh",
+   "confidence": "alta"
+  },
+  "inversor_modelo": {
+   "value": "Huawei SUN2000-20KTL",
+   "source": "Equipos (pág. 3): JA Solar 550 wp · Huawei SUN2000-20KTL · BYD Battery Box 10 kWh",
+   "confidence": "alta"
+  },
+  "bateria": {
+   "value": "BYD Battery Box 10 kWh",
+   "source": "Equipos (pág. 3): JA Solar 550 wp · Huawei SUN2000-20KTL · BYD Battery Box 10 kWh",
+   "confidence": "media"
+  },
+  "importe_total": {
+   "value": "40000",
+   "source": "Propuesta económica (pág. 5): 40.000,00 euros",
+   "confidence": "media"
+  }
+ },
+ "project": {
+  "company": {
+   "value": "Solar Vega",
+   "source": "Nombre de la empresa: Solar Vega, S.L.U.",
+   "confidence": "alta"
+  },
+  "locality": {
+   "value": "Lorca",
+   "source": "Dirección: Avda. Juan Carlos I, nº 120, 30800 Lorca (Murcia)",
+   "confidence": "media"
+  },
+  "name": {
+   "value": "Instalación Solar Vega Lorca",
+   "source": "Empresa y localidad del presupuesto",
+   "confidence": "media"
+  }
+ },
+ "missing": [
+  "estructura"
+ ],
+ "notes": [
+  "Hay varios importes en el presupuesto; se ha tomado el mayor. Compruébalo antes de crear el proyecto.",
+  "El importe del presupuesto va sin IVA.",
+  "Forma de pago: 30 / 40 / 20 / 10 %, como en el contrato modelo."
+ ],
+ "client": {
+  "name": "Solar Vega, S.L.U.",
+  "address": "Avda. Juan Carlos I, nº 120, 30800 Lorca (Murcia)"
+ },
+ "extras": {
+  "garantia_producto": "12",
+  "garantia_produccion": "30",
+  "garantia_potencia": "87,4"
+ }
+}

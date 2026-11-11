@@ -1,0 +1,328 @@
+{
+ "pl_marcas": {
+  "Huawei": {
+   "nombre": "Huawei",
+   "logo": "data:image/png;base64,iVBORw0KGgo="
+  }
+ },
+ "pl_proveedores": {
+  "SUMEBA": {
+   "nombre": "SUMEBA"
+  }
+ },
+ "pl_equipos": {
+  "e1": {
+   "id": "e1",
+   "posicion": 0,
+   "categoria": "modulos",
+   "partida": "modulos",
+   "marca": "Aiko",
+   "modelo": "AIKO 615 Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "proveedor": "SUMEBA",
+   "unidad": "módulo",
+   "precio_unitario": 76.15,
+   "por_modulo": 1,
+   "cantidad_defecto": 1.0,
+   "atributos": {
+    "potencia_wp": 615,
+    "nota": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €"
+   },
+   "notas": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "muestra": 1,
+   "stock": 3.5,
+   "stock_minimo": 1.0,
+   "ficha_tecnica": "Aiko/ficha.pdf",
+   "ofertas": [
+    {
+     "supplier": "SUMEBA",
+     "price": 76.15
+    }
+   ],
+   "precio_revisado_el": "2026-10-20"
+  },
+  "e2": {
+   "id": "e2",
+   "posicion": 1,
+   "categoria": "inversores",
+   "partida": "inversores",
+   "marca": "",
+   "modelo": "",
+   "proveedor": "",
+   "unidad": "ud",
+   "precio_unitario": 0.0,
+   "por_modulo": 0,
+   "cantidad_defecto": 1.0,
+   "atributos": {},
+   "notas": "",
+   "muestra": 0,
+   "stock": 0.0,
+   "stock_minimo": 0.0,
+   "ficha_tecnica": "",
+   "ofertas": [],
+   "precio_revisado_el": null
+  }
+ },
+ "pl_historial_precios": {
+  "h1": {
+   "id": "h1",
+   "equipo_id": "e1",
+   "precio": 76.15,
+   "proveedor": "SUMEBA",
+   "ofertas": [
+    {
+     "supplier": "SUMEBA",
+     "price": 76.15
+    }
+   ],
+   "por": "Ana",
+   "fecha": "2026-10-01 08:30:15.123456"
+  }
+ },
+ "pl_meta": {
+  "price_review_baseline": {
+   "clave": "price_review_baseline",
+   "valor": "2026-10-01"
+  },
+  "price_review_notified": {
+   "clave": "price_review_notified",
+   "valor": "2026-10-20"
+  }
+ },
+ "pl_presupuestos": {
+  "b1": {
+   "id": "b1",
+   "nombre": "Presupuesto Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "propietario": "Ana",
+   "propietario_id": "7",
+   "estado": "validated",
+   "oferta_id": "o1",
+   "cliente_id": 12,
+   "cliente_tipo": "client",
+   "nombre_variante": "Con batería",
+   "datos": {
+    "rows": [
+     {
+      "a": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+      "n": 1.5
+     }
+    ],
+    "x": null
+   },
+   "kwp": 51.6,
+   "paneles": 80,
+   "total_presupuesto": 38700.5,
+   "version": 3,
+   "creado_el": "2026-09-01 10:00:00.000000",
+   "actualizado_el": "2026-09-02 11:00:01.000005",
+   "actualizado_por": "Luis"
+  }
+ },
+ "pl_propuestas": {
+  "pr1": {
+   "id": "pr1",
+   "presupuesto_id": "b1",
+   "version": 2,
+   "estado": "sent",
+   "nota": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "creado_el": "2026-09-03 00:00:00.000000",
+   "creado_por": "Ana",
+   "enviado_el": "2026-09-04 00:00:00.000000",
+   "enviado_por": "Ana",
+   "decidido_el": null,
+   "decidido_por": "",
+   "logo_cliente": "data:image/png;base64,AAAA"
+  }
+ },
+ "pl_proyectos": {
+  "p1": {
+   "id": "p1",
+   "propietario_id": "local",
+   "nombre": "Instalación Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "descripcion": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "fecha_inicio": "2026-10-01",
+   "documentos": [
+    {
+     "title": "Guía",
+     "body": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €"
+    }
+   ],
+   "linea_base": {
+    "importe_total": 38700
+   },
+   "cambios": [
+    {
+     "id": "c1",
+     "set": {
+      "paneles_uds": 90
+     }
+    }
+   ],
+   "presupuesto": {
+    "total": 1
+   },
+   "partes_contrato": {
+    "cliente": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €"
+   },
+   "contrato_generado_el": "2026-10-02 09:00:00.000000",
+   "archivo_contrato": "Contrato.pdf",
+   "plan_pagos": {
+    "stages": []
+   },
+   "creado_el": "2026-10-01 07:00:00.000000",
+   "ruta_dropbox": "/Proyectos/X",
+   "eliminado_el": null
+  },
+  "p2": {
+   "id": "p2",
+   "propietario_id": "local",
+   "nombre": "Borrado",
+   "descripcion": "",
+   "fecha_inicio": null,
+   "documentos": [],
+   "linea_base": {},
+   "cambios": [],
+   "presupuesto": {},
+   "partes_contrato": {},
+   "contrato_generado_el": null,
+   "archivo_contrato": "",
+   "plan_pagos": {},
+   "creado_el": "2026-11-06 10:47:34.819200",
+   "ruta_dropbox": "",
+   "eliminado_el": "2026-10-05 00:00:00.000000"
+  }
+ },
+ "pl_tareas_proyecto": {
+  "t1": {
+   "id": "t1",
+   "proyecto_id": "p1",
+   "nombre": "Redactar Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "descripcion": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "fase": "Inicio",
+   "departamento": "ADMINISTRACIÓN",
+   "posicion": 0,
+   "hito": 1,
+   "inicio": "2026-10-01",
+   "fin": "2026-10-03",
+   "fin_previsto": "2026-10-03",
+   "progreso": 100,
+   "estado": "done",
+   "motivo_estado": "",
+   "nota_estado": "",
+   "completada_el": "2026-10-03",
+   "nota_cierre": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "entregables": [
+    {
+     "key": "k",
+     "label": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+     "na": false
+    }
+   ],
+   "adjuntos": [
+    {
+     "id": "a",
+     "kind": "note",
+     "text": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €"
+    }
+   ],
+   "usa": [
+    "paneles_uds"
+   ],
+   "cambios_revisados": [
+    "c1"
+   ],
+   "etapa_pago": 0,
+   "importe_pago": 1000.5,
+   "etiqueta_pago": "30 %",
+   "carpeta_dropbox": "01",
+   "avisadas": [
+    "t2"
+   ],
+   "marcas_vencimiento": [
+    "due:2026-10-03"
+   ],
+   "depende_de": [],
+   "lista": [
+    {
+     "text": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+     "done": true
+    }
+   ],
+   "tipo": "material",
+   "creado_el": "2026-10-01 07:00:00.000000"
+  },
+  "t2": {
+   "id": "t2",
+   "proyecto_id": "p1",
+   "nombre": "Segunda",
+   "descripcion": "",
+   "fase": "",
+   "departamento": "",
+   "posicion": 0,
+   "hito": 0,
+   "inicio": "2026-10-04",
+   "fin": "2026-10-06",
+   "fin_previsto": null,
+   "progreso": 0,
+   "estado": "todo",
+   "motivo_estado": "",
+   "nota_estado": "",
+   "completada_el": null,
+   "nota_cierre": "",
+   "entregables": [],
+   "adjuntos": [],
+   "usa": [],
+   "cambios_revisados": [],
+   "etapa_pago": null,
+   "importe_pago": null,
+   "etiqueta_pago": "",
+   "carpeta_dropbox": "",
+   "avisadas": [],
+   "marcas_vencimiento": [],
+   "depende_de": [
+    "t1"
+   ],
+   "lista": [],
+   "tipo": "",
+   "creado_el": "2026-10-01 07:01:00.000000"
+  }
+ },
+ "pl_actividad": {
+  "ac1": {
+   "id": "ac1",
+   "proyecto_id": "p1",
+   "tarea_id": "t1",
+   "nombre_tarea": "Redactar",
+   "fecha": "2026-10-03 12:00:00.000001",
+   "actor": "Ana",
+   "tipo": "status",
+   "resumen": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "detalle": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €"
+  }
+ },
+ "pl_borradores": {
+  "d1": {
+   "id": "d1",
+   "nombre": "Borrador",
+   "datos": {
+    "form": {
+     "a": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €"
+    }
+   },
+   "actualizado_el": "2026-10-06 00:00:00.000000",
+   "actualizado_por": "Ana"
+  }
+ },
+ "pl_devoluciones_material": {
+  "m1": {
+   "id": "m1",
+   "proyecto_id": "p1",
+   "equipo_id": "e1",
+   "etiqueta": "AIKO",
+   "unidad": "módulo",
+   "cantidad": 2.5,
+   "nota": "Comilla ' y \"dobles\", barra \\ y \\n literal, salto\nde línea, tab\t, emoji 😀, ñandú «x» €",
+   "por": "Ana",
+   "fecha": "2026-10-07 00:00:00.000000"
+  }
+ }
+}
