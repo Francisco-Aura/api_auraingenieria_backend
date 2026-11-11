@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +42,9 @@ public class PresupuestoService {
     private static final Pattern ID_VALIDO = Pattern.compile("^[A-Za-z0-9-]{8,64}$");
     private static final int NIVEL_ADMIN = 1;
     private static final String SIN_IDENTIFICAR = "Sin identificar";
+    /** El nombre de un presupuesto es «Cliente · Proyecto»: lo que va tras este separador es el proyecto. */
+    private static final String SEPARADOR_PROYECTO = " · ";
+    private static final Pattern VERSION_FINAL = Pattern.compile("\\s*(\\(copia\\)|v\\d+)$");
     private static final DateTimeFormatter ISO_UTC = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSxxx");
 
     private final pl_PresupuestoRepository presupuestos;
@@ -119,6 +123,7 @@ public class PresupuestoService {
         b.setPaneles(cuerpo.getPaneles());
         b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
         b.setActualizadoPor(quien);
+        asignarOferta(b, false);
         presupuestos.save(b);
         return conDatos(b, null);
     }
@@ -135,6 +140,9 @@ public class PresupuestoService {
             String quien = b.getActualizadoPor().isEmpty() ? "Otra persona" : b.getActualizadoPor();
             throw new ErrorApi(HttpStatus.CONFLICT, quien + " ha guardado una versión más reciente de este presupuesto mientras lo tenías abierto.");
         }
+        String proyectoAntes = claveProyecto(b.getNombre());
+        String tipoAntes = b.getClienteTipo();
+        Integer clienteAntes = b.getClienteId();
         b.setNombre(cuerpo.getNombre().strip());
         b.setClienteId(cuerpo.getClienteId());
         b.setClienteTipo(cuerpo.getClienteTipo());
@@ -142,6 +150,9 @@ public class PresupuestoService {
         b.setKwp(cuerpo.getKwp());
         b.setPaneles(cuerpo.getPaneles());
         b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
+        boolean cambioDeProyecto = !proyectoAntes.equals(claveProyecto(b.getNombre()))
+                || !Objects.equals(tipoAntes, b.getClienteTipo()) || !Objects.equals(clienteAntes, b.getClienteId());
+        asignarOferta(b, cambioDeProyecto);
         marcarCambio(b, null);
         presupuestos.save(b);
         return conDatos(b, ultimasPropuestas(List.of(id)).get(id));
@@ -375,6 +386,46 @@ public class PresupuestoService {
             return b.getPropietarioId().equals(String.valueOf(miId));
         }
         return !b.getPropietario().isEmpty() && yo.equalsIgnoreCase(b.getPropietario());
+    }
+
+    /**
+     * La parte «proyecto» del nombre («Cliente · Proyecto»), normalizada para compararla: sin mayúsculas, sin tildes, sin espacios de
+     * más y sin «v2» o «(copia)» al final (las copias antiguas los llevaban en el nombre). Vacía si el nombre no tiene proyecto.
+     */
+    static String claveProyecto(String nombre) {
+        int i = nombre == null ? -1 : nombre.indexOf(SEPARADOR_PROYECTO);
+        if (i < 0) {
+            return "";
+        }
+        String p = Normalizer.normalize(nombre.substring(i + SEPARADOR_PROYECTO.length()), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").strip();
+        return VERSION_FINAL.matcher(p).replaceFirst("").strip();
+    }
+
+    /**
+     * Los presupuestos del mismo cliente y del mismo proyecto son variantes de una misma oferta: uno que coincide con otros entra en
+     * su oferta (y se la da a los que no la tenían). Si cambia de cliente o de proyecto, sale de la oferta que compartía.
+     * Sin proyecto en el nombre no se agrupa nada.
+     */
+    private void asignarOferta(pl_Presupuesto b, boolean cambioDeProyecto) {
+        String clave = claveProyecto(b.getNombre());
+        List<pl_Presupuesto> mismos = clave.isEmpty() ? List.of()
+                : presupuestos.findByClienteTipoAndClienteId(b.getClienteTipo(), b.getClienteId()).stream()
+                        .filter(o -> !o.getId().equals(b.getId()) && claveProyecto(o.getNombre()).equals(clave)).toList();
+        if (!mismos.isEmpty()) {
+            String oferta = mismos.stream().map(pl_Presupuesto::getOfertaId).filter(s -> !s.isEmpty()).findFirst()
+                    .orElseGet(() -> UUID.randomUUID().toString());
+            b.setOfertaId(oferta);
+            for (pl_Presupuesto o : mismos) {
+                if (o.getOfertaId().isEmpty()) {
+                    o.setOfertaId(oferta);
+                    presupuestos.save(o);
+                }
+            }
+        } else if (cambioDeProyecto && !b.getOfertaId().isEmpty()
+                && presupuestos.findByOfertaId(b.getOfertaId()).stream().anyMatch(o -> !o.getId().equals(b.getId()))) {
+            b.setOfertaId("");
+        }
     }
 
     private List<pl_Presupuesto> oferta(pl_Presupuesto b) {

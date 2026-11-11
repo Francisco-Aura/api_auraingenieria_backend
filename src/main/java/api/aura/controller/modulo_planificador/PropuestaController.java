@@ -1,6 +1,8 @@
 package api.aura.controller.modulo_planificador;
 
 import api.aura.config.ErrorApi;
+import api.aura.dto.modulo_planificador.PresupuestoGuardarRequest;
+import jakarta.validation.Valid;
 import api.aura.service.modulo_planificador.PropuestaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -72,6 +74,12 @@ public class PropuestaController {
     @GetMapping("/proposals/{id}/html")
     public ResponseEntity<byte[]> html(@PathVariable String id) {
         return descarga(propuestaService.html(id), MediaType.parseMediaType("text/html; charset=utf-8"));
+    }
+
+    /** La presentación para el cliente del presupuesto en curso (mismo cuerpo que al guardarlo). No guarda nada. */
+    @PostMapping("/budget/proposal-html")
+    public ResponseEntity<byte[]> htmlDelBorrador(@Valid @RequestBody PresupuestoGuardarRequest cuerpo) {
+        return descarga(propuestaService.htmlDeBorrador(cuerpo), MediaType.parseMediaType("text/html; charset=utf-8"));
     }
 
     private static ResponseEntity<byte[]> descarga(PropuestaService.Documento d, MediaType tipo) {
