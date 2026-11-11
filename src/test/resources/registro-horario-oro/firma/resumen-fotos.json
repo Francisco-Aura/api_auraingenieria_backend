@@ -1,0 +1,242 @@
+{
+ "foto1_s0_v": {
+  "ok": true,
+  "w": 464,
+  "h": 167
+ },
+ "foto1_s0_f": {
+  "ok": true,
+  "w": 651,
+  "h": 234
+ },
+ "foto1_s20_v": {
+  "ok": true,
+  "w": 464,
+  "h": 167
+ },
+ "foto1_s20_f": {
+  "ok": true,
+  "w": 651,
+  "h": 234
+ },
+ "foto1_s50_v": {
+  "ok": true,
+  "w": 464,
+  "h": 167
+ },
+ "foto1_s50_f": {
+  "ok": true,
+  "w": 653,
+  "h": 234
+ },
+ "foto1_s80_v": {
+  "ok": true,
+  "w": 464,
+  "h": 167
+ },
+ "foto1_s80_f": {
+  "ok": true,
+  "w": 653,
+  "h": 236
+ },
+ "foto1_s100_v": {
+  "ok": true,
+  "w": 465,
+  "h": 169
+ },
+ "foto1_s100_f": {
+  "ok": true,
+  "w": 653,
+  "h": 236
+ },
+ "foto2_sombra_s0_v": {
+  "ok": true,
+  "w": 336,
+  "h": 161
+ },
+ "foto2_sombra_s0_f": {
+  "ok": true,
+  "w": 549,
+  "h": 254
+ },
+ "foto2_sombra_s20_v": {
+  "ok": true,
+  "w": 337,
+  "h": 161
+ },
+ "foto2_sombra_s20_f": {
+  "ok": true,
+  "w": 550,
+  "h": 254
+ },
+ "foto2_sombra_s50_v": {
+  "ok": true,
+  "w": 337,
+  "h": 162
+ },
+ "foto2_sombra_s50_f": {
+  "ok": true,
+  "w": 550,
+  "h": 255
+ },
+ "foto2_sombra_s80_v": {
+  "ok": true,
+  "w": 338,
+  "h": 163
+ },
+ "foto2_sombra_s80_f": {
+  "ok": true,
+  "w": 552,
+  "h": 257
+ },
+ "foto2_sombra_s100_v": {
+  "ok": true,
+  "w": 339,
+  "h": 163
+ },
+ "foto2_sombra_s100_f": {
+  "ok": true,
+  "w": 552,
+  "h": 257
+ },
+ "foto3_fina_s0_v": {
+  "ok": true,
+  "w": 544,
+  "h": 215
+ },
+ "foto3_fina_s0_f": {
+  "ok": true,
+  "w": 594,
+  "h": 235
+ },
+ "foto3_fina_s20_v": {
+  "ok": true,
+  "w": 545,
+  "h": 215
+ },
+ "foto3_fina_s20_f": {
+  "ok": true,
+  "w": 595,
+  "h": 235
+ },
+ "foto3_fina_s50_v": {
+  "ok": true,
+  "w": 545,
+  "h": 215
+ },
+ "foto3_fina_s50_f": {
+  "ok": true,
+  "w": 595,
+  "h": 235
+ },
+ "foto3_fina_s80_v": {
+  "ok": true,
+  "w": 545,
+  "h": 217
+ },
+ "foto3_fina_s80_f": {
+  "ok": true,
+  "w": 595,
+  "h": 235
+ },
+ "foto3_fina_s100_v": {
+  "ok": true,
+  "w": 546,
+  "h": 217
+ },
+ "foto3_fina_s100_f": {
+  "ok": true,
+  "w": 597,
+  "h": 237
+ },
+ "foto4_grande_s0_v": {
+  "ok": true,
+  "w": 512,
+  "h": 209
+ },
+ "foto4_grande_s0_f": {
+  "ok": true,
+  "w": 1120,
+  "h": 458
+ },
+ "foto4_grande_s20_v": {
+  "ok": true,
+  "w": 512,
+  "h": 209
+ },
+ "foto4_grande_s20_f": {
+  "ok": true,
+  "w": 1121,
+  "h": 458
+ },
+ "foto4_grande_s50_v": {
+  "ok": true,
+  "w": 512,
+  "h": 210
+ },
+ "foto4_grande_s50_f": {
+  "ok": true,
+  "w": 1122,
+  "h": 460
+ },
+ "foto4_grande_s80_v": {
+  "ok": true,
+  "w": 514,
+  "h": 210
+ },
+ "foto4_grande_s80_f": {
+  "ok": true,
+  "w": 1124,
+  "h": 460
+ },
+ "foto4_grande_s100_v": {
+  "ok": true,
+  "w": 514,
+  "h": 210
+ },
+ "foto4_grande_s100_f": {
+  "ok": true,
+  "w": 1124,
+  "h": 462
+ },
+ "blanco_s0_v": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s0_f": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s20_v": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s20_f": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s50_v": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s50_f": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s80_v": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s80_f": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s100_v": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ },
+ "blanco_s100_f": {
+  "ok": false,
+  "error": "No se detecta ninguna firma. Sube la sensibilidad o repite la foto con más luz."
+ }
+}
