@@ -107,14 +107,26 @@ public final class PdfRegistro {
     }
 
     private double anchoTexto(String t, double tam, boolean negrita) {
-        return fuente(negrita).getWidthPoint(t, (float) tam);
+        return fuente(negrita).getWidthPoint(representable(t, negrita), (float) tam);
+    }
+
+    /**
+     * Helvetica solo dibuja los caracteres de WinAnsi (el alfabeto latino con tildes). Los demás (un nombre en chino, por
+     * ejemplo) se sustituyen por «?» para que se vea que falta algo, en vez de desaparecer; el Word sí los lleva.
+     * El Registro Horario anterior dibujaba un cuadrado negro (■) en su lugar.
+     */
+    private String representable(String t, boolean negrita) {
+        BaseFont f = fuente(negrita);
+        StringBuilder sb = new StringBuilder();
+        t.codePoints().forEach(c -> sb.append(c <= 0xFFFF && f.charExists(c) ? new String(Character.toChars(c)) : "?"));
+        return sb.toString();
     }
 
     private void escribir(double x, double yBase, String t, double tam, boolean negrita) {
         lienzo.beginText();
         lienzo.setFontAndSize(fuente(negrita), (float) tam);
         lienzo.setTextMatrix((float) x, (float) Y(yBase));
-        lienzo.showText(t);
+        lienzo.showText(representable(t, negrita));
         lienzo.endText();
     }
 

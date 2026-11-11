@@ -132,4 +132,20 @@ class PdfRegistroTest {
         DatosNoValidosException e = assertThrows(DatosNoValidosException.class, () -> PdfRegistro.generar(r.documento()));
         assertEquals("el contenido no cabe en una sola página", e.getMessage());
     }
+
+    @Test
+    void losCaracteresQueHelveticaNoTieneSeSustituyenPorInterrogante() throws IOException {
+        JsonNode todo = MotorWordTest.casos();
+        JsonNode p = todo.get("casos").get(0).get("peticion");
+        var datos = MotorWordTest.datos(p, todo.get("empresas"));
+        var chino = new api.aura.service.modulo_registro_horario.documento.DatosRegistro("李 小龙 Ñandú", datos.nif(),
+                datos.numAfiliacion(), datos.empresa(), datos.cif(), datos.ccc(), datos.centroTrabajo(), datos.localidad(),
+                datos.horarioManana(), datos.horarioTarde(), datos.estadoDias(), datos.horasDia(), datos.fechaFirma());
+        MotorWord.Resultado r = motor.construir(chino, p.get("anio").asInt(), p.get("mes").asInt(),
+                Base64.getDecoder().decode(p.get("firma_png_base64").asText()));
+        try (PDDocument pdf = Loader.loadPDF(PdfRegistro.generar(r.documento()))) {
+            String texto = new PDFTextStripper().getText(pdf);
+            assertTrue(texto.contains("? ?? Ñandú"), texto);
+        }
+    }
 }
