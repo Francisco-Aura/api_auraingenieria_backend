@@ -94,6 +94,11 @@ public class FirmaService {
 
     /** Imagen decodificada y con la orientación corregida. Rechaza lo que pese o mida demasiado. */
     public Imagen abrir(byte[] datos) {
+        return OrientacionExif.corregir(decodificar(datos), OrientacionExif.leer(datos));
+    }
+
+    /** Imagen decodificada tal cual (sin corregir la orientación). Rechaza lo que pese o mida demasiado. */
+    public Imagen decodificar(byte[] datos) {
         if (datos.length > MAX_BYTES) {
             throw new FirmaError("La imagen pesa demasiado (máximo " + MAX_BYTES / (1024 * 1024) + " MB).");
         }
@@ -121,7 +126,7 @@ public class FirmaService {
         if (leida == null) {
             throw new FirmaError(NO_SE_PUEDE_LEER);
         }
-        return OrientacionExif.corregir(aImagen(leida), OrientacionExif.leer(datos));
+        return aImagen(leida);
     }
 
     /** ARGB sin premultiplicar; los grises se copian tal cual (sin la conversión de gamma de Java). */
@@ -159,11 +164,11 @@ public class FirmaService {
         return new Imagen(w, h, r);
     }
 
-    static byte[] png(Imagen img) {
+    public static byte[] png(Imagen img) {
         return png(img.ancho, img.alto, img.argb);
     }
 
-    static byte[] png(int ancho, int alto, int[] argb) {
+    public static byte[] png(int ancho, int alto, int[] argb) {
         BufferedImage b = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_ARGB);
         b.setRGB(0, 0, ancho, alto, argb, 0, ancho);
         ByteArrayOutputStream salida = new ByteArrayOutputStream();

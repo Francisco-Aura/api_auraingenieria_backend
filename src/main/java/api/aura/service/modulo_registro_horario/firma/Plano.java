@@ -116,6 +116,25 @@ public final class Plano {
         return r;
     }
 
+    /** {@code ImageChops.subtract}: a - b sin bajar de 0. */
+    public Plano restar(Plano otra) {
+        Plano r = new Plano(ancho, alto);
+        for (int i = 0; i < datos.length; i++) {
+            r.datos[i] = (byte) Math.max(0, (datos[i] & 0xFF) - (otra.datos[i] & 0xFF));
+        }
+        return r;
+    }
+
+    /** {@code ImageOps.expand(imagen, border=n, fill=valor)}: añade un marco de n píxeles. */
+    public Plano expandir(int borde, int valor) {
+        Plano r = new Plano(ancho + 2 * borde, alto + 2 * borde);
+        if (valor != 0) {
+            Arrays.fill(r.datos, (byte) valor);
+        }
+        r.pegar(this, borde, borde);
+        return r;
+    }
+
     /** {@code ImageChops.darker}: el menor de cada pareja de píxeles. */
     public Plano menor(Plano otra) {
         Plano r = new Plano(ancho, alto);
