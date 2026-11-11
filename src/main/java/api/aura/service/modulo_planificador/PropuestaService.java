@@ -2,6 +2,7 @@ package api.aura.service.modulo_planificador;
 
 import api.aura.config.ErrorApi;
 import api.aura.config.UsuarioPlanificadorHolder;
+import api.aura.dto.modulo_planificador.PresupuestoGuardarRequest;
 import api.aura.entity.modulo_planificador.pl_Equipo;
 import api.aura.entity.modulo_planificador.pl_Presupuesto;
 import api.aura.entity.modulo_planificador.pl_Propuesta;
@@ -262,6 +263,30 @@ public class PropuestaService {
      * La presentación de la propuesta (HTML animado, imprimible a PDF), con todo lo que se puede tomar del presupuesto validado y con las
      * imágenes incrustadas: un solo archivo que se descarga y se puede mandar. Lo que el presupuesto no tiene va en blanco.
      */
+    /**
+     * La misma presentación, pero del presupuesto en curso tal como está en pantalla (cliente, datos, kWp, paneles y total, como al guardarlo):
+     * es el documento para el cliente que se saca al terminar de confeccionar el presupuesto, sin esperar a validarlo ni a crear la propuesta.
+     * No guarda nada; sin propuesta no hay logo del cliente (la plantilla lo omite): el logo se sube en la pestaña de la propuesta.
+     */
+    @Transactional(readOnly = true)
+    public Documento htmlDeBorrador(PresupuestoGuardarRequest cuerpo) {
+        pl_Presupuesto b = new pl_Presupuesto();
+        b.setNombre(cuerpo.getNombre() == null ? "" : cuerpo.getNombre());
+        b.setDatos(cuerpo.getDatos());
+        b.setKwp(cuerpo.getKwp());
+        b.setPaneles(cuerpo.getPaneles());
+        b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
+        try {
+            Map<String, Object> datos = PropuestaDatos.paraHtml(b, catalogo());
+            datos.put("logo", "");
+            String nombre = b.getNombre().isEmpty() ? "presupuesto" : b.getNombre();
+            return new Documento(propuestaHtml.generar(datos).getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    ("Propuesta " + nombre).replaceAll("[\\\\/:*?\"<>|]+", " ").strip() + ".html");
+        } catch (RuntimeException e) {
+            throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
+        }
+    }
+
     @Transactional(readOnly = true)
     public Documento html(String id) {
         pl_Propuesta p = buscar(id);

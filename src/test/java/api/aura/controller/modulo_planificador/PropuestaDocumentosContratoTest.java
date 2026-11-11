@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -177,6 +178,36 @@ class PropuestaDocumentosContratoTest {
         StringBuilder sb = new StringBuilder();
         for (byte b : hash) sb.append(String.format("%02x", b));
         return sb.toString();
+    }
+
+    @Test
+    void laPresentacionDelClienteSeSacaDelBorradorSinGuardarNiValidarNada() throws Exception {
+        JsonNode e = entrada();
+        equipos(e.get("equipos")).values().forEach(q -> {
+            q.setPartida("");
+            equiposRepo.save(q);
+        });
+        JsonNode b = e.get("budget");
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("name", b.get("name").asText());
+        cuerpo.put("data", json.convertValue(b.get("datos"), new TypeReference<LinkedHashMap<String, Object>>() {
+        }));
+        cuerpo.put("kwp", b.get("kwp").asDouble());
+        cuerpo.put("panels", b.get("panels").asInt());
+        cuerpo.put("budget_total", b.get("total").asDouble());
+        String salida = mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/html")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        var m = Pattern.compile("<script id=\"datos\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(salida);
+        assertTrue(m.find());
+        JsonNode datos = json.readTree(m.group(1));
+        assertEquals(b.get("datos").get("customer").get("name").asText(), datos.get("client").asText(), "el cliente es el de los datos del presupuesto");
+        assertEquals(b.get("total").asDouble(), datos.get("total").asDouble(), 0.001);
+        assertEquals("", datos.get("logo").asText(), "sin propuesta no hay logo del cliente");
+        assertEquals(0, propuestas.count(), "no crea ninguna propuesta");
+        assertEquals(0, presupuestos.count(), "no guarda el presupuesto");
     }
 
     // ------------------------------------------------------------------------------------ PowerPoint
