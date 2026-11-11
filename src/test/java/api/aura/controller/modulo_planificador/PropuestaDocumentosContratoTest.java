@@ -213,6 +213,35 @@ class PropuestaDocumentosContratoTest {
         assertEquals(0, presupuestos.count(), "no guarda el presupuesto");
     }
 
+    @Test
+    void laPropuestaEnPdfLlevaLaPaginaDeFirmaOAvisaDeQueNoHayNavegador() throws Exception {
+        JsonNode e = entrada();
+        equipos(e.get("equipos")).values().forEach(q -> {
+            q.setPartida("");
+            equiposRepo.save(q);
+        });
+        JsonNode b = e.get("budget");
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("name", b.get("name").asText());
+        cuerpo.put("data", json.convertValue(b.get("datos"), new TypeReference<LinkedHashMap<String, Object>>() {
+        }));
+        cuerpo.put("kwp", b.get("kwp").asDouble());
+        cuerpo.put("panels", b.get("panels").asInt());
+        cuerpo.put("budget_total", b.get("total").asDouble());
+        var respuesta = mvc.perform(post("/api/planificador/budget/proposal-pdf").contentType("application/json").content(json.writeValueAsString(cuerpo))).andReturn().getResponse();
+        if (respuesta.getStatus() == 501) {
+            return; // sin Chrome en esta máquina: el cliente imprime el HTML desde el navegador
+        }
+        assertEquals(200, respuesta.getStatus(), respuesta.getContentAsString());
+        byte[] pdf = respuesta.getContentAsByteArray();
+        assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
+        try (org.apache.pdfbox.pdmodel.PDDocument d = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+            assertEquals(18, d.getNumberOfPages(), "una página por diapositiva, con la de firma");
+            String texto = new org.apache.pdfbox.text.PDFTextStripper().getText(d);
+            assertTrue(texto.contains("Firma del cliente"), "lleva la página de aceptación y firma");
+        }
+    }
+
     // ------------------------------------------------------------------------------------ PowerPoint
 
     @Test
