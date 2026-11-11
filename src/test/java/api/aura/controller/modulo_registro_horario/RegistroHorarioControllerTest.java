@@ -41,13 +41,21 @@ class RegistroHorarioControllerTest {
     Path carpeta;
     MockMvc mvc;
 
+    static RegistroHorarioController controlador(Path archivoEmpresas) {
+        var empresas = new EmpresasConfig(new ObjectMapper(), archivoEmpresas.toString());
+        var trabajos = new TrabajosPesados();
+        var firmas = new FirmaService(trabajos);
+        return new RegistroHorarioController(empresas, firmas,
+                new api.aura.service.modulo_registro_horario.GenerarService(empresas, firmas,
+                        new api.aura.service.modulo_registro_horario.documento.MotorWord(firmas), trabajos));
+    }
+
     @BeforeEach
     void preparar() throws Exception {
         Path archivo = carpeta.resolve("empresas.json");
         Files.writeString(archivo, EMPRESAS);
         mvc = MockMvcBuilders
-                .standaloneSetup(new RegistroHorarioController(new EmpresasConfig(new ObjectMapper(), archivo.toString()),
-                        new FirmaService(new TrabajosPesados())))
+                .standaloneSetup(controlador(archivo))
                 .setControllerAdvice(new RegistroHorarioExceptionHandler())
                 .build();
     }

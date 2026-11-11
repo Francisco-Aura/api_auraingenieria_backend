@@ -37,6 +37,7 @@ import static api.aura.service.modulo_registro_horario.documento.XmlDocx.w;
  * firmas del pie). Es el motor del Registro Horario anterior ({@code registro_horas.py}) escrito en Java: sobre el mismo
  * XML del Word y con las mismas medidas, para que el documento salga igual.
  */
+@org.springframework.stereotype.Component
 public final class MotorWord {
 
     /** Resultado de rellenar el mes: el Word y los totales. */

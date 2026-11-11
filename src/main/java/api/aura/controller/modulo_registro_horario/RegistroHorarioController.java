@@ -1,10 +1,13 @@
 package api.aura.controller.modulo_registro_horario;
 
 import api.aura.config.ErrorApi;
+import api.aura.dto.modulo_registro_horario.DocumentoGenerado;
 import api.aura.dto.modulo_registro_horario.EmpresasRespuesta;
+import api.aura.dto.modulo_registro_horario.GenerarRequest;
 import api.aura.dto.modulo_registro_horario.FestivosRespuesta;
 import api.aura.service.modulo_registro_horario.CalendarioFestivos;
 import api.aura.service.modulo_registro_horario.EmpresasConfig;
+import api.aura.service.modulo_registro_horario.GenerarService;
 import api.aura.service.modulo_registro_horario.firma.FirmaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -13,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +40,7 @@ public class RegistroHorarioController {
 
     private final EmpresasConfig empresas;
     private final FirmaService firma;
+    private final GenerarService generador;
 
     @GetMapping("/health")
     public Map<String, Boolean> salud() {
@@ -70,5 +75,19 @@ public class RegistroHorarioController {
         }
         byte[] png = firma.extraerPng(imagen.getBytes(), sensibilidad, vista);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_PNG).body(png);
+    }
+
+    /** Rellena la plantilla con los datos recibidos y devuelve el PDF (o el Word). No guarda nada. */
+    @PostMapping("/generar")
+    public ResponseEntity<byte[]> generar(@RequestBody GenerarRequest peticion) {
+        DocumentoGenerado doc = generador.generar(peticion);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(doc.tipo()))
+                .header("Content-Disposition", "attachment; filename=\"documento." + doc.extension() + "\"; filename*=UTF-8''"
+                        + GenerarService.codificarNombre(doc.nombreArchivo()))
+                .header("X-Dias-Trabajados", String.valueOf(doc.diasTrabajados()))
+                .header("X-Horas", doc.horas())
+                .cacheControl(CacheControl.noStore())
+                .body(doc.contenido());
     }
 }
