@@ -286,6 +286,12 @@ h2 .hl { display: inline-block; background: var(--y); color: #fff; padding: 0 12
 
 /* Instalaciones de referencia */
 .refgrid { margin-top: 56px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+/* Dos diapositivas de instalaciones: la de las cuatro más pequeñas y la de las tres mayores, con tarjetas más anchas y foto más alta */
+.refgrid.n4 { grid-template-columns: repeat(4, 1fr); }
+.refgrid.n3 { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.refgrid.n3 .rf img { height: 300px; }
+.refgrid.n3 .rf b { font-size: 18px; }
+.refgrid.n3 .rf span { font-size: 16px; }
 .rf { background: #fff; border: 1px solid #e3e4e6; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 22px rgba(0,0,0,.06); }
 .rf img { width: 100%; height: 250px; object-fit: cover; display: block; }
 .rf div { padding: 12px 14px 16px; }
@@ -496,13 +502,16 @@ const GALERIAS = {
 const galeria = (fotos, base) => `<div class="gal g${fotos.length}">${fotos.map((n, i) => `<img class="in pop" style="--i:${base + i}" src="proyectos/${n}.jpg" alt="">`).join('')}</div>`
 const PROVEEDORES = ['sigenergy', 'fronius', 'aiko', 'jinko', 'longi', 'huawei']
 const CLIENTES = ['jisap', 'jimbofresh', 'jcano', 'primalum', 'peymapiel', 'lario', 'isabelalonso', 'laciezana']
-const SECTORES = ['Sector agrícola', 'Sector ganadero', 'Industria alimentaria', 'Sector industrial', 'Grandes consumidores de energía']
+const SECTORES = ['Sector agrícola', 'Sector ganadero', 'Industria alimentaria', 'Sector industrial', 'Transporte y logística', 'Grandes consumidores de energía']
 const REFS = [
-  ['aledo', 'Comunidad de Regantes de Aledo', '525 kWp', '', '2024'],
+  // De menos a más potencia: las cuatro primeras van en la fila de arriba y las más grandes, abajo y más anchas
   ['arenas', 'Arenas del Valle', '240 kWp', '', '2023'],
   ['levante', 'Levante Sur', '255 kWp de paneles', '430 kWh de baterías', '2025'],
   ['ciezana', 'La Ciezana (Venta del Olivo)', '255 kWp', 'con almacenamiento', '2025'],
   ['lorca2', 'Lorca (Murcia)', '300 kWn', 'Autoconsumo', '2020'],
+  ['aledo', 'Comunidad de Regantes de Aledo', '525 kWp', '', '2024'],
+  ['lacadosocana', 'Lacados Ocaña', '800 kW', '', '2022'],
+  ['primalum', 'Primalum', '1,3 MW', '', '2024'],
 ]
 const ICON = {
   box: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M12 11v5M9.5 13.5h5"/>',
@@ -542,7 +551,7 @@ const slides = [
       ['plug', 'Inversores', (D.inverter_count > 0 ? `<b data-count="${D.inverter_count}"></b>` : '<b></b>'), ''],
     ].map((k, i) => `<div class="kpi ${k[3]} in" style="--i:${i + 3}"><span class="cicon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[k[0]]}</svg></span>${k[2]}<i>${k[1]}</i></div>`).join('')}</div>
     <div class="specs">${[
-      ['sun', 'Tipo de instalación', esc([D.kind || 'Autoconsumo', D.supply].filter(Boolean).join(' · '))],
+      ['sun', 'Tipo de instalación', esc(D.kind || 'Autoconsumo')],
       ['panel', 'Módulo', esc(D.panel || ''), esc(D.strings || '')],
       ['plug', 'Inversor', D.inverter ? `${esc(D.inverter)} · ${D.inverter_count || 1} ${(D.inverter_count || 1) === 1 ? 'unidad' : 'unidades'}` : ''],
       ['batt', 'Baterías', esc(D.battery || 'No incluidas')],
@@ -582,8 +591,8 @@ const slides = [
     <div class="sign in" style="--i:3"><div class="signl"><span class="cicon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC.deal}</svg></span><div><b>Por parte del cliente</b><span class="who2">${esc(D.client)}</span><p>Firma de la empresa en señal de la aceptación de todas las condiciones técnicas, económicas y de garantía recogidas en esta propuesta.</p></div></div>
       <div class="signr"><b>Firma del cliente</b><div class="box"></div></div></div></section>`,
 
-  `<section class="slide">${deco}${title('Instalaciones de', 'referencia', '', 'Proyectos realizados')}
-    <div class="refgrid">${REFS.map((r, i) => `<div class="rf in" style="--i:${i + 3}"><img src="proyectos/${r[0]}.jpg" alt="${r[1]}"><div><b>${r[1]}</b><span>${[r[2], r[3]].filter(Boolean).join(' · ')}</span>${r[4] ? `<em>${r[4]}</em>` : ''}</div></div>`).join('')}</div></section>`,
+  ...[REFS.slice(0, 4), REFS.slice(4)].filter((g) => g.length > 0).map((grupo) => `<section class="slide">${deco}${title('Instalaciones de', 'referencia', '', 'Proyectos realizados')}
+    <div class="refgrid n${grupo.length}">${grupo.map((r, i) => `<div class="rf in" style="--i:${i + 3}"><img src="proyectos/${r[0]}.jpg" alt="${r[1]}"><div><b>${r[1]}</b><span>${[r[2], r[3]].filter(Boolean).join(' · ')}</span>${r[4] ? `<em>${r[4]}</em>` : ''}</div></div>`).join('')}</div></section>`),
 
   `<section class="slide">${deco}${title('Equipos de', 'referencia', '', 'Proyectos realizados')}${galeria(GALERIAS.equipos, 3)}</section>`,
 
