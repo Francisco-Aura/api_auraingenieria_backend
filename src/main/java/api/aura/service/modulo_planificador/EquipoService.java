@@ -37,6 +37,7 @@ public class EquipoService {
     private final MarcaService marcas;
     private final ProveedorService proveedores;
     private final PresupuestoService presupuestos;
+    private final InventarioExcel inventarioExcel;
 
     // ---------------------------------------------------------------- consulta
 
@@ -54,6 +55,13 @@ public class EquipoService {
         r.put("categories", CatalogoEquipos.categorias());
         r.put("items", equipos.findAllByOrderByPosicionAsc().stream().map(EquipoService::aDto).toList());
         return r;
+    }
+
+    /** Todo el inventario en un Excel (hojas: todo, una por categoría y precios por proveedor), con el nombre con el que se descarga. */
+    @Transactional(readOnly = true)
+    public Map.Entry<String, byte[]> exportarExcel() {
+        byte[] contenido = inventarioExcel.generar(equipos.findAllByOrderByPosicionAsc());
+        return Map.entry("Inventario Aura " + java.time.LocalDate.now() + ".xlsx", contenido);
     }
 
     @Transactional(readOnly = true)

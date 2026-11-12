@@ -173,6 +173,15 @@ public final class PropuestaDatos {
         return tamanos.size() + " strings: " + sj + " paneles";
     }
 
+    private static final Pattern PATRON_LOGO = Pattern.compile("^data:(image/(?:png|jpeg|webp|svg\\+xml));base64,([A-Za-z0-9+/=]+)$");
+    private static final int LOGO_MAX_CARACTERES = 2_000_000;
+
+    /** El logo si es una imagen en data URI de tamaño razonable; si no, vacío. */
+    public static String logoValido(Object valor) {
+        String logo = valor == null ? "" : String.valueOf(valor);
+        return logo.length() <= LOGO_MAX_CARACTERES && PATRON_LOGO.matcher(logo).matches() ? logo : "";
+    }
+
     /** Todo lo que la presentación HTML puede tomar del presupuesto. */
     public static Map<String, Object> paraHtml(pl_Presupuesto b, Map<String, pl_Equipo> equipos) {
         Map<String, Object> salida = paraPptx(b, equipos);
@@ -180,6 +189,12 @@ public final class PropuestaDatos {
         Map<String, Object> encuesta = mapa(datos.get("survey"));
         Object referencia = datos.get("reference");
         salida.put("project", referencia == null ? "" : String.valueOf(referencia).strip());
+        // CIF y logo de la empresa del cliente (parámetros iniciales del presupuesto): solo van si están, para no dejar claves vacías
+        Object cif = datos.get("cif");
+        if ((cif == null || String.valueOf(cif).isBlank()) && mapa(datos.get("customer")).get("cif") != null) cif = mapa(datos.get("customer")).get("cif");
+        if (cif != null && !String.valueOf(cif).isBlank()) salida.put("cif", String.valueOf(cif).strip());
+        String logo = logoValido(datos.get("clientLogo"));
+        if (!logo.isEmpty()) salida.put("logo", logo);
         salida.put("supply", SUMINISTRO.getOrDefault(String.valueOf(encuesta.getOrDefault("supply", "")), ""));
         salida.put("strings", resumenDeStrings(datos.get("strings"), b.getPaneles()));
         salida.put("warranty", garantias(b, equipos));

@@ -279,7 +279,7 @@ public class PropuestaService {
         b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
         try {
             Map<String, Object> datos = PropuestaDatos.paraHtml(b, catalogo());
-            datos.put("logo", "");
+            datos.putIfAbsent("logo", ""); // el del presupuesto, si lo trae
             String nombre = b.getNombre().isEmpty() ? "presupuesto" : b.getNombre();
             return new Documento(propuestaHtml.generar(datos).getBytes(java.nio.charset.StandardCharsets.UTF_8),
                     ("Propuesta " + nombre).replaceAll("[\\\\/:*?\"<>|]+", " ").strip() + ".html");
@@ -307,7 +307,9 @@ public class PropuestaService {
         pl_Presupuesto b = presupuestoDe(p);
         try {
             Map<String, Object> datos = PropuestaDatos.paraHtml(b, catalogo());
-            datos.put("logo", p.getLogoCliente());
+            // El logo subido en la propuesta manda; si no hay, el de los parámetros del presupuesto (ya está en los datos)
+            if (p.getLogoCliente() != null && !p.getLogoCliente().isEmpty()) datos.put("logo", p.getLogoCliente());
+            else datos.putIfAbsent("logo", "");
             return new Documento(propuestaHtml.generar(datos).getBytes(java.nio.charset.StandardCharsets.UTF_8), nombreDeArchivo(b, p) + ".html");
         } catch (RuntimeException e) {
             throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
