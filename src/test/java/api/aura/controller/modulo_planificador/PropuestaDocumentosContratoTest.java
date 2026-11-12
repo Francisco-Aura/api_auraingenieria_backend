@@ -151,6 +151,14 @@ class PropuestaDocumentosContratoTest {
         assertEquals("Vacío", pp.get("client"));
     }
 
+    @Test
+    void elResumenDeStringsSoloSaleSiSumaLosPanelesDelPresupuesto() {
+        List<Map<String, Object>> reparto = List.of(Map.of("panels", 19), Map.of("panels", 18), Map.of("panels", 18));
+        assertEquals("3 strings: 19 + 18 + 18 paneles", PropuestaDatos.resumenDeStrings(reparto, 55));
+        assertEquals("", PropuestaDatos.resumenDeStrings(reparto, 60), "un reparto de otros paneles no se enseña");
+        assertEquals("3 strings: 19 + 18 + 18 paneles", PropuestaDatos.resumenDeStrings(reparto, 0), "sin paneles en el presupuesto no se puede comparar");
+    }
+
     // --------------------------------------------------------------------------------------- HTML
 
     @Test
@@ -236,7 +244,7 @@ class PropuestaDocumentosContratoTest {
         byte[] pdf = respuesta.getContentAsByteArray();
         assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
         try (org.apache.pdfbox.pdmodel.PDDocument d = org.apache.pdfbox.Loader.loadPDF(pdf)) {
-            assertEquals(18, d.getNumberOfPages(), "una página por diapositiva, con la de firma");
+            assertEquals(19, d.getNumberOfPages(), "una página por diapositiva, con la de firma");
             String texto = new org.apache.pdfbox.text.PDFTextStripper().getText(d);
             assertTrue(texto.contains("Firma del cliente"), "lleva la página de aceptación y firma");
         }

@@ -141,8 +141,8 @@ public final class PropuestaDatos {
         return g;
     }
 
-    /** «4 strings de 20 paneles» o «2 strings: 20 + 5 paneles»; vacío si el presupuesto no tiene los strings repartidos. */
-    static String resumenDeStrings(Object crudo) {
+    /** «4 strings de 20 paneles» o «2 strings: 20 + 5 paneles»; vacío si el presupuesto no tiene los strings repartidos o no suman sus paneles. */
+    public static String resumenDeStrings(Object crudo, int panelesDelPresupuesto) {
         List<Integer> tamanos = new ArrayList<>();
         if (crudo instanceof List<?> l) {
             for (Object o : l) {
@@ -153,6 +153,8 @@ public final class PropuestaDatos {
             }
         }
         if (tamanos.isEmpty()) return "";
+        // Un reparto que no suma los paneles del presupuesto es de antes de cambiarlos: mejor en blanco que un dato falso
+        if (panelesDelPresupuesto > 0 && tamanos.stream().mapToInt(Integer::intValue).sum() != panelesDelPresupuesto) return "";
         if (tamanos.size() == 1) return "1 string de " + tamanos.get(0) + " paneles";
         if (new HashSet<>(tamanos).size() == 1) return tamanos.size() + " strings de " + tamanos.get(0) + " paneles";
         if (tamanos.size() <= 4) {
@@ -179,7 +181,7 @@ public final class PropuestaDatos {
         Object referencia = datos.get("reference");
         salida.put("project", referencia == null ? "" : String.valueOf(referencia).strip());
         salida.put("supply", SUMINISTRO.getOrDefault(String.valueOf(encuesta.getOrDefault("supply", "")), ""));
-        salida.put("strings", resumenDeStrings(datos.get("strings")));
+        salida.put("strings", resumenDeStrings(datos.get("strings"), b.getPaneles()));
         salida.put("warranty", garantias(b, equipos));
         // Si el presupuesto lleva una estructura de marquesina, esa es la que se marca (la cubierta solo da la habitual)
         String tipo = marquesina(b, equipos);
