@@ -130,9 +130,12 @@ public class Cliente {
     @JoinColumn(name = "idUsuario")
     private Usuario usuario;
 
-    // Relación con puntos de suministro
+    // Relación con puntos de suministro. Carga diferida: fuera de toString,
+    // equals y hashCode para no recorrerla (ni fallar) sin sesión abierta.
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<PuntoSuministro> puntosSuministro;
 
 }

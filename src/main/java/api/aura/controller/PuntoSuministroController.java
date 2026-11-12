@@ -64,6 +64,7 @@ public class PuntoSuministroController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarPorId(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         puntoSuministroService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
     }

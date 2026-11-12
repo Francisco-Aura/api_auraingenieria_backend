@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import api.aura.config.AuraUserHolder;
 import api.aura.dto.ClienteCarteraDTO;
 import api.aura.dto.ClienteDTO;
 import api.aura.entity.Cliente;
@@ -22,6 +23,8 @@ public class ClienteController {
 
     private static final Logger logger = LoggerFactory.getLogger(ClienteController.class);
 
+    private static final int TAMANIO_MAXIMO_PAGINA = 200;
+
     @Autowired
     private ClienteService clienteService;
 
@@ -31,6 +34,11 @@ public class ClienteController {
             String nombre = clienteDTO.getNombre() != null ? clienteDTO.getNombre().trim() : "";
             logger.debug("Solicitud para crear cliente. nombre='{}', cif='{}'", nombre, clienteDTO.getCif());
         }
+        if (!AuraUserHolder.esAdmin()) {
+            // El usuario asignado lo eligen solo los administradores (en la pantalla el
+            // campo está bloqueado para el resto, que dan de alta sin usuario asignado)
+            clienteDTO.setIdUsuario(null);
+        }
         Cliente clienteCreado = clienteService.crearCliente(clienteDTO);
         return ResponseEntity.ok(clienteCreado);
     }
@@ -39,7 +47,7 @@ public class ClienteController {
     public ResponseEntity<Page<Cliente>> obtenerTodosLosClientes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<Cliente> clientes = clienteService.obtenerTodosLosClientes(PageRequest.of(page, size));
+        Page<Cliente> clientes = clienteService.obtenerTodosLosClientes(pagina(page, size));
         return ResponseEntity.ok(clientes);
     }
 
@@ -54,7 +62,7 @@ public class ClienteController {
                     terminoNormalizado.length(), page, size);
         }
         try {
-            Page<ClienteDTO> clientes = clienteService.buscarClientes(terminoNormalizado, PageRequest.of(page, size));
+            Page<ClienteDTO> clientes = clienteService.buscarClientes(terminoNormalizado, pagina(page, size));
             return ResponseEntity.ok(clientes);
         } catch (Exception e) {
             logger.error("Error al buscar clientes", e);
@@ -77,13 +85,26 @@ public class ClienteController {
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarCliente(@PathVariable Integer id,
             @Valid @RequestBody ClienteDTO clienteDTO) {
+        if (!AuraUserHolder.esAdmin()) {
+            // Solo un administrador cambia el usuario asignado (en la pantalla el campo
+            // está bloqueado para el resto): se conserva el que tiene el cliente
+            clienteService.obtenerClientePorId(id).ifPresent(actual -> clienteDTO.setIdUsuario(
+                    actual.getUsuario() != null ? actual.getUsuario().getId() : null));
+        }
         Cliente clienteActualizado = clienteService.actualizarCliente(id, clienteDTO);
         return ResponseEntity.ok(clienteActualizado);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarCliente(@PathVariable Integer id) {
+        // Borrado físico sin uso en el frontend: como el de puntos y contratos, solo administradores
+        SesionActual.exigirAdmin();
         clienteService.eliminarCliente(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Página acotada: evita volcar toda la tabla con size enorme o fallar con valores negativos. */
+    private static PageRequest pagina(int page, int size) {
+        return PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), TAMANIO_MAXIMO_PAGINA));
     }
 }

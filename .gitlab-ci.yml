@@ -55,6 +55,14 @@ cache:
         "echo SSH_OK && hostname && whoami"
 
   script:
+    - |
+      if [ -n "$SESSION_COOKIE_NAME" ]; then
+        echo "=== Nombre de la cookie de sesion: $SESSION_COOKIE_NAME ==="
+        # DES, PRE y PRO comparten IP y las cookies no distinguen puerto: con el mismo nombre,
+        # entrar en uno cerraria la sesion del otro. Se empaqueta solo en el jar de ese entorno.
+        echo "server.servlet.session.cookie.name=$SESSION_COOKIE_NAME" > src/main/resources/application-local.properties
+      fi
+
     - echo "=== Compilando backend AURA ==="
     - mvn -B clean package -DskipTests -U
 
@@ -100,6 +108,7 @@ deploy_backend_DES:
     DEPLOY_HOST: "5.34.148.92"
     DEPLOY_PORT: "2223"
     DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_DES"
+    SESSION_COOKIE_NAME: "AURA_SESSION_DES"
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
@@ -111,6 +120,7 @@ deploy_backend_PRE:
     DEPLOY_HOST: "5.34.148.92"
     DEPLOY_PORT: "2222"
     DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_PRE"
+    SESSION_COOKIE_NAME: "AURA_SESSION_PRE"
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "release"'

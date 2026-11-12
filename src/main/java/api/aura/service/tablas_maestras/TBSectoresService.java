@@ -40,7 +40,7 @@ public class TBSectoresService {
                     sector.setDescripcion(sectorActualizado.getDescripcion());
                     return sectoresRepository.save(sector);
                 })
-                .orElseThrow(() -> new RuntimeException("Sector no encontrado con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Sector no encontrado con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'sectores'")

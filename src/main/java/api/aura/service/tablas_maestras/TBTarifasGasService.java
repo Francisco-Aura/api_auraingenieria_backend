@@ -40,7 +40,7 @@ public class TBTarifasGasService {
                     tarifaGas.setDescripcion(tarifaGasActualizada.getDescripcion());
                     return tarifasGasRepository.save(tarifaGas);
                 })
-                .orElseThrow(() -> new RuntimeException("Tarifa de Gas no encontrada con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Tarifa de Gas no encontrada con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'tarifas-gas'")

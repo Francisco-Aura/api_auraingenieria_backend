@@ -18,7 +18,6 @@ public interface ClienteNotaAdjuntoRepository extends JpaRepository<ClienteNotaA
 
     Optional<ClienteNotaAdjunto> findByIdAndNota_Id(Long id, Long notaId);
 
-    void deleteByNota_Id(Long notaId);
 
     @Modifying
     void delete(ClienteNotaAdjunto adjunto);

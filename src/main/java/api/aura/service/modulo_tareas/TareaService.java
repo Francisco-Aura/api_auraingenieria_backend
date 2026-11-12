@@ -7,6 +7,7 @@ import api.aura.entity.modulo_tareas.*;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.UsuarioRepository;
 import api.aura.repository.modulo_tareas.*;
+import api.aura.util.ArchivosTransaccion;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,28 @@ public class TareaService {
     public List<TareaDTO> obtenerPorUsuario(Integer usuarioId) {
         return tareaRepository.findByUsuarioAsignado_Id(usuarioId).stream()
                 .map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
+    }
+
+    /**
+     * Si un usuario que no es administrador puede ver la tarea: la suya (asignada o creada
+     * por él), una de la que le ha llegado un aviso (mención, comentario...) o una ligada a
+     * un cliente (se ven desde la ficha del cliente). Las mismas que encuentra en pantalla;
+     * antes cualquiera leía cualquier tarea por su número, con historial, comentarios y archivos.
+     */
+    @Transactional(readOnly = true)
+    public boolean puedeVerTarea(Long tareaId, Integer usuarioId) {
+        if (tareaId == null || usuarioId == null) return false;
+        return tareaRepository.findById(tareaId)
+                .map(t -> esDe(t.getUsuarioAsignado(), usuarioId)
+                        || esDe(t.getUsuarioCreador(), usuarioId)
+                        || t.getClienteRelacionado() != null
+                        || notificacionService.tieneAvisoDe(tareaId, usuarioId))
+                // Si no existe, que responda «no encontrada» quien la busque
+                .orElse(true);
+    }
+
+    private static boolean esDe(Usuario usuario, Integer usuarioId) {
+        return usuario != null && usuarioId.equals(usuario.getId());
     }
 
     public List<TareaDTO> obtenerPorCliente(Integer clienteId) {
@@ -90,10 +113,12 @@ public class TareaService {
             tarea.setFechaInicioProgreso(ahora);
         }
         mt_Tarea guardada = tareaRepository.save(tarea);
+        Integer usuarioAccionId = dto.getUsuarioAccionId() != null ? dto.getUsuarioAccionId() : dto.getUsuarioCreadorId();
         registrarHistorial(guardada, guardada.getEstado(),
-                obtenerUsuarioAccion(dto.getUsuarioCreadorId(), guardada.getUsuarioCreador()),
+                obtenerUsuarioAccion(usuarioAccionId, guardada.getUsuarioCreador()),
                 ahora, null, "Creación de la tarea");
-        notificacionService.notificarAsignacion(guardada);
+        // Con el autor, quien crea una tarea y se la asigna a sí mismo no se autonotifica
+        notificacionService.notificarAsignacion(guardada, usuarioAccionId);
         return toDto(guardada, true);
     }
 
@@ -102,6 +127,9 @@ public class TareaService {
         if (dto == null) {
             throw new IllegalArgumentException("Los datos de la tarea son obligatorios");
         }
+        // Por turno con un cambio de estado o el aviso de vencimiento de la misma tarea:
+        // la edición guarda la tarea entera y pisaba lo que ellos acababan de cambiar
+        tareaRepository.bloquear(id);
         mt_Tarea tarea = tareaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
 
@@ -132,8 +160,9 @@ public class TareaService {
         Long estadoNuevo = actualizada.getEstado() != null ? actualizada.getEstado().getId() : null;
         String estadoNombreNuevo = actualizada.getEstado() != null ? actualizada.getEstado().getNombre() : null;
 
-        // ID del usuario que realiza la acción (para no auto-notificar)
-        Integer usuarioAccionId = dto.getUsuarioCreadorId();
+        // ID del usuario que realiza la acción (para no auto-notificar). Los clientes
+        // antiguos no lo envían: entonces se mantiene el creador como antes.
+        Integer usuarioAccionId = dto.getUsuarioAccionId() != null ? dto.getUsuarioAccionId() : dto.getUsuarioCreadorId();
 
         // Si el usuario asignado cambió
         if (!java.util.Objects.equals(usuarioAsignadoNuevo, usuarioAsignadoAnterior)) {
@@ -207,18 +236,37 @@ public class TareaService {
         return TareaCalculos.sonFechasIguales(fecha1, fecha2);
     }
 
+    /** true si la tarea existe y la creó un usuario administrador (nivel 1). */
+    @Transactional(readOnly = true)
+    public boolean creadaPorAdministrador(Long id) {
+        return tareaRepository.findById(id)
+                .map(t -> t.getUsuarioCreador() != null && Integer.valueOf(1).equals(t.getUsuarioCreador().getNivelAcceso()))
+                .orElse(false);
+    }
+
     @Transactional
     public void eliminar(Long id) {
-        // Primero eliminar archivos físicos de todos los adjuntos asociados a la tarea
+        // La fila queda bloqueada: el aviso de vencimiento no puede colar un historial
+        // o una notificación entre el borrado de estos y el de la tarea
+        tareaRepository.bloquear(id);
+        // Archivos físicos de todos los adjuntos de la tarea: se borran cuando el
+        // borrado en BD queda confirmado. Antes se borraban primero y, si después
+        // fallaba el borrado de la tarea, esta seguía existiendo sin sus archivos.
         List<mt_Adjunto> adjuntos = adjuntoRepository.findByComentario_Tarea_Id(id);
         adjuntos.addAll(adjuntoRepository.findByTareaIdAndComentarioIsNull(id));
         for (mt_Adjunto adjunto : adjuntos) {
+            String ruta = adjunto.getRutaArchivo();
             try {
-                fileStorageService.eliminarArchivo(adjunto.getRutaArchivo());
+                ArchivosTransaccion.borrarTrasConfirmar(ruta, () -> fileStorageService.eliminarArchivo(ruta));
             } catch (IOException e) {
-                log.warn("No se pudo eliminar el archivo físico: {}", adjunto.getRutaArchivo(), e);
+                log.warn("No se pudo eliminar el archivo físico: {}", ruta, e);
             }
         }
+        // Historial y avisos de la tarea: sus claves foráneas no borran en cascada y,
+        // sin esto, eliminar una tarea con historial (todas lo tienen) fallaba con un
+        // conflicto de datos.
+        historialRepository.deleteByTareaId(id);
+        notificacionService.eliminarPorTarea(id);
         // Eliminar la tarea (cascada eliminará comentarios y adjuntos en BD)
         tareaRepository.deleteById(id);
     }
@@ -232,17 +280,13 @@ public class TareaService {
     }
 
     @Transactional
-    public TareaDTO cambiarEstado(Long tareaId, Long estadoId) {
-        CambioEstadoRequest request = new CambioEstadoRequest();
-        request.setEstadoId(estadoId);
-        return cambiarEstado(tareaId, request);
-    }
-
-    @Transactional
     public TareaDTO cambiarEstado(Long tareaId, CambioEstadoRequest request) {
         if (request == null || request.getEstadoId() == null) {
             throw new IllegalArgumentException("El estado destino es obligatorio");
         }
+        // Por turno: con dos «Completar» a la vez, el segundo ya ve la tarea completada
+        // y no crea otra vez la siguiente repetición ni repite avisos e historial
+        tareaRepository.bloquear(tareaId);
         mt_Tarea tarea = tareaRepository.findById(tareaId)
                 .orElseThrow(() -> new IllegalArgumentException("Tarea no encontrada"));
         mt_TareaEstado estado = estadoRepository.findById(request.getEstadoId())
@@ -252,13 +296,18 @@ public class TareaService {
             return toDto(tarea, true);
         }
 
+        boolean eraFinal = valorEstadoFinal(tarea);
         Usuario usuarioAccion = obtenerUsuarioAccion(request.getUsuarioAccionId(), tarea.getUsuarioAsignado());
         aplicarCambioEstado(tarea, estado, usuarioAccion, request.getMotivoBloqueo(), request.getComentario());
         mt_Tarea guardada = tareaRepository.save(tarea);
-        notificacionService.notificarCambioEstado(guardada, estado.getNombre());
+        // Con el autor del cambio, la persona asignada no recibe avisos de sus propios cambios
+        notificacionService.notificarCambioEstado(guardada, estado.getNombre(), request.getUsuarioAccionId());
         // Si el estado es final, notificar a los administradores
         if (Boolean.TRUE.equals(estado.getEstadoFinal())) {
             notificacionService.notificarCompletada(guardada, usuarioAccion);
+            if (!eraFinal) {
+                crearSiguienteRepeticion(guardada, usuarioAccion);
+            }
         }
         return toDto(guardada, true);
     }
@@ -287,9 +336,19 @@ public class TareaService {
         return tareas.stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
 
+    /** Horizonte máximo de «por vencer» (10 años): cualquier uso real queda muy por debajo. */
+    static final int MAX_DIAS_POR_VENCER = 3650;
+
     public List<TareaDTO> obtenerPorVencer(int dias) {
+        if (dias < 0) {
+            // El límite quedaría antes de ahora: nunca hay resultados (igual que antes,
+            // pero sin consultar ni arriesgar una fecha fuera de rango)
+            return List.of();
+        }
+        // Un valor enorme generaba una fecha imposible para la BD (error 500)
+        int diasAcotados = Math.min(dias, MAX_DIAS_POR_VENCER);
         LocalDateTime desde = LocalDateTime.now();
-        LocalDateTime hasta = LocalDate.now().plusDays(dias).atTime(23, 59, 59);
+        LocalDateTime hasta = LocalDate.now().plusDays(diasAcotados).atTime(23, 59, 59);
         return tareaRepository.findByEstado_EstadoFinalFalseAndFechaVencimientoBetween(desde, hasta)
                 .stream().map(tarea -> toDto(tarea, false)).collect(Collectors.toList());
     }
@@ -336,24 +395,25 @@ public class TareaService {
                 "Métricas Básicas - Total: {}, Vencidas: {}, En Progreso: {}, Pendientes: {}, Completadas: {}, Bloqueadas: {}",
                 total, vencidas, enProgreso, pendientes, completadas, tareasBloqueadas);
 
-        // Calcular estadísticas semanales (lunes a domingo actual)
-        LocalDateTime inicioSemana = ahora.minusDays(ahora.getDayOfWeek().getValue() - 1).toLocalDate().atStartOfDay();
-        LocalDateTime finSemana = inicioSemana.plusDays(6).withHour(23).withMinute(59).withSecond(59);
+        // Semana en curso: lunes 00:00 hasta el domingo 23:59:59.999999999, extremos
+        // incluidos. Antes se comparaba contra «inicioSemana - 1 día» y «finSemana + 1
+        // día», una ventana de nueve días que metía en el recuento el domingo anterior
+        // y el lunes siguiente.
+        LocalDateTime inicioSemana = ahora.toLocalDate()
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+                .atStartOfDay();
+        LocalDateTime finSemana = inicioSemana.plusDays(6).with(java.time.LocalTime.MAX);
 
         // Tareas completadas ESTA SEMANA (por fecha de finalización)
         long completadasSemana = tareas.stream()
-                .filter(t -> Boolean.TRUE.equals(valorEstadoFinal(t)) &&
-                        t.getFechaFinalizacion() != null &&
-                        t.getFechaFinalizacion().isAfter(inicioSemana.minusDays(1)) &&
-                        t.getFechaFinalizacion().isBefore(finSemana.plusDays(1)))
+                .filter(t -> Boolean.TRUE.equals(valorEstadoFinal(t))
+                        && TareaCalculos.dentroDe(t.getFechaFinalizacion(), inicioSemana, finSemana))
                 .count();
 
         // Total de tareas de esta semana
         long totalSemana = completadasSemana + tareas.stream()
-                .filter(t -> Boolean.FALSE.equals(valorEstadoFinal(t)) &&
-                        t.getFechaVencimiento() != null &&
-                        t.getFechaVencimiento().isAfter(inicioSemana.minusDays(1)) &&
-                        t.getFechaVencimiento().isBefore(finSemana.plusDays(1)))
+                .filter(t -> Boolean.FALSE.equals(valorEstadoFinal(t))
+                        && TareaCalculos.dentroDe(t.getFechaVencimiento(), inicioSemana, finSemana))
                 .count();
 
         // Métricas de tiempo
@@ -401,11 +461,7 @@ public class TareaService {
                         .orElse(0);
         log.debug("Tareas Vencidas: {}, Delay Promedio: {} días", tareasVencidasList.size(), delayPromedioDias);
 
-        // Tareas bloqueadas en el período actual
-        long tareasBloqueadasPeriodo = tareas.stream()
-                .filter(t -> t.getEstado() != null && Boolean.TRUE.equals(t.getEstado().getEsBloqueo()))
-                .count();
-        log.debug("Tareas Bloqueadas: {}", tareasBloqueadasPeriodo);
+        log.debug("Tareas Bloqueadas: {}", tareasBloqueadas);
 
         // Tareas próximas a vencer (próximos 3 días)
         LocalDateTime proximosTresDias = ahora.plusDays(3);
@@ -446,7 +502,7 @@ public class TareaService {
                 .tasaCompletacion(tasaCompletacion)
                 .eficiencia(eficiencia)
                 .delayPromedioDias(delayPromedioDias)
-                .tareasBloqueadasPeriodo(tareasBloqueadasPeriodo)
+                .tareasBloqueadasPeriodo(tareasBloqueadas)
                 .tareasProximasAVencer(tareasProximasAVencer)
                 .prioridadPromedioPendientes(prioridadPromedioPendientes)
                 .tareasSinAsignar(tareasSinAsignar)
@@ -488,7 +544,7 @@ public class TareaService {
         if (!tareaRepository.existsById(tareaId)) {
             throw new IllegalArgumentException("Tarea no encontrada");
         }
-        return historialRepository.findByTarea_IdOrderByFechaInicioDesc(tareaId).stream()
+        return historialRepository.findByTarea_IdOrderByFechaInicioDescIdDesc(tareaId).stream()
                 .map(this::toDtoHistorial)
                 .collect(Collectors.toList());
     }
@@ -509,7 +565,11 @@ public class TareaService {
                         .orElseThrow(() -> new IllegalArgumentException("Usuario asignado inexistente"))
                 : null);
 
-        if (dto.getUsuarioCreadorId() != null) {
+        // El creador se fija al crear (el controlador pone el usuario de la sesión).
+        // Al editar se conserva el que tiene la tarea: el valor del cuerpo se ignora,
+        // así nadie puede atribuir una tarea existente a otra persona. El formulario
+        // ya envía el creador actual, por lo que para el usuario no cambia nada.
+        if (esCreacion && dto.getUsuarioCreadorId() != null) {
             Usuario creador = usuarioRepository.findById(dto.getUsuarioCreadorId())
                     .orElseThrow(() -> new IllegalArgumentException("Usuario creador inexistente"));
             tarea.setUsuarioCreador(creador);
@@ -694,6 +754,10 @@ public class TareaService {
         if (Boolean.TRUE.equals(nuevoEstado.getEsBloqueo()) && (motivoBloqueo == null || motivoBloqueo.isBlank())) {
             throw new IllegalArgumentException("Es necesario detallar el motivo del bloqueo");
         }
+        // La columna admite 255: más largo fallaba al guardar (o se cortaba sin avisar)
+        if (Boolean.TRUE.equals(nuevoEstado.getEsBloqueo()) && motivoBloqueo.length() > MOTIVO_BLOQUEO_MAX) {
+            throw new IllegalArgumentException("El motivo del bloqueo no puede tener más de " + MOTIVO_BLOQUEO_MAX + " caracteres");
+        }
 
         LocalDateTime ahora = LocalDateTime.now();
         cerrarHistorialAbierto(tarea, ahora);
@@ -701,7 +765,7 @@ public class TareaService {
         tarea.setEstado(nuevoEstado);
         if (Boolean.TRUE.equals(nuevoEstado.getEstadoFinal())) {
             tarea.setFechaFinalizacion(ahora);
-        } else if (tarea.getFechaFinalizacion() != null && !Boolean.TRUE.equals(nuevoEstado.getEstadoFinal())) {
+        } else if (tarea.getFechaFinalizacion() != null) {
             tarea.setFechaFinalizacion(null);
         }
 
@@ -725,8 +789,146 @@ public class TareaService {
         registrarHistorial(tarea, nuevoEstado, usuarioAccion, ahora, motivoBloqueo, comentario);
     }
 
+    static final int MOTIVO_BLOQUEO_MAX = 255;
+
+    /** Comentario con el que nace cada repetición; enlaza con la tarea de la que sale. */
+    static final String MARCA_REPETICION = "Repetición de la tarea #";
+
+    /**
+     * «Repetir»: al completar una tarea periódica se crea la siguiente con el mismo
+     * contenido y las fechas desplazadas un periodo. Si ya existe (se reabrió y se
+     * volvió a completar), no se duplica.
+     */
+    private void crearSiguienteRepeticion(mt_Tarea tarea, Usuario usuarioAccion) {
+        String periodo = periodoRepeticion(tarea.getRepetir());
+        if (periodo == null) {
+            return;
+        }
+        // Su repetición ya se creó (la tarea se reabrió y se volvió a completar). Sin
+        // vencimiento, la fecha de referencia es la de finalización y cambiaba al
+        // completarla otra vez, así que la comprobación por fecha no bastaba.
+        if (historialRepository.countByComentario(MARCA_REPETICION + tarea.getId()) > 0) {
+            return;
+        }
+        LocalDateTime base = tarea.getFechaVencimiento() != null ? tarea.getFechaVencimiento() : tarea.getFechaFinalizacion();
+        // Las dos fechas recorren la misma cadena de repeticiones: se busca en la BD una sola vez
+        java.util.Map<Long, java.util.Optional<mt_Tarea>> anteriores = new java.util.HashMap<>();
+        LocalDateTime vencimiento = siguienteFecha(base, periodo, diaDeLaSerie(tarea, base, periodo, mt_Tarea::getFechaVencimiento, anteriores));
+        Integer clienteId = tarea.getClienteRelacionado() != null ? tarea.getClienteRelacionado().getId() : null;
+        Integer usuarioId = tarea.getUsuarioAsignado() != null ? tarea.getUsuarioAsignado().getId() : null;
+        if (tareaRepository.contarRepeticiones(tarea.getId(), tarea.getTitulo(), vencimiento, clienteId, usuarioId) > 0) {
+            return;
+        }
+        LocalDateTime inicio = tarea.getFechaInicio() == null ? null
+                : siguienteFecha(tarea.getFechaInicio(), periodo, diaDeLaSerie(tarea, tarea.getFechaInicio(), periodo, mt_Tarea::getFechaInicio, anteriores));
+        mt_TareaEstado inicial = estadoRepository.findByEstadoFinalFalseOrderByOrdenAsc().stream().findFirst().orElse(null);
+        mt_Tarea nueva = mt_Tarea.builder()
+                .titulo(tarea.getTitulo())
+                .descripcion(tarea.getDescripcion())
+                .prioridad(tarea.getPrioridad())
+                .notificar(tarea.getNotificar())
+                .enviarCorreo(tarea.getEnviarCorreo())
+                .fijada(tarea.getFijada())
+                .repetir(tarea.getRepetir())
+                .fechaInicio(inicio)
+                .fechaVencimiento(vencimiento)
+                .estado(inicial)
+                .usuarioAsignado(tarea.getUsuarioAsignado())
+                .usuarioCreador(tarea.getUsuarioCreador())
+                .clienteRelacionado(tarea.getClienteRelacionado())
+                .clientePotencialNombre(tarea.getClientePotencialNombre())
+                .cups(tarea.getCups())
+                .categoria(tarea.getCategoria())
+                .subcategoria(tarea.getSubcategoria())
+                .build();
+        mt_Tarea guardada = tareaRepository.save(nueva);
+        registrarHistorial(guardada, inicial, usuarioAccion, LocalDateTime.now(), null,
+                MARCA_REPETICION + tarea.getId());
+        notificacionService.notificarAsignacion(guardada, usuarioAccion != null ? usuarioAccion.getId() : null);
+    }
+
+    private static String periodoRepeticion(String repetir) {
+        if (repetir == null) {
+            return null;
+        }
+        String periodo = repetir.trim().toLowerCase(java.util.Locale.ROOT);
+        return java.util.Set.of("diario", "semanal", "mensual", "anual").contains(periodo) ? periodo : null;
+    }
+
+    /**
+     * Fecha siguiente de la serie. En las mensuales y anuales se respeta el día de la
+     * serie: una tarea del 31 pasa al 28 de febrero y vuelve al 31 en marzo (antes se
+     * quedaba en el 28 para siempre); una del 29 de febrero vuelve al 29 en bisiesto.
+     */
+    static LocalDateTime siguienteFecha(LocalDateTime fecha, String periodo, int diaDeLaSerie) {
+        return switch (periodo) {
+            case "diario" -> fecha.plusDays(1);
+            case "semanal" -> fecha.plusWeeks(1);
+            case "mensual" -> conDia(fecha.plusMonths(1), diaDeLaSerie);
+            case "anual" -> conDia(fecha.plusYears(1), diaDeLaSerie);
+            default -> null;
+        };
+    }
+
+    private static LocalDateTime conDia(LocalDateTime fecha, int dia) {
+        return fecha.withDayOfMonth(Math.min(Math.max(dia, 1), fecha.toLocalDate().lengthOfMonth()));
+    }
+
+    /**
+     * Día del mes de la serie (solo cuenta en las mensuales y anuales). Una fecha en el
+     * último día de su mes puede venir recortada (el 30 de abril de una tarea del 31) y una
+     * del 28, además, haberse quedado así con la versión anterior: en esos dos casos se
+     * sigue hacia atrás la cadena de repeticiones mientras los días no bajen y se toma el
+     * mayor. Así una serie que ya se había quedado en el 28 vuelve sola a su día. Cualquier
+     * otra fecha (también el 29 o el 30 puestos a mano) es el día de la serie, y si alguien
+     * cambió la fecha a mano (no es la que salía sola de la tarea previa), manda la fecha nueva.
+     */
+    private int diaDeLaSerie(mt_Tarea tarea, LocalDateTime base, String periodo,
+            java.util.function.Function<mt_Tarea, LocalDateTime> fechaDe,
+            java.util.Map<Long, java.util.Optional<mt_Tarea>> anteriores) {
+        int dia = base.getDayOfMonth();
+        if (!"mensual".equals(periodo) && !"anual".equals(periodo)) return dia;
+        mt_Tarea actual = tarea;
+        LocalDateTime fecha = base;
+        for (int saltos = 0; saltos < 60 && dia < 31 && puedeEstarRecortada(fecha); saltos++) {
+            mt_Tarea anterior = actual.getId() == null ? null
+                    : anteriores.computeIfAbsent(actual.getId(), id -> java.util.Optional.ofNullable(tareaAnterior(id))).orElse(null);
+            if (anterior == null || fechaDe.apply(anterior) == null) break;
+            LocalDateTime fechaAnterior = fechaDe.apply(anterior);
+            if (fechaAnterior.getDayOfMonth() < fecha.getDayOfMonth()) break;
+            // Solo se sigue si esta fecha pudo salir sola de la anterior (mismo mes y sin bajar
+            // del día que daba la versión de antes). Si no, alguien la puso a mano: manda ella
+            java.time.LocalDate generada = "anual".equals(periodo)
+                    ? fechaAnterior.toLocalDate().plusYears(1) : fechaAnterior.toLocalDate().plusMonths(1);
+            if (!java.time.YearMonth.from(generada).equals(java.time.YearMonth.from(fecha))
+                    || fecha.getDayOfMonth() < generada.getDayOfMonth()) break;
+            dia = Math.max(dia, fechaAnterior.getDayOfMonth());
+            actual = anterior;
+            fecha = fechaAnterior;
+        }
+        return dia;
+    }
+
+    private static boolean puedeEstarRecortada(LocalDateTime fecha) {
+        int dia = fecha.getDayOfMonth();
+        return dia == 28 || dia == fecha.toLocalDate().lengthOfMonth();
+    }
+
+    /** La tarea de la que salió esta repetición (por el comentario con el que nació). */
+    private mt_Tarea tareaAnterior(Long tareaId) {
+        for (String comentario : historialRepository.comentariosQueEmpiezanPor(tareaId, MARCA_REPETICION + "%")) {
+            try {
+                Long id = Long.valueOf(comentario.substring(MARCA_REPETICION.length()).trim());
+                return tareaRepository.findById(id).orElse(null);
+            } catch (NumberFormatException ignorado) {
+                // comentario con otro formato: se prueba el siguiente
+            }
+        }
+        return null;
+    }
+
     private void cerrarHistorialAbierto(mt_Tarea tarea, LocalDateTime referencia) {
-        historialRepository.findTopByTarea_IdOrderByFechaInicioDesc(tarea.getId()).ifPresent(historial -> {
+        historialRepository.findTopByTarea_IdOrderByFechaInicioDescIdDesc(tarea.getId()).ifPresent(historial -> {
             if (historial.getFechaFin() == null) {
                 historial.setFechaFin(referencia);
                 if (Boolean.TRUE.equals(historial.getEstado().getCuentaTiempo())

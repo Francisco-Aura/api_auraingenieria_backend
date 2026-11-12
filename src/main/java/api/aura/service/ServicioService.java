@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +30,10 @@ public class ServicioService {
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Autowired
+    private api.aura.repository.ServiciosPagosRepository serviciosPagosRepository;
+
+    @Transactional
     public Servicio guardarServicio(Servicio servicio) {
         logger.info("Guardando servicio para cliente ID: {}",
                 servicio.getCliente() != null ? servicio.getCliente().getId() : "null");
@@ -40,11 +46,14 @@ public class ServicioService {
             if (servicioExistente.isPresent()) {
                 Servicio servicioActual = servicioExistente.get();
 
-                servicioActual.setFecha(servicio.getFecha());
+                // El formulario no envía fecha, fecha de pago ni fecha de baja: cada edición
+                // las dejaba vacías (un servicio dado de baja volvía a estar activo al
+                // cambiarle la descripción). Solo se cambian si llegan.
+                if (servicio.getFecha() != null) servicioActual.setFecha(servicio.getFecha());
                 servicioActual.setFechaInicioServicio(servicio.getFechaInicioServicio());
                 servicioActual.setFechaFinServicio(servicio.getFechaFinServicio());
-                servicioActual.setFechaPago(servicio.getFechaPago());
-                servicioActual.setFechaBaja(servicio.getFechaBaja());
+                if (servicio.getFechaPago() != null) servicioActual.setFechaPago(servicio.getFechaPago());
+                if (servicio.getFechaBaja() != null) servicioActual.setFechaBaja(servicio.getFechaBaja());
                 servicioActual.setDescripcion(servicio.getDescripcion());
                 servicioActual.setIdGestora(servicio.getIdGestora());
                 servicioActual.setIdProducto(servicio.getIdProducto());
@@ -55,10 +64,9 @@ public class ServicioService {
                 servicioActual.setDescuento(servicio.getDescuento());
                 servicioActual.setImporteFinal(
                         resolverImporteFinal(servicio.getImporte(), servicio.getDescuento(), servicio.getImporteFinal()));
-                servicioActual.setIdPagoPlazos(servicio.getIdPagoPlazos());
-
                 logger.info("Actualizando modalidad de pago: {} -> {}",
                         servicioActual.getIdPagoPlazos(), servicio.getIdPagoPlazos());
+                servicioActual.setIdPagoPlazos(servicio.getIdPagoPlazos());
 
                 logger.info("Campos del servicio actualizados. Guardando en base de datos...");
                 return servicioRepository.save(servicioActual);
@@ -115,11 +123,17 @@ public class ServicioService {
             return importeFinal;
         }
         if (importe != null) {
-            return importe - (descuento != null ? descuento : 0d);
+            if (descuento == null) {
+                return importe;
+            }
+            // Resta en decimal: con double, 100.10 - 0.20 daba 99.89999999999999 y
+            // ese valor (con sus decimales espurios) llegaba a la BD y a los informes.
+            return BigDecimal.valueOf(importe).subtract(BigDecimal.valueOf(descuento)).doubleValue();
         }
         return null;
     }
 
+    @Transactional
     public Servicio renovarServicio(Integer id) {
         Optional<Servicio> originalOpt = servicioRepository.findById(id);
         if (originalOpt.isEmpty())
@@ -207,7 +221,11 @@ public class ServicioService {
                 .stream().map(this::toDTO).toList();
     }
 
+    @Transactional
     public void eliminarPorId(Integer id) {
+        // Su plan de pagos se borra en la misma transacción: la pantalla lo borraba en
+        // otra petición antes y, si la segunda fallaba, el servicio quedaba sin pagos
+        serviciosPagosRepository.findByServicioId(id).ifPresent(serviciosPagosRepository::delete);
         servicioRepository.deleteById(id);
     }
 

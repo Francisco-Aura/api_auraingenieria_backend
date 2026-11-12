@@ -31,6 +31,8 @@ public class TareaDTO {
     private Integer usuarioAsignadoId;
     private String usuarioAsignadoNombre;
     private Integer usuarioCreadorId;
+    /** Solo en peticiones: quién crea o edita la tarea (para no notificarle sus propios cambios). */
+    private Integer usuarioAccionId;
     private String usuarioCreadorNombre;
     private Integer nivelAccesoCreador;
     private Integer clienteRelacionadoId;

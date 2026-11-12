@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpHeaders;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -58,12 +58,12 @@ public class ContratoController {
                     ? contratoService.guardarContrato(contrato, true)
                     : contratoService.guardarContrato(contrato);
             return ResponseEntity.ok(guardado);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("Error al procesar el contrato (json)", e);
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el contrato"));
+                    .body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al procesar el contrato")));
         }
     }
 
@@ -79,12 +79,12 @@ public class ContratoController {
             Contrato contrato = parseContratoFromJson(node);
             Contrato guardado = guardarSegunArchivo(contrato, archivo, leerFlagEliminarArchivo(node));
             return ResponseEntity.ok(guardado);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("Error al procesar el contrato (multipart)", e);
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el contrato"));
+                    .body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al procesar el contrato")));
         }
     }
 
@@ -103,12 +103,12 @@ public class ContratoController {
                     ? contratoService.guardarContrato(contrato, true)
                     : contratoService.guardarContrato(contrato);
             return ResponseEntity.ok(actualizado);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("Error al procesar la actualización del contrato (json)", e);
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar el contrato"));
+                    .body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al actualizar el contrato")));
         }
     }
 
@@ -126,12 +126,12 @@ public class ContratoController {
             contrato.setId(id);
             Contrato actualizado = guardarSegunArchivo(contrato, archivo, leerFlagEliminarArchivo(node));
             return ResponseEntity.ok(actualizado);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("Error al procesar la actualización del contrato (multipart)", e);
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar el contrato"));
+                    .body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al actualizar el contrato")));
         }
     }
 
@@ -158,11 +158,9 @@ public class ContratoController {
             Contrato contrato = contratoService.obtenerPorId(id)
                     .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado"));
             Path ruta = contratoService.obtenerRutaPdf(id);
-            String nombre = contrato.getNombreArchivo() == null ? "contrato.pdf" : contrato.getNombreArchivo();
-            String seguro = nombre.replace("\"", "").replaceAll("[\r\n]", "");
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + seguro + "\"")
+                    .headers(DescargaSegura.cabeceras(contrato.getNombreArchivo(), "contrato.pdf"))
                     .body(new PathResource(ruta));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
@@ -181,6 +179,7 @@ public class ContratoController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarPorId(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         contratoService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
     }
@@ -198,10 +197,13 @@ public class ContratoController {
             return ResponseEntity.ok(guardado);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
+            // Como al crear o editar: el manejador global responde 409 con el motivo traducido
+            throw e;
         } catch (Exception e) {
             logger.error("Error al renovar contrato {} (json)", idContratoOriginal, e);
             return ResponseEntity.internalServerError()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al renovar el contrato"));
+                    .body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al renovar el contrato")));
         }
     }
 
@@ -221,10 +223,13 @@ public class ContratoController {
             return ResponseEntity.ok(guardado);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
+            // Como al crear o editar: el manejador global responde 409 con el motivo traducido
+            throw e;
         } catch (Exception e) {
             logger.error("Error al renovar contrato {} (multipart)", idContratoOriginal, e);
             return ResponseEntity.internalServerError()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al renovar el contrato"));
+                    .body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al renovar el contrato")));
         }
     }
 
@@ -242,7 +247,7 @@ public class ContratoController {
         } catch (Exception e) {
             logger.error("Error al actualizar comentario de renovación en contrato {}", id, e);
             return ResponseEntity.internalServerError()
-                    .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar comentario"));
+                    .body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al actualizar comentario")));
         }
     }
 
@@ -267,6 +272,13 @@ public class ContratoController {
 
     private Contrato parseContratoFromJson(JsonNode jsonNode) throws Exception {
         Contrato contrato = objectMapper.treeToValue(jsonNode, Contrato.class);
+        // Los metadatos del PDF solo los fija ContratoFileStorageService: si se
+        // aceptaran del cliente, un contrato nuevo podría apuntar (y luego borrar)
+        // el PDF de otro contrato.
+        contrato.setNombreArchivo(null);
+        contrato.setRutaArchivoContrato(null);
+        contrato.setTipoMimeArchivo(null);
+        contrato.setTamanioArchivo(null);
 
         if (jsonNode.has("idCliente") && !jsonNode.get("idCliente").isNull()
                 && !jsonNode.get("idCliente").asText().isEmpty()) {
