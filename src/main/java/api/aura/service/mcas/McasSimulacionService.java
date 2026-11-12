@@ -36,6 +36,7 @@ public class McasSimulacionService {
     private final MotorMcas motor;
     private final McasProposalService propuestas;
     private final ModuloConfiguracionService flags;
+    private final McasCondicionesCobroService condicionesCobro;
 
     @Transactional(readOnly = true)
     public McasSimulacionDTO simular(Integer idConjunto, String referenciaContrato) {
@@ -128,12 +129,13 @@ public class McasSimulacionService {
     private List<McasSimulacionDTO.Cuota> calendario(ResultadoCalculo res, Contrato c, ContextoCalculo ctx) {
         if (res.getResultado() != ResultadoCalculo.Resultado.CALCULADO || res.getImporteTotal() == null)
             return List.of();
-        LocalDate primera = ctx.getFechaEfectiva();
         List<BigDecimal> cuotas = motor.buildPagos(res.getImporteTotal(),
                 res.getNumeroPagos() != null ? res.getNumeroPagos() : 1);
+        List<LocalDate> fechas = condicionesCobro.fechasCobro(ctx.getIdComercializadora(), ctx.getIdGestora(),
+                ctx.getFechaEfectiva(), cuotas.size());
         List<McasSimulacionDTO.Cuota> lista = new ArrayList<>();
         for (int i = 0; i < cuotas.size(); i++)
-            lista.add(new McasSimulacionDTO.Cuota(i + 1, primera != null ? primera.plusMonths(i) : null, cuotas.get(i)));
+            lista.add(new McasSimulacionDTO.Cuota(i + 1, fechas.get(i), cuotas.get(i)));
         return lista;
     }
 
@@ -145,7 +147,6 @@ public class McasSimulacionService {
         datos.put("esRenovacion", ctx.getEsRenovacion());
         datos.put("tipoRenovacion", ctx.getTipoRenovacion());
         datos.put("altaNueva", ctx.getAltaNueva());
-        datos.put("ambito", ctx.getAmbito());
         datos.put("zonaComision", ctx.getZonaComision());
         datos.put("codigoProducto", ctx.getCodigoProductoComercial());
         datos.put("tarifaAcceso", ctx.getCodigoTarifaAcceso());
@@ -155,6 +156,8 @@ public class McasSimulacionService {
         datos.put("potenciaKw", ctx.getPotenciaCalculoKw());
         datos.put("numeroPagos", ctx.getNumeroPagos());
         datos.put("fechaInicio", ctx.getFechaEfectiva());
+        datos.put("ultimaRelacion", ctx.getFechaUltimaRelacionComercializadora());
+        datos.put("mesesUltimaRelacion", ctx.getMesesDesdeUltimaRelacion());
         return datos;
     }
 }

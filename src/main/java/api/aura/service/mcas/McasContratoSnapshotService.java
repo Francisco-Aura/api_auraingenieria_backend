@@ -31,7 +31,6 @@ public class McasContratoSnapshotService {
         datos.put("cups_luz", c.getPuntoSuministro() != null ? c.getPuntoSuministro().getCUPSluz() : null);
         datos.put("cups_gas", c.getPuntoSuministro() != null ? c.getPuntoSuministro().getCUPSgas() : null);
         datos.put("fecha_inicio", fecha(c.getFechaInicio()));
-        datos.put("fecha_fin", fecha(c.getFechaFin()));
         datos.put("comercializadora_id", c.getIdComercializadoraActual());
         datos.put("tarifa_luz_id", ceroANull(c.getIdTarifaLuz()));
         datos.put("tarifa_gas_id", ceroANull(c.getIdTarifaGas()));
@@ -49,11 +48,9 @@ public class McasContratoSnapshotService {
         datos.put("segmento", c.getMcasSegmento());
         datos.put("es_renovacion", c.getMcasEsRenovacion());
         datos.put("tipo_renovacion", c.getMcasTipoRenovacion());
-        datos.put("ambito", c.getMcasAmbito());
         datos.put("gestora_id", c.getMcasIdGestora());
         datos.put("producto_comercial_id", c.getMcasIdProductoComercial());
         datos.put("zona_comision", c.getMcasZonaComision());
-        datos.put("numero_pagos", c.getMcasNumeroPagos());
         datos.put("alta_nueva", c.getMcasAltaNueva());
 
         try {

@@ -35,9 +35,22 @@ class McasContratoSnapshotServiceTest {
         Contrato contrato = contratoBase();
         String inicial = service.capturar(contrato).hash();
 
-        contrato.setMcasNumeroPagos(12);
+        contrato.setMcasFeeEurMwh(new java.math.BigDecimal("13"));
 
         assertThat(service.capturar(contrato).hash()).isNotEqualTo(inicial);
+    }
+
+    @Test
+    void no_cambia_con_lo_que_no_influye_en_la_comision() {
+        Contrato contrato = contratoBase();
+        String inicial = service.capturar(contrato).hash();
+
+        // La fecha fin (cambiarla no es una baja anticipada; duda 15) y el antiguo nº de
+        // pagos del contrato (ahora de la comercializadora; duda 8) no cuentan
+        contrato.setFechaFin(java.sql.Date.valueOf("2030-12-31"));
+        contrato.setMcasNumeroPagos(12);
+
+        assertThat(service.capturar(contrato).hash()).isEqualTo(inicial);
     }
 
     private Contrato contratoBase() {

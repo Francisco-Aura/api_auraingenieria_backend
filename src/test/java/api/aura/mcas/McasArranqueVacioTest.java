@@ -73,6 +73,7 @@ class McasArranqueVacioTest {
     @Autowired private ContratoService contratoService;
     @Autowired private UsuarioRepository usuarios;
     @Autowired private ClienteRepository clientes;
+    @Autowired private api.aura.repository.PuntoSuministroRepository puntos;
     @Autowired private TBComercializadorasRepository comercializadoras;
     @Autowired private TBTarifasLuzRepository tarifasLuz;
     @Autowired private TBProductosRepository productosServicio;
@@ -200,10 +201,10 @@ class McasArranqueVacioTest {
         filas.add(((ObjectNode) tramo("consumo_kwh", 20_000, null, false, 120, 3)).put("minInclusivo", false));
         guardarTabla(tramos, filas);
 
-        // Iberdrola: varios datos (zona, potencia, oferta) y condición de ámbito
+        // Iberdrola: varios datos (zona, potencia, oferta)
         int iberdrolaTabla = tabla(iberdrola, "Iberdrola 2026");
-        int varios = regla(iberdrolaTabla, "Iberdrola · fuera de ámbito", "MULTI_DIMENSION_LOOKUP",
-                "{\"ambito\":\"FUERA\"}", null, null);
+        int varios = regla(iberdrolaTabla, "Iberdrola · por zonas", "MULTI_DIMENSION_LOOKUP",
+                null, null, null);
         ArrayNode cubo = mapper.createArrayNode();
         orden = 1;
         String[] zonas = {"ZBR", "ZAR"};
@@ -256,8 +257,8 @@ class McasArranqueVacioTest {
         calcula(contratoJson(naturgy, "NAT-1").put("mcasSegmento", "PYME").put("consumoAnual", 50_000),
                 "200.00", "Naturgy · pymes");
         calcula(contratoJson(iberdrola, "IBE-1").put("mcasSegmento", "PYME").put("consumoAnual", 9_000)
-                .put("mcasAmbito", "FUERA").put("mcasZonaComision", "ZBR").put("potencia1", 10)
-                .put("mcasIdProductoComercial", idProducto(iberdrola, "PLAN_ONLINE")), "90.00", "Iberdrola · fuera de ámbito");
+                .put("potencia1", 10)
+                .put("mcasIdProductoComercial", idProducto(iberdrola, "PLAN_ONLINE")), "90.00", "Iberdrola · por zonas");
         calcula(contratoJson(iris, "IRIS-2").put("mcasSegmento", "RESIDENCIAL").put("consumoAnual", 3_000),
                 "50.00", "Iris · residencial");
 
@@ -301,7 +302,7 @@ class McasArranqueVacioTest {
         assertThat(publicada.path("estado").asText()).isEqualTo("PUBLICADO");
 
         Contrato contrato = guardar(contratoJson(iberdrola, "IBE-2").put("mcasSegmento", "PYME").put("consumoAnual", 9_000)
-                .put("mcasAmbito", "FUERA").put("mcasZonaComision", "ZBR").put("potencia1", 10)
+                .put("potencia1", 10)
                 .put("mcasIdProductoComercial", idProducto(iberdrola, "PLAN_ONLINE")));
         JsonNode propuesta = get("/api/mcas/propuestas/contrato/" + contrato.getId()).get(0);
         assertThat(propuesta.path("importeAutomatico").decimalValue()).isEqualByComparingTo("90.00");
@@ -387,6 +388,10 @@ class McasArranqueVacioTest {
     private Contrato guardar(ObjectNode cuerpo) throws Exception {
         Contrato c = mapper.treeToValue(cuerpo, Contrato.class);
         c.setCliente(clientes.save(Cliente.builder().nombre("Cliente " + c.getContrato()).cif(c.getContrato()).build()));
+        // La zona de comisión sale del punto: sin zonas por provincia, un CUPS que no es ES0021 es ZBR
+        c.setPuntoSuministro(puntos.save(api.aura.entity.PuntoSuministro.builder().cliente(c.getCliente())
+                .direccion("Calle Mayor 1").codigoPostal("30001").poblacion("Murcia").provincia("Murcia")
+                .CUPSluz("ES0031" + String.format("%014d", (long) Math.abs(c.getContrato().hashCode())) + "AA").build()));
         return contratoService.guardarContrato(c);
     }
 

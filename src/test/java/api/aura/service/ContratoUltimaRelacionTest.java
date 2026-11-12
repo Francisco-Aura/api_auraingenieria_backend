@@ -67,10 +67,18 @@ class ContratoUltimaRelacionTest {
     }
 
     @Test
-    void si_el_ultimo_anterior_es_de_otra_comercializadora_se_queda_vacia() {
+    void cuenta_la_ultima_relacion_con_esa_comercializadora_aunque_despues_hubiera_otra() {
+        // Ejemplo del cliente (duda 22): Endesa, luego Iberdrola y vuelve a Endesa
         Contrato c = nuevo(IBERDROLA,
                 contrato(1, IBERDROLA, "2024-11-01", "2025-10-31"),
                 contrato(2, ENDESA, "2025-11-01", "2026-10-31"));
+
+        assertThat(c.getMcasFechaUltimaRelacionComercializadora()).isEqualTo(Date.valueOf("2025-10-31"));
+    }
+
+    @Test
+    void si_nunca_estuvo_con_esa_comercializadora_se_queda_vacia() {
+        Contrato c = nuevo(IBERDROLA, contrato(2, ENDESA, "2025-11-01", "2026-10-31"));
 
         assertThat(c.getMcasFechaUltimaRelacionComercializadora()).isNull();
     }

@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface McasLineaPropuestaRepository extends JpaRepository<McasLineaPropuesta, Long> {
     List<McasLineaPropuesta> findByIdPropuestaOrderByOrdenAsc(Long idPropuesta);
+
+    void deleteByIdPropuesta(Long idPropuesta);
 }

@@ -43,13 +43,19 @@ public class McasVistaPreviaService {
     private final McasConjuntoReglasRepository conjuntoRepo;
     private final TBComercializadorasRepository comercializadoras;
     private final ObjectMapper mapper;
+    private final McasCondicionesCobroService condicionesCobro;
+    private final api.aura.service.ContratoService contratos;
 
     @PersistenceContext
     private EntityManager em;
 
     public McasVistaPreviaService(McasProposalService propuestas, MotorMcas motor,
                                   McasConjuntoReglasRepository conjuntoRepo,
-                                  TBComercializadorasRepository comercializadoras, ObjectMapper mapper) {
+                                  TBComercializadorasRepository comercializadoras, ObjectMapper mapper,
+                                  McasCondicionesCobroService condicionesCobro,
+                                  api.aura.service.ContratoService contratos) {
+        this.condicionesCobro = condicionesCobro;
+        this.contratos = contratos;
         this.propuestas = propuestas;
         this.motor = motor;
         this.conjuntoRepo = conjuntoRepo;
@@ -61,9 +67,18 @@ public class McasVistaPreviaService {
     public McasVistaPreviaDTO calcular(JsonNode cuerpo) {
         Contrato c = leer(cuerpo);
         Integer idExistente = c.getId();
+        // Igual que al guardar: la última relación con la comercializadora no se escribe, se
+        // calcula (con su id todavía puesto, para no contarse a sí mismo como contrato anterior)
+        contratos.rellenarUltimaRelacion(c);
         c.setId(null);
         ContextoCalculo ctx = propuestas.construirContexto(c, "vista-previa-" + UUID.randomUUID());
+        McasVistaPreviaDTO dto = evaluar(c, idExistente, ctx);
+        // La zona ya no se escribe en el contrato: la pantalla enseña la que ha salido
+        dto.setZonaComision(ctx.getZonaComision());
+        return dto;
+    }
 
+    private McasVistaPreviaDTO evaluar(Contrato c, Integer idExistente, ContextoCalculo ctx) {
         // Tabla de comisiones que usaría el cálculo y sus reglas: de ahí salen los campos.
         boolean conComercializadora = ctx.getIdComercializadora() != null && ctx.getIdComercializadora() != 0;
         Optional<McasConjuntoReglas> conjunto = Optional.empty();
@@ -121,9 +136,11 @@ public class McasVistaPreviaService {
      */
     public static McasVistaPreviaDTO sinImportes(McasVistaPreviaDTO dto) {
         if (dto == null) return null;
-        String mensaje = dto.getEstado() == null ? dto.getMensaje() : switch (dto.getEstado()) {
+        // «Ya tiene comisión» es un aviso para administradores: quien graba el contrato no
+        // revisa comisiones (respuesta del cliente a la duda 18). Para él, datos completos.
+        Estado estado = dto.getEstado() == Estado.YA_TIENE_COMISION ? Estado.CALCULADO : dto.getEstado();
+        String mensaje = estado == null ? dto.getMensaje() : switch (estado) {
             case CALCULADO -> "Datos de la comisión completos: se calculará al guardar el contrato y la revisará un administrador.";
-            case YA_TIENE_COMISION -> "Este contrato ya tiene una comisión aprobada. Los cambios del contrato no generan otra comisión.";
             case REQUIERE_REVISION_MANUAL, ERROR_CALCULO -> "Un administrador revisará la comisión de este contrato en Comisiones MCAS.";
             case NO_COMISIONABLE -> "Este contrato no genera comisión.";
             default -> dto.getMensaje();
@@ -136,7 +153,8 @@ public class McasVistaPreviaService {
                         .usadoPor(c.getUsadoPor() == null || c.getUsadoPor().isEmpty() ? List.of() : List.of("Tabla de comisiones"))
                         .build())
                 .toList();
-        return McasVistaPreviaDTO.builder().estado(dto.getEstado()).mensaje(mensaje).campos(campos).build();
+        return McasVistaPreviaDTO.builder().estado(estado).mensaje(mensaje).campos(campos)
+                .zonaComision(dto.getZonaComision()).build();
     }
 
     private McasVistaPreviaDTO conResultado(ResultadoCalculo res, Contrato c, ContextoCalculo ctx, Campos campos) {
@@ -164,7 +182,8 @@ public class McasVistaPreviaService {
         return McasVistaPreviaDTO.builder().estado(Estado.YA_TIENE_COMISION)
                 .mensaje("Este contrato ya tiene una comisión aprobada: "
                         + McasMensajes.importeEnPagos(importe, aprobada.getNumeroPagos())
-                        + ". Los cambios del contrato no generan otra comisión.")
+                        + ". Si solo cambia la fecha de inicio, sus cuotas pendientes se mueven solas;"
+                        + " otros cambios no generan otra comisión (se ajusta en su servicio).")
                 .importe(importe).numeroPagos(aprobada.getNumeroPagos())
                 .campos(campos.derivar(Set.of())).build();
     }
@@ -181,14 +200,14 @@ public class McasVistaPreviaService {
                 .findFirst();
     }
 
-    /** Mismo calendario que la propuesta: desde la fecha de inicio del contrato, un pago al mes. */
+    /** Mismo calendario que la propuesta: las fechas de cobro de la comercializadora, un pago al mes. */
     private List<McasVistaPreviaDTO.Cuota> calendario(BigDecimal importe, int pagos, Contrato c, ContextoCalculo ctx) {
-        LocalDate primera = ctx.getFechaEfectiva();
         List<BigDecimal> cuotas = motor.buildPagos(importe, pagos);
+        List<LocalDate> fechas = condicionesCobro.fechasCobro(ctx.getIdComercializadora(), ctx.getIdGestora(),
+                ctx.getFechaEfectiva(), cuotas.size());
         List<McasVistaPreviaDTO.Cuota> lista = new ArrayList<>();
         for (int i = 0; i < cuotas.size(); i++)
-            lista.add(McasVistaPreviaDTO.Cuota.builder().numero(i + 1)
-                    .fecha(primera != null ? primera.plusMonths(i) : null).importe(cuotas.get(i)).build());
+            lista.add(McasVistaPreviaDTO.Cuota.builder().numero(i + 1).fecha(fechas.get(i)).importe(cuotas.get(i)).build());
         return lista;
     }
 

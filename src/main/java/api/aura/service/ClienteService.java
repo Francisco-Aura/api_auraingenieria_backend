@@ -45,7 +45,7 @@ public class ClienteService {
         cliente.setCif(clienteDTO.getCif());
         cliente.setDireccion(clienteDTO.getDireccion());
         cliente.setPoblacion(clienteDTO.getPoblacion());
-        cliente.setProvincia(clienteDTO.getProvincia());
+        cliente.setProvincia(api.aura.util.Provincias.nombreOficial(clienteDTO.getProvincia()));
         cliente.setCodigoPostal(clienteDTO.getCodigoPostal());
         cliente.setNombreAutorizado(clienteDTO.getNombreAutorizado());
         cliente.setTelefonoAutorizado(clienteDTO.getTelefonoAutorizado());
@@ -113,7 +113,7 @@ public class ClienteService {
                     cliente.setCif(clienteDTO.getCif());
                     cliente.setDireccion(clienteDTO.getDireccion());
                     cliente.setPoblacion(clienteDTO.getPoblacion());
-                    cliente.setProvincia(clienteDTO.getProvincia());
+                    cliente.setProvincia(api.aura.util.Provincias.nombreOficial(clienteDTO.getProvincia()));
                     cliente.setCodigoPostal(clienteDTO.getCodigoPostal());
                     cliente.setNombreAutorizado(clienteDTO.getNombreAutorizado());
                     cliente.setTelefonoAutorizado(clienteDTO.getTelefonoAutorizado());
@@ -196,6 +196,9 @@ public class ClienteService {
      * Solo afecta entidades sin baja efectiva. Los valores historicos de los anos
      * 1 y 1900 se consideran equivalentes a NULL.
      */
+    @Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher eventos;
+
     private void darBajaEnCascada(Integer clienteId, java.util.Date fechaBaja) {
         java.sql.Date fechaSql = new java.sql.Date(fechaBaja.getTime());
 
@@ -210,6 +213,12 @@ public class ClienteService {
         var contratos = contratoRepository.findActivosPorClienteId(clienteId);
         contratos.forEach(c -> c.setFechaBaja(fechaSql));
         contratoRepository.saveAll(contratos);
+
+        // Una baja antes del año puede dar lugar a retrocesión de la comisión (MCAS)
+        if (eventos != null)
+            contratos.stream().map(c -> c.getPuntoSuministro() != null ? c.getPuntoSuministro().getId() : null)
+                    .filter(java.util.Objects::nonNull).distinct()
+                    .forEach(id -> eventos.publishEvent(new api.aura.service.mcas.McasBajaEvent(id)));
     }
 
     public Page<Cliente> obtenerTodosLosClientes(PageRequest pageRequest) {

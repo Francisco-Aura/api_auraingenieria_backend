@@ -30,7 +30,7 @@ public final class McasCamposRequeridos {
     private static final Map<String, McasCampo> CONDICIONES = Map.ofEntries(
             Map.entry("tipo_suministro", TIPO_SUMINISTRO), Map.entry("segmento", SEGMENTO),
             Map.entry("es_renovacion", ES_RENOVACION), Map.entry("tipo_renovacion", TIPO_RENOVACION),
-            Map.entry("alta_nueva", ALTA_NUEVA), Map.entry("ambito", AMBITO),
+            Map.entry("alta_nueva", ALTA_NUEVA),
             Map.entry("zona_comision", ZONA_COMISION), Map.entry("tarifa_acceso", TARIFA_ACCESO),
             Map.entry("codigo_producto", PRODUCTO),
             Map.entry("consumo_min_kwh", CONSUMO), Map.entry("consumo_max_kwh", CONSUMO),
@@ -39,7 +39,7 @@ public final class McasCamposRequeridos {
 
     /** Condiciones cuyo valor es una opción del desplegable (las demás son sí/no o rangos). */
     private static final Set<String> CONDICIONES_CON_OPCIONES = Set.of(
-            "tipo_suministro", "segmento", "tipo_renovacion", "ambito", "zona_comision", "tarifa_acceso",
+            "tipo_suministro", "segmento", "tipo_renovacion", "zona_comision", "tarifa_acceso",
             "codigo_producto");
 
     /** Dimensiones de mcas_valores_rango y el campo del contrato que miran. */

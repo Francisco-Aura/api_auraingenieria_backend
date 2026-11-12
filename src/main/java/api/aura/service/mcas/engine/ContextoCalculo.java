@@ -16,8 +16,8 @@ public class ContextoCalculo {
     Boolean esRenovacion;
     String tipoRenovacion;          // FIRMADA / TACITA / OTRA
     String tipoPrecio;              // FIJO / INDEXADO
-    String ambito;                  // DENTRO / FUERA / NA
-    String zonaComision;
+    String zonaComision;            // sale de la provincia del punto (McasZonasService); ya no se escribe a mano
+    String motivoSinZona;           // por qué no se ha podido saber la zona, para decirlo si una regla la pide
     Integer idTarifaLuz;
     Integer idTarifaGas;
     String codigoTarifaAcceso;      // nombre de la tarifa (ej: "3.0TD") para match en condiciones
@@ -29,9 +29,10 @@ public class ContextoCalculo {
     BigDecimal consumoAnualKwh;
     BigDecimal consumoAnualMwh;     // = consumoAnualKwh / 1000
     BigDecimal feeEurMwh;
-    Integer numeroPagos;            // manual del usuario, prioridad sobre regla
+    Integer numeroPagos;            // de la comercializadora o su gestora (condiciones de cobro); la regla gana
     LocalDate fechaEfectiva;
     Boolean altaNueva;
     LocalDate fechaUltimaRelacionComercializadora;
+    Integer mesesDesdeUltimaRelacion; // meses completos de esa fecha a la de inicio; null si no hubo relación
     String correlacionId;
 }

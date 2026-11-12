@@ -35,6 +35,8 @@ public class McasVistaPreviaDTO {
     private String regla;
     @Builder.Default
     private List<String> avisos = List.of();
+    /** Zona de comisión del contrato, calculada por la provincia de su punto (vacía si no la tiene o no se sabe). */
+    private String zonaComision;
     /** Datos que piden las reglas de la comercializadora, con los que faltan marcados. */
     @Builder.Default
     private List<Campo> campos = List.of();

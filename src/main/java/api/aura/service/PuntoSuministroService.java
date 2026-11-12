@@ -45,6 +45,14 @@ public class PuntoSuministroService {
     @Autowired
     private ContratoRepository contratoRepository;
 
+    /** Para revisar las retrocesiones MCAS cuando el punto se da de baja o se reactiva. */
+    @Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher eventos;
+
+    private void avisarMcas(Integer idPunto) {
+        if (eventos != null && idPunto != null) eventos.publishEvent(new api.aura.service.mcas.McasBajaEvent(idPunto));
+    }
+
     @Transactional
     public PuntoSuministro guardarPuntoSuministro(PuntoSuministro puntoSuministro) {
         // Si es una actualización, cargamos la entidad gestionada desde BD para
@@ -179,6 +187,7 @@ public class PuntoSuministroService {
         }
 
         PuntoSuministro saved = puntoSuministroRepository.save(target);
+        avisarMcas(saved.getId());
 
         // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto
         // de suministro
@@ -198,7 +207,7 @@ public class PuntoSuministroService {
         destino.setDireccion(origen.getDireccion());
         destino.setCodigoPostal(origen.getCodigoPostal());
         destino.setPoblacion(origen.getPoblacion());
-        destino.setProvincia(origen.getProvincia());
+        destino.setProvincia(api.aura.util.Provincias.nombreOficial(origen.getProvincia()));
         destino.setIdentificacion(origen.getIdentificacion());
         destino.setUbicacion(origen.getUbicacion());
         destino.setCUPSluz(origen.getCUPSluz());
@@ -278,6 +287,7 @@ public class PuntoSuministroService {
                 throw new IllegalArgumentException("No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
             }
             ps.setFechaBaja(null);
+            avisarMcas(ps.getId());
             puntoSuministroRepository.save(ps);
         });
     }

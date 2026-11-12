@@ -69,6 +69,8 @@ public class McasProposalService {
     private final TBTarifasLuzRepository tarifasLuzRepo;
     private final TBTarifasGasRepository tarifasGasRepo;
     private final TBProductosRepository productosServicioRepo;
+    private final McasCondicionesCobroService condicionesCobro;
+    private final McasZonasService zonas;
 
     // Feature flag codes
     public static final String FLAG_ENABLED      = "MCAS_ENABLED";
@@ -132,6 +134,8 @@ public class McasProposalService {
     public McasPropuesta triggerDesdeContrato(Integer idContrato) {
         Contrato contrato = contratoRepo.findByIdForUpdate(idContrato)
                 .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado: " + idContrato));
+        // La zona sale de la provincia del punto: se pone antes de la instantánea para que cuente
+        zonas.aplicar(contrato);
         McasContratoSnapshotService.Snapshot actual = snapshots.capturar(contrato);
         propuestaRepo.findActivasPorContrato(idContrato).stream()
                 .filter(p -> !ESTADOS_TERMINALES.contains(p.getEstado()))
@@ -163,6 +167,7 @@ public class McasProposalService {
         String corr = UUID.randomUUID().toString();
         Contrato c = contratoRepo.findByIdForUpdate(idContrato)
                 .orElseThrow(() -> new IllegalArgumentException("Contrato no encontrado: " + idContrato));
+        zonas.aplicar(c);
         McasContratoSnapshotService.Snapshot snapshot = snapshots.capturar(c);
 
         // Validar campos mínimos
@@ -187,9 +192,18 @@ public class McasProposalService {
         // Una sola comisión por contrato y tipo de evento: si ya se aprobó una, los
         // cambios posteriores del contrato no generan otra propuesta aprobable.
         Optional<McasPropuesta> conComision = comisionYaGenerada(idContrato, tipoEvento(c), null);
-        if (conComision.isPresent())
+        if (conComision.isPresent()) {
+            McasPropuesta aprobada = conComision.get();
+            Set<String> cambios = cambiosRespectoA(aprobada, snapshot);
+            // Nada que influya en la comisión (p. ej. solo la fecha fin, o una clave que ya no
+            // forma parte de la instantánea): la aprobada sigue valiendo tal cual.
+            if (cambios.isEmpty()) return aprobada;
+            // Solo la fecha de inicio (se grabó estimada y se ajusta unos días; respuesta del
+            // cliente a la duda 15): se mueven las cuotas pendientes del servicio, sin avisos.
+            if (cambios.equals(Set.of(CLAVE_FECHA_INICIO))) return moverCobros(aprobada, c, snapshot, usuario, corr);
             return crearPropuesta(c, "REQUIERE_REVISION_MANUAL",
-                    mensajeComisionExistente(conComision.get()), List.of(), corr, usuario, snapshot);
+                    mensajeComisionExistente(aprobada), List.of(), corr, usuario, snapshot);
+        }
 
         // Un «No procede» sigue valiendo aunque el contrato cambie: la propuesta nueva
         // va a revisión manual (no se puede aprobar en lote) hasta que el validador
@@ -206,7 +220,7 @@ public class McasProposalService {
         p = propuestaRepo.save(p);
         if (res.getLineas() != null && !res.getLineas().isEmpty()) guardarLineas(p, res);
         if (res.getResultado() == ResultadoCalculo.Resultado.CALCULADO && res.getImporteTotal() != null)
-            guardarCalendario(p, res);
+            guardarCalendario(c, p, res);
         auditoria.registrar(p.getId(), idContrato, "PROPUESTA_CALCULADA", null, p.getEstado(), res, usuario, corr);
         log.info("MCAS contrato={} propuesta={} estado={}", idContrato, p.getId(), p.getEstado());
         return p;
@@ -525,18 +539,15 @@ public class McasProposalService {
         // calculó), el del contrato o un único pago.
         Integer pagos = numeroPagos != null ? numeroPagos
                 : p.getNumeroPagos() != null && p.getNumeroPagos() > 0 ? p.getNumeroPagos()
-                : Objects.requireNonNullElse(pagosDelContrato(c), 1);
+                : Objects.requireNonNullElse(pagosDeLaComercializadora(c), 1);
         p.setDatosEditadosJson(datosEdicionJson(p, importeDefinitivo, pagos, overrideJson, motivoEdicion));
         if (importeDefinitivo != null) p.setImporteDefinitivo(importeDefinitivo);
         p.setNumeroPagos(pagos);
-        // Las propuestas que no pasaron por el motor no tienen primera aplicación:
-        // la fecha de inicio del contrato (calendario y servicio).
-        if (p.getFechaPrimeraAplicacion() == null)
-            p.setFechaPrimeraAplicacion(fecha(c.getFechaInicio(), null));
 
-        // Reconstruir calendario con importe editado
+        // Reconstruir calendario con importe editado (y la fecha del primer cobro, que las
+        // propuestas que no pasaron por el motor no tienen)
         BigDecimal imp = p.getImporteDefinitivo() != null ? p.getImporteDefinitivo() : p.getImporteCalculado();
-        reconstruirCalendario(p, imp, pagos);
+        reconstruirCalendario(c, p, imp, pagos);
         if (lineaRepo.findByIdPropuestaOrderByOrdenAsc(p.getId()).isEmpty())
             lineaRepo.save(McasLineaPropuesta.builder()
                     .idPropuesta(p.getId()).tipoLinea("AJUSTE").metodo("MANUAL")
@@ -608,15 +619,15 @@ public class McasProposalService {
 
     /**
      * La propuesta que ocupa la clave del contrato en su estado actual, si sigue activa.
-     * Una comisión aprobada cuyo servicio se borró (o se dio de baja) ya no cuenta como
-     * comisión: su clave se libera para que el contrato, aunque no haya cambiado, se pueda
-     * volver a calcular. Antes «Calcular propuesta» devolvía la aprobada antigua sin servicio.
+     * Una comisión aprobada cuyo servicio se borró ya no cuenta como comisión: su clave se
+     * libera para que el contrato, aunque no haya cambiado, se pueda volver a calcular. Antes
+     * «Calcular propuesta» devolvía la aprobada antigua sin servicio.
      */
     private Optional<McasPropuesta> propuestaActivaPorClave(String clave, String usuario, String corr) {
         Optional<McasPropuesta> existente = propuestaRepo.findByClaveIdempotencia(clave)
                 .filter(p -> !List.of("CANCELADO", "SUPERADO").contains(p.getEstado()));
         if (existente.isPresent() && ESTADOS_CON_COMISION.contains(existente.get().getEstado())
-                && !servicioVigente(existente.get())) {
+                && !tieneServicio(existente.get())) {
             McasPropuesta sinServicio = existente.get();
             liberarClave(sinServicio, "sin-servicio");
             // Antes del alta de la nueva: Hibernate inserta antes de actualizar y la clave es única
@@ -629,10 +640,13 @@ public class McasProposalService {
         return existente;
     }
 
-    /** Pagos introducidos en el contrato (1 a 12); null si no hay o no son válidos. */
-    private Integer pagosDelContrato(Contrato c) {
-        Integer n = c.getMcasNumeroPagos();
-        return n != null && n >= 1 && n <= 12 ? n : null;
+    /**
+     * Pagos en que cobra la comercializadora del contrato (o su gestora), de sus condiciones
+     * de cobro; null si no los tiene configurados. Desde el 05/11/2026 el contrato ya no
+     * tiene «Nº de pagos» (respuesta del cliente a la duda 8): un valor antiguo se ignora.
+     */
+    private Integer pagosDeLaComercializadora(Contrato c) {
+        return condicionesCobro.numeroPagos(c.getIdComercializadoraActual(), c.getMcasIdGestora());
     }
 
     /** Tipo de evento de la propuesta del contrato: RENOVACION o NUEVO_CONTRATO. */
@@ -646,7 +660,7 @@ public class McasProposalService {
                 .filter(x -> !Objects.equals(x.getId(), excluida))
                 .filter(x -> ESTADOS_CON_COMISION.contains(x.getEstado()))
                 .filter(x -> Objects.equals(x.getTipoEvento(), tipoEvento))
-                .filter(this::servicioVigente)
+                .filter(this::tieneServicio)
                 .findFirst();
     }
 
@@ -668,8 +682,7 @@ public class McasProposalService {
         Set<Integer> idsServicio = conComision.stream().map(McasPropuesta::getIdServicioCreado)
                 .filter(Objects::nonNull).collect(java.util.stream.Collectors.toSet());
         Set<Integer> vigentes = idsServicio.isEmpty() ? Set.of() : servicioRepo.findAllById(idsServicio).stream()
-                .filter(s -> s.getFechaBaja() == null).map(Servicio::getId)
-                .collect(java.util.stream.Collectors.toSet());
+                .map(Servicio::getId).collect(java.util.stream.Collectors.toSet());
         Set<String> claves = new HashSet<>();
         for (McasPropuesta p : conComision)
             if (p.getIdServicioCreado() != null && vigentes.contains(p.getIdServicioCreado()))
@@ -678,15 +691,14 @@ public class McasProposalService {
     }
 
     /**
-     * Si el servicio de la comisión se eliminó o se dio de baja, esa comisión ya no cuenta.
-     * Al eliminar el servicio la BD deja vacío id_servicio_creado (ON DELETE SET NULL):
-     * una propuesta aprobada sin servicio es una cuyo servicio se borró. Antes contaba
-     * como comisión vigente y MCAS no volvía a proponer la de ese contrato.
+     * Una comisión aprobada cuenta mientras exista su servicio. Si se elimina, ya no cuenta
+     * y MCAS la vuelve a proponer (la BD deja vacío id_servicio_creado: ON DELETE SET NULL).
+     * Si solo se da de baja sigue contando: es lo que pasa cuando el contrato o el punto se
+     * dan de baja y llega una retrocesión, y la comisión cobrada no se tiene que volver a
+     * proponer (respuesta del cliente a la duda 17).
      */
-    private boolean servicioVigente(McasPropuesta p) {
-        if (p.getIdServicioCreado() == null) return false;
-        return servicioRepo.findById(p.getIdServicioCreado())
-                .map(s -> s.getFechaBaja() == null).orElse(false);
+    private boolean tieneServicio(McasPropuesta p) {
+        return p.getIdServicioCreado() != null && servicioRepo.findById(p.getIdServicioCreado()).isPresent();
     }
 
     private String mensajeComisionExistente(McasPropuesta previa) {
@@ -753,8 +765,6 @@ public class McasProposalService {
                     || (producto.getActivoHasta() != null && fecha.isAfter(producto.getActivoHasta()));
             if (incompatible) f.add("producto_comercial_activo_y_compatible");
         }
-        if (c.getMcasNumeroPagos() != null
-                && (c.getMcasNumeroPagos() < 1 || c.getMcasNumeroPagos() > 12)) f.add("numero_pagos_1_a_12");
         return f;
     }
 
@@ -772,6 +782,7 @@ public class McasProposalService {
         BigDecimal kwh = c.getConsumoAnual() != null ? BigDecimal.valueOf(c.getConsumoAnual()) : null;
         BigDecimal mwh = kwh != null ? kwh.divide(BigDecimal.valueOf(1000), 6, RoundingMode.HALF_UP) : null;
         LocalDate fechaEf = fecha(c.getFechaInicio(), LocalDate.now());
+        LocalDate ultimaRelacion = fecha(c.getMcasFechaUltimaRelacionComercializadora(), null);
 
         String codigoTarifa = resolverCodigoTarifa(c);
         McasProductoComercial producto = c.getMcasIdProductoComercial() != null
@@ -783,6 +794,10 @@ public class McasProposalService {
         BigDecimal potencia = mayorPotenciaContratada(c);
         String potenciaOrigen = potencia != null ? "MAYOR_CONTRATADA" : null;
 
+        // Zona de comisión: por la provincia del punto de suministro (o su CUPS si la
+        // comercializadora no tiene zonas). Lo que hubiera escrito en el contrato se ignora.
+        McasZonasService.Resuelta zona = zonas.aplicar(c);
+
         return ContextoCalculo.builder()
                 .idContrato(c.getId())
                 .idComercializadora(c.getIdComercializadoraActual())
@@ -792,8 +807,8 @@ public class McasProposalService {
                 .esRenovacion(c.getMcasEsRenovacion())
                 .tipoRenovacion(c.getMcasTipoRenovacion())
                 .tipoPrecio(c.getMcasTipoPrecio())
-                .ambito(c.getMcasAmbito())
-                .zonaComision(c.getMcasZonaComision())
+                .zonaComision(zona.zona())
+                .motivoSinZona(zona.motivo())
                 .idTarifaLuz(c.getIdTarifaLuz() != 0 ? c.getIdTarifaLuz() : null)
                 .idTarifaGas(c.getIdTarifaGas() != 0 ? c.getIdTarifaGas() : null)
                 .codigoTarifaAcceso(codigoTarifa)
@@ -805,13 +820,22 @@ public class McasProposalService {
                 .consumoAnualKwh(kwh)
                 .consumoAnualMwh(mwh)
                 .feeEurMwh(c.getMcasFeeEurMwh())
-                .numeroPagos(c.getMcasNumeroPagos())
+                .numeroPagos(pagosDeLaComercializadora(c))
                 .fechaEfectiva(fechaEf)
                 .altaNueva(c.getMcasAltaNueva())
-                .fechaUltimaRelacionComercializadora(
-                        fecha(c.getMcasFechaUltimaRelacionComercializadora(), null))
+                .fechaUltimaRelacionComercializadora(ultimaRelacion)
+                .mesesDesdeUltimaRelacion(mesesEntre(ultimaRelacion, fechaEf))
                 .correlacionId(corr)
                 .build();
+    }
+
+    /**
+     * Meses completos entre el fin de la última relación con la comercializadora y la fecha de
+     * inicio (15/05/2025 a 13/02/2026: 8). Null sin relación anterior; 0 si se solapan.
+     */
+    static Integer mesesEntre(LocalDate ultimaRelacion, LocalDate inicio) {
+        if (ultimaRelacion == null || inicio == null) return null;
+        return (int) Math.max(0, java.time.temporal.ChronoUnit.MONTHS.between(ultimaRelacion, inicio));
     }
 
     /** Mayor potencia contratada (P1–P6) mayor que cero, o null si no hay ninguna. */
@@ -886,7 +910,7 @@ public class McasProposalService {
                 .tipoEvento(tipoEvento(c))
                 .claveIdempotencia(clave).estado(estado)
                 .idPoliticaRetrocesion(idRetrocesion)
-                .numeroPagos(pagosDelContrato(c))
+                .numeroPagos(pagosDeLaComercializadora(c))
                 .trazaCalculoJson(toJson(traza))
                 .advertenciasJson(toJson(advertencias)).creadoPor(usuario).build());
         auditoria.registrar(p.getId(), c.getId(), "PROPUESTA_CREADA", null, estado,
@@ -905,8 +929,10 @@ public class McasProposalService {
             case REQUIERE_DATOS -> "REQUIERE_DATOS";
         };
         String tipo = tipoEvento(c);
-        // La primera cuota va siempre en la fecha de inicio del contrato.
-        LocalDate fechaPrimeraAplicacion = ctx.getFechaEfectiva();
+        // La primera cuota va en la fecha del primer cobro (condiciones de cobro de la
+        // comercializadora; sin configurar, la fecha de inicio del contrato).
+        LocalDate fechaPrimeraAplicacion = condicionesCobro.fechasCobro(
+                ctx.getIdComercializadora(), ctx.getIdGestora(), ctx.getFechaEfectiva(), 1).get(0);
         List<String> advertencias = new ArrayList<>(
                 res.getAdvertencias() != null ? res.getAdvertencias() : List.of());
         Integer idRetrocesion = seleccionarRetrocesion(ctx, advertencias);
@@ -924,7 +950,7 @@ public class McasProposalService {
                 .importeDefinitivo(res.getImporteTotal())
                 // Sin importe calculado el motor no resuelve los pagos: los del contrato,
                 // para que «Completar manualmente» no cree el servicio en un solo pago.
-                .numeroPagos(res.getNumeroPagos() != null ? res.getNumeroPagos() : pagosDelContrato(c))
+                .numeroPagos(res.getNumeroPagos() != null ? res.getNumeroPagos() : pagosDeLaComercializadora(c))
                 .fechaPrimeraAplicacion(fechaPrimeraAplicacion)
                 .advertenciasJson(advertencias.isEmpty() ? null : toJson(advertencias))
                 .creadoPor(usuario).actualizadoPor(usuario).actualizadoEn(LocalDateTime.now())
@@ -932,9 +958,9 @@ public class McasProposalService {
     }
 
     /**
-     * La politica de retrocesion es informativa: no calcula ni descuenta nada, por
-     * eso se asocia siempre para mostrar la «retrocesión potencial»; el indicador
-     * FLAG_RETROCESION queda reservado para aplicar retrocesiones en las bajas. Si
+     * En el alta la politica de retrocesion no calcula ni descuenta nada: se asocia
+     * siempre para mostrar la «retrocesión potencial» y es la que usa despues
+     * McasRetrocesionService (con FLAG_RETROCESION encendido) si hay una baja antes del año. Si
      * esta mal configurada (dos politicas con la misma especificidad) se deja sin
      * asignar y se anota como advertencia, en vez de tumbar toda la propuesta y
      * dejar el contrato sin ninguna comision que revisar.
@@ -966,21 +992,28 @@ public class McasProposalService {
         }
     }
 
-    private void guardarCalendario(McasPropuesta p, ResultadoCalculo res) {
+    private void guardarCalendario(Contrato c, McasPropuesta p, ResultadoCalculo res) {
         int n = res.getNumeroPagos() != null ? res.getNumeroPagos() : 1;
-        reconstruirCalendario(p, res.getImporteTotal(), n);
+        reconstruirCalendario(c, p, res.getImporteTotal(), n);
     }
 
-    private void reconstruirCalendario(McasPropuesta p, BigDecimal importe, int numeroPagos) {
+    /** Cuotas de la comisión con las fechas de cobro de la comercializadora del contrato. */
+    private void reconstruirCalendario(Contrato c, McasPropuesta p, BigDecimal importe, int numeroPagos) {
         calendarioRepo.deleteByIdPropuesta(p.getId());
         List<BigDecimal> cuotas = motor.buildPagos(importe, numeroPagos);
-        LocalDate primeraFecha = p.getFechaPrimeraAplicacion();
+        List<LocalDate> fechas = fechasCobro(c, cuotas.size());
+        p.setFechaPrimeraAplicacion(fechas.get(0));
         for (int i = 0; i < cuotas.size(); i++) {
             calendarioRepo.save(McasCalendarioPago.builder()
                     .idPropuesta(p.getId()).numeroPago(i + 1)
-                    .fechaPago(primeraFecha != null ? primeraFecha.plusMonths(i) : null)
+                    .fechaPago(fechas.get(i))
                     .importe(cuotas.get(i)).build());
         }
+    }
+
+    private List<LocalDate> fechasCobro(Contrato c, int cuotas) {
+        return condicionesCobro.fechasCobro(c.getIdComercializadoraActual(), c.getMcasIdGestora(),
+                fecha(c.getFechaInicio(), null), cuotas);
     }
 
     private void actualizarLineasDefinitivas(McasPropuesta p, BigDecimal totalDefinitivo) {
@@ -1062,10 +1095,11 @@ public class McasProposalService {
         s.setImporte(imp != null ? imp.doubleValue() : 0.0);
         s.setImporteFinal(imp != null ? imp.doubleValue() : 0.0);
         s.setDescuento(0.0);
-        if (p.getFechaPrimeraAplicacion() != null)
-            s.setFechaInicioServicio(java.sql.Date.valueOf(p.getFechaPrimeraAplicacion()));
-        else if (c.getFechaInicio() != null)
+        // El servicio dura lo que el contrato; cada cuota lleva su fecha de cobro
+        if (c.getFechaInicio() != null)
             s.setFechaInicioServicio(new java.sql.Date(c.getFechaInicio().getTime()));
+        else if (p.getFechaPrimeraAplicacion() != null)
+            s.setFechaInicioServicio(java.sql.Date.valueOf(p.getFechaPrimeraAplicacion()));
         if (c.getFechaFin() != null)
             s.setFechaFinServicio(new java.sql.Date(c.getFechaFin().getTime()));
         s.setObservaciones("Comisión generada por MCAS. Propuesta #" + p.getId() + ". "
@@ -1138,6 +1172,146 @@ public class McasProposalService {
             }
             if (pagos.isEmpty() && imp != null) { sp.setPrimerPagoImporte(imp.doubleValue()); sp.setPrimerPagoPagado(false); }
         serviciosPagosRepo.save(sp);
+    }
+
+    // ============================================================
+    // CONTRATO BORRADO Y CAMBIOS DE UN CONTRATO YA COMISIONADO
+    // ============================================================
+
+    /**
+     * Borra las comisiones de un contrato que se va a borrar: sus propuestas (con su desglose
+     * y calendario) y los servicios de comisión que crearon, con su plan de pagos. Borrar un
+     * contrato es que no llegó a hacerse, así que su comisión tampoco existe (respuesta del
+     * cliente a la duda 17). La auditoría se conserva, con una entrada que lo explica.
+     * Una baja del contrato o del punto es otra cosa: no pasa por aquí y la comisión se queda.
+     */
+    @Transactional
+    public void eliminarComisionesDelContrato(Integer idContrato) {
+        List<McasPropuesta> propuestas = propuestaRepo.findByIdContratoOrderByCreadoEnDesc(idContrato);
+        if (propuestas.isEmpty()) return;
+        String usuario = usuario();
+        List<Integer> servicios = propuestas.stream().map(McasPropuesta::getIdServicioCreado)
+                .filter(Objects::nonNull).distinct().toList();
+        for (Integer idServicio : servicios) {
+            serviciosPagosRepo.findByServicioId(idServicio).ifPresent(serviciosPagosRepo::delete);
+            if (servicioRepo.existsById(idServicio)) servicioRepo.deleteById(idServicio);
+        }
+        for (McasPropuesta p : propuestas) {
+            calendarioRepo.deleteByIdPropuesta(p.getId());
+            lineaRepo.deleteByIdPropuesta(p.getId());
+        }
+        propuestaRepo.deleteAll(propuestas);
+        auditoria.registrar(null, idContrato, "CONTRATO_ELIMINADO", null, null,
+                Map.of("propuestas_borradas", propuestas.size(), "servicios_borrados", servicios), usuario, null);
+        log.info("MCAS contrato={} borrado: {} propuestas y servicios {} eliminados", idContrato, propuestas.size(), servicios);
+    }
+
+    private static final String CLAVE_FECHA_INICIO = "fecha_inicio";
+
+    /**
+     * Datos de la instantánea actual que difieren de los de la comisión aprobada. Solo se
+     * comparan las claves de la instantánea de ahora: las que se quitaron después (p. ej. la
+     * fecha fin o el nº de pagos del contrato) ya no influyen y no cuentan como cambio. Si la
+     * instantánea aprobada no se puede leer, se da por cambiada entera (revisión a mano).
+     */
+    private Set<String> cambiosRespectoA(McasPropuesta aprobada, McasContratoSnapshotService.Snapshot actual) {
+        if (actual.hash().equals(aprobada.getHashContrato())) return Set.of();
+        try {
+            Map<String, Object> antes = mapper.readValue(aprobada.getInstantaneaJson(),
+                    new com.fasterxml.jackson.core.type.TypeReference<LinkedHashMap<String, Object>>() {});
+            Map<String, Object> ahora = mapper.readValue(actual.json(),
+                    new com.fasterxml.jackson.core.type.TypeReference<LinkedHashMap<String, Object>>() {});
+            Set<String> cambios = new TreeSet<>();
+            for (Map.Entry<String, Object> dato : ahora.entrySet())
+                if (!antes.containsKey(dato.getKey()) || !Objects.equals(String.valueOf(antes.get(dato.getKey())),
+                        String.valueOf(dato.getValue())))
+                    cambios.add(dato.getKey());
+            return cambios;
+        } catch (Exception e) {
+            log.warn("MCAS propuesta={} instantánea ilegible: {}", aprobada.getId(), e.getMessage());
+            return Set.of("instantanea");
+        }
+    }
+
+    /** Pagos de cada cuota de ServiciosPagos, del 1 al 12 (las columnas se llaman así). */
+    private static final List<String> CUOTAS_SERVICIO = List.of("primer", "segundo", "tercer", "cuarto", "quinto",
+            "sexto", "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo");
+
+    /**
+     * Solo ha cambiado la fecha de inicio de un contrato con la comisión aprobada: las cuotas
+     * que aún no se han cobrado pasan a las fechas de cobro de la nueva fecha de inicio, el
+     * servicio empieza el nuevo día y la comisión queda al día con el contrato, sin abrir otra
+     * propuesta ni avisos. No se tocan las cobradas ni las que se cambiaron a mano en el
+     * servicio (duda 13: cuotas 2 y 3 con huecos): solo se mueve la que sigue en la fecha que
+     * le tocaba con la fecha de inicio anterior.
+     */
+    private McasPropuesta moverCobros(McasPropuesta aprobada, Contrato c,
+                                      McasContratoSnapshotService.Snapshot snapshot, String usuario, String corr) {
+        Servicio servicio = servicioRepo.findById(aprobada.getIdServicioCreado()).orElseThrow();
+        List<McasCalendarioPago> calendario = calendarioRepo.findByIdPropuestaOrderByNumeroPagoAsc(aprobada.getId());
+        int cuotas = Math.max(1, Math.max(calendario.size(),
+                aprobada.getNumeroPagos() != null ? aprobada.getNumeroPagos() : 1));
+        List<LocalDate> fechas = fechasCobro(c, Math.min(cuotas, CUOTAS_SERVICIO.size()));
+        LocalDate inicioAnteriorAprobado = fechaInicioDeLaInstantanea(aprobada);
+        List<LocalDate> fechasAnteriores = condicionesCobro.fechasCobro(c.getIdComercializadoraActual(),
+                c.getMcasIdGestora(), inicioAnteriorAprobado, fechas.size());
+        List<Integer> aMano = new ArrayList<>();
+
+        List<Integer> movidas = new ArrayList<>();
+        Optional<ServiciosPagos> plan = serviciosPagosRepo.findByServicioId(servicio.getId());
+        plan.ifPresent(sp -> {
+            org.springframework.beans.BeanWrapper cuota = new org.springframework.beans.BeanWrapperImpl(sp);
+            for (int i = 0; i < fechas.size(); i++) {
+                String prefijo = CUOTAS_SERVICIO.get(i) + "Pago";
+                if (Boolean.TRUE.equals(cuota.getPropertyValue(prefijo + "Pagado"))) continue;
+                if (cuota.getPropertyValue(prefijo + "Importe") == null && i > 0) continue;
+                LocalDate actual = api.aura.util.FechaNegocio.aLocalDate((java.util.Date) cuota.getPropertyValue(prefijo + "Fecha"));
+                if (actual != null && !actual.equals(fechasAnteriores.get(i))) { aMano.add(i + 1); continue; }
+                cuota.setPropertyValue(prefijo + "Fecha", fechas.get(i) != null ? java.sql.Date.valueOf(fechas.get(i)) : null);
+                movidas.add(i + 1);
+            }
+            serviciosPagosRepo.save(sp);
+        });
+        for (McasCalendarioPago pago : calendario) {
+            int i = pago.getNumeroPago() - 1;
+            if (i >= 0 && i < fechas.size() && (plan.isEmpty() || movidas.contains(pago.getNumeroPago())))
+                pago.setFechaPago(fechas.get(i));
+        }
+        calendarioRepo.saveAll(calendario);
+
+        java.util.Date inicioAnterior = servicio.getFechaInicioServicio();
+        if (c.getFechaInicio() != null) servicio.setFechaInicioServicio(new java.sql.Date(c.getFechaInicio().getTime()));
+        servicioRepo.save(servicio);
+
+        if (!fechas.isEmpty() && (plan.isEmpty() || movidas.contains(1))) aprobada.setFechaPrimeraAplicacion(fechas.get(0));
+        // Su clave era la de la instantánea anterior: si la fecha volviera atrás, la encontraría
+        // por clave y no movería las cuotas. Sin clave, cada cambio se compara con la instantánea.
+        liberarClave(aprobada, "cobros");
+        aprobada.setHashContrato(snapshot.hash());
+        aprobada.setInstantaneaJson(snapshot.json());
+        aprobada.setActualizadoPor(usuario);
+        aprobada.setActualizadoEn(LocalDateTime.now());
+        propuestaRepo.save(aprobada);
+        auditoria.registrar(aprobada.getId(), c.getId(), "COBROS_MOVIDOS_POR_FECHA_INICIO", aprobada.getEstado(),
+                aprobada.getEstado(), Map.of(
+                        "fecha_inicio_anterior", String.valueOf(inicioAnterior),
+                        "fecha_inicio_nueva", String.valueOf(fecha(c.getFechaInicio(), null)),
+                        "cuotas_movidas", movidas,
+                        "cuotas_cambiadas_a_mano", aMano,
+                        "id_servicio", servicio.getId()), usuario, corr);
+        log.info("MCAS contrato={} propuesta={}: cuotas {} movidas por cambio de fecha de inicio",
+                c.getId(), aprobada.getId(), movidas);
+        return aprobada;
+    }
+
+    /** Fecha de inicio guardada en la instantánea de la propuesta (la que había al aprobar o al último traslado). */
+    private LocalDate fechaInicioDeLaInstantanea(McasPropuesta p) {
+        try {
+            String texto = mapper.readTree(p.getInstantaneaJson()).path(CLAVE_FECHA_INICIO).asText(null);
+            return texto == null || texto.isBlank() || "null".equals(texto) ? null : LocalDate.parse(texto.substring(0, 10));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String toJson(Object o) {

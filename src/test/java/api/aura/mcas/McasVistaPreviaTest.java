@@ -5,6 +5,7 @@ import api.aura.dto.mcas.McasCampo;
 import api.aura.dto.mcas.McasVistaPreviaDTO;
 import api.aura.entity.Cliente;
 import api.aura.entity.Contrato;
+import api.aura.entity.mcas.McasCondicionCobro;
 import api.aura.entity.mcas.McasConjuntoReglas;
 import api.aura.entity.mcas.McasPropuesta;
 import api.aura.entity.mcas.McasReglaComision;
@@ -15,6 +16,7 @@ import api.aura.entity.tablas_maestras.TBProductos;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.repository.mcas.McasAuditoriaRepository;
+import api.aura.repository.mcas.McasCondicionCobroRepository;
 import api.aura.repository.mcas.McasConjuntoReglasRepository;
 import api.aura.repository.mcas.McasPropuestaRepository;
 import api.aura.repository.mcas.McasReglaComisionRepository;
@@ -67,12 +69,14 @@ class McasVistaPreviaTest {
     @Autowired private ContratoService contratoService;
     @Autowired private ModuloConfiguracionService modulos;
     @Autowired private ClienteRepository clientes;
+    @Autowired private api.aura.repository.PuntoSuministroRepository puntos;
     @Autowired private ContratoRepository contratos;
     @Autowired private TBComercializadorasRepository comercializadoras;
     @Autowired private McasConjuntoReglasRepository conjuntos;
     @Autowired private McasReglaComisionRepository reglas;
     @Autowired private McasValorRangoRepository rangos;
     @Autowired private McasPropuestaRepository propuestas;
+    @Autowired private McasCondicionCobroRepository condicionesCobro;
     @Autowired private McasAuditoriaRepository auditorias;
     @Autowired private TBProductosRepository productosServicio;
     @Autowired private TBPagoPlazosRepository pagoPlazos;
@@ -100,7 +104,9 @@ class McasVistaPreviaTest {
     void calcula_la_comision_estimada_con_regla_legible_y_calendario() {
         Integer iris = comercializadoraIris();
 
-        McasVistaPreviaDTO r = vistaPrevia.calcular(pyme(iris).put("mcasNumeroPagos", 2));
+        // Los pagos son de la comercializadora (condiciones de cobro), no del contrato
+        condicionesCobro.save(McasCondicionCobro.builder().idComercializadora(iris).numeroPagos(2).build());
+        McasVistaPreviaDTO r = vistaPrevia.calcular(pyme(iris).put("mcasNumeroPagos", 7));
 
         assertThat(r.getEstado()).isEqualTo(McasVistaPreviaDTO.Estado.CALCULADO);
         assertThat(r.getImporte()).isEqualByComparingTo("571.26");
@@ -166,21 +172,28 @@ class McasVistaPreviaTest {
         TBComercializadoras com = comercializadoras.save(TBComercializadoras.builder().nombre("VP IBERDROLA").build());
         McasConjuntoReglas generico = conjunto(com.getId(), null, "Iberdrola 2026");
         McasReglaComision matriz = reglas.save(McasReglaComision.builder().idConjuntoReglas(generico.getId())
-                .codigo("IBE_MATRIZ").nombre("Iberdrola · fuera de ámbito").prioridad(10).metodoCalculo("MATRIX_LOOKUP")
-                .condicionesJson("{\"ambito\":\"FUERA\"}").activo(true).build());
+                .codigo("IBE_MATRIZ").nombre("Iberdrola · por zonas").prioridad(10).metodoCalculo("MATRIX_LOOKUP")
+                .activo(true).build());
         celda(matriz, 1, "ZBR", "74.40");
         celda(matriz, 2, "ZAR", "57.60");
         conjunto(com.getId(), 77, "Iberdrola gestora Nexo");
 
-        McasVistaPreviaDTO r = vistaPrevia.calcular(base(com.getId()).put("mcasAmbito", "FUERA")
-                .put("potencia1", 10).put("mcasZonaComision", "ZAR"));
+        // La zona no se escribe: sale del punto (sin zonas por provincia, el CUPS ES0021 es ZAR),
+        // y lo que llegue escrito en el contrato se ignora
+        Cliente titular = clientes.save(Cliente.builder().nombre("Titular zona").cif("VPZ" + System.nanoTime()).build());
+        api.aura.entity.PuntoSuministro punto = puntos.save(api.aura.entity.PuntoSuministro.builder().cliente(titular)
+                .direccion("Calle Mayor 1").codigoPostal("30001").poblacion("Murcia").provincia("Murcia")
+                .CUPSluz("ES0021000000000001AA").build());
+        com.fasterxml.jackson.databind.node.ObjectNode cuerpo = base(com.getId()).put("potencia1", 10)
+                .put("mcasZonaComision", "ZBR");
+        cuerpo.putObject("puntoSuministro").put("id", punto.getId());
+        McasVistaPreviaDTO r = vistaPrevia.calcular(cuerpo);
 
         assertThat(r.getEstado()).isEqualTo(McasVistaPreviaDTO.Estado.CALCULADO);
         assertThat(r.getImporte()).isEqualByComparingTo("57.60");
         assertThat(r.getCampos()).extracting(McasVistaPreviaDTO.Campo::getClave).containsExactly(
-                McasCampo.AMBITO, McasCampo.ZONA_COMISION, McasCampo.POTENCIA, McasCampo.GESTORA);
+                McasCampo.ZONA_COMISION, McasCampo.POTENCIA, McasCampo.GESTORA);
         assertThat(campo(r, McasCampo.ZONA_COMISION).orElseThrow().getValores()).containsExactly("ZAR", "ZBR");
-        assertThat(campo(r, McasCampo.AMBITO).orElseThrow().getValores()).containsExactly("FUERA");
         assertThat(campo(r, McasCampo.GESTORA).orElseThrow().getUsadoPor()).containsExactly("Iberdrola gestora Nexo");
     }
 
@@ -246,7 +259,8 @@ class McasVistaPreviaTest {
         assertThat(r.getEstado()).isEqualTo(McasVistaPreviaDTO.Estado.YA_TIENE_COMISION);
         assertThat(r.getImporte()).isEqualByComparingTo("571.26");
         assertThat(r.getMensaje()).isEqualTo("Este contrato ya tiene una comisión aprobada: 571,26 € en 1 pago. "
-                + "Los cambios del contrato no generan otra comisión.");
+                + "Si solo cambia la fecha de inicio, sus cuotas pendientes se mueven solas;"
+                + " otros cambios no generan otra comisión (se ajusta en su servicio).");
     }
 
     @Test
@@ -292,7 +306,7 @@ class McasVistaPreviaTest {
         List<String> campos = new ArrayList<>();
         nodo.fieldNames().forEachRemaining(campos::add);
         assertThat(campos).containsExactlyInAnyOrder("estado", "mensaje", "importe", "numeroPagos", "calendario",
-                "regla", "avisos", "campos");
+                "regla", "avisos", "zonaComision", "campos");
         assertThat(json).doesNotContain("traza").doesNotContain("IRIS_PYME");
 
         mvc.perform(post("/api/mcas/vista-previa").contentType(MediaType.APPLICATION_JSON)

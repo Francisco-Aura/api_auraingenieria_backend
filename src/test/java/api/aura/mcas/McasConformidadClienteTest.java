@@ -4,11 +4,13 @@ import api.aura.controller.mcas.McasPropuestasController;
 import api.aura.entity.Cliente;
 import api.aura.entity.Contrato;
 import api.aura.entity.Servicio;
+import api.aura.entity.ServiciosPagos;
 import api.aura.entity.mcas.McasAuditoria;
 import api.aura.entity.mcas.McasCalendarioPago;
 import api.aura.entity.mcas.McasConjuntoReglas;
 import api.aura.entity.mcas.McasPoliticaRetrocesion;
 import api.aura.entity.mcas.McasProductoComercial;
+import api.aura.entity.mcas.McasCondicionCobro;
 import api.aura.entity.mcas.McasPropuesta;
 import api.aura.entity.mcas.McasReglaComision;
 import api.aura.entity.mcas.McasTramoRetrocesion;
@@ -95,17 +97,26 @@ class McasConformidadClienteTest {
     @Autowired private ServiciosPagosRepository serviciosPagos;
     @Autowired private McasAuditoriaRepository auditorias;
     @Autowired private McasPropuestaRepository propuestas;
+    @Autowired private api.aura.repository.mcas.McasCondicionCobroRepository condicionesCobro;
+    @Autowired private api.aura.service.ContratoService contratoService;
+    @Autowired private api.aura.service.mcas.McasCondicionesCobroService cobros;
+    @Autowired private api.aura.repository.mcas.McasZonaComisionRepository zonasRepo;
+    @Autowired private api.aura.repository.PuntoSuministroRepository puntos;
+    @Autowired private api.aura.service.mcas.McasVistaPreviaService vistaPrevia;
     @Autowired private TBGestorasRepository gestoras;
     @Autowired private McasProductoComercialRepository productosComerciales;
     @Autowired private McasPoliticaRetrocesionRepository politicas;
     @Autowired private McasTramoRetrocesionRepository tramos;
     @Autowired private McasPropuestasController propuestasController;
     @Autowired private ObjectMapper mapper;
+    @Autowired private api.aura.service.mcas.McasRetrocesionService retrocesiones;
+    @Autowired private api.aura.repository.mcas.McasRetrocesionRepository retrocesionesRepo;
 
     @BeforeEach
     void datosBase() {
         modulos.activar(McasProposalService.FLAG_ENABLED);
         modulos.activar(McasProposalService.FLAG_FIJO);
+        modulos.desactivar(McasProposalService.FLAG_RETROCESION);
         if (productosServicio.findFirstByNombreContainingIgnoreCaseOrderByIdAsc("switching").isEmpty())
             productosServicio.save(TBProductos.builder().nombre("SWITCHING").build());
         for (int cuotas = 1; cuotas <= 2; cuotas++) {
@@ -273,14 +284,15 @@ class McasConformidadClienteTest {
     }
 
     @Test
-    void una_propuesta_sin_calculo_usa_la_fecha_y_los_pagos_del_contrato() {
+    void una_propuesta_sin_calculo_usa_la_fecha_y_los_pagos_de_la_comercializadora() {
         // Sin tipo de suministro la propuesta se crea en REQUIERE_DATOS sin pasar por
-        // el motor: no tiene fecha de primera aplicación ni número de pagos.
+        // el motor: no tiene fecha de primera aplicación; los pagos, los de la comercializadora.
         Escenario e = escenario("COMERCIALIZADORA SIN CALCULO");
-        McasPropuesta p = calcular(e, c -> c.mcasTipoSuministro(null).mcasNumeroPagos(2));
+        condicionesCobro.save(McasCondicionCobro.builder().idComercializadora(e.idComercializadora).numeroPagos(2).build());
+        McasPropuesta p = calcular(e, c -> c.mcasTipoSuministro(null).mcasNumeroPagos(9));
         assertThat(p.getEstado()).isEqualTo("REQUIERE_DATOS");
         assertThat(p.getFechaPrimeraAplicacion()).isNull();
-        assertThat(p.getNumeroPagos()).isEqualTo(2);        // «Completar manualmente» precarga los del contrato
+        assertThat(p.getNumeroPagos()).isEqualTo(2);        // «Completar manualmente» precarga los de la comercializadora
 
         mcas.abrirEdicion(p.getId());
         McasPropuesta f = mcas.finalizarEditado(p.getId(), new BigDecimal("80"), null, null, "Datos revisados a mano");
@@ -311,10 +323,16 @@ class McasConformidadClienteTest {
                 .hasMessageContaining("servicio #" + aprobada.getIdServicioCreado());
         assertThat(propuestas.findById(nueva.getId()).orElseThrow().getEstado()).isEqualTo("REQUIERE_REVISION_MANUAL");
 
-        // Si el servicio de aquella comisión se da de baja, ya se puede completar a mano.
+        // Si el servicio de aquella comisión se da de baja (retrocesión), la comisión sigue
+        // contando: no se completa otra (respuesta del cliente a la duda 17)
         Servicio servicio = servicios.findById(aprobada.getIdServicioCreado()).orElseThrow();
         servicio.setFechaBaja(Date.valueOf("2026-06-01"));
         servicios.save(servicio);
+        assertThat(propuestaDelListado(nueva.getId()).path("admiteEdicionManual").asBoolean(true)).isFalse();
+
+        // Si se elimina, ya no cuenta y se puede completar a mano
+        serviciosPagos.findByServicioId(servicio.getId()).ifPresent(serviciosPagos::delete);
+        servicios.delete(servicio);
         assertThat(propuestaDelListado(nueva.getId()).path("admiteEdicionManual").asBoolean(false)).isTrue();
         assertThat(mcas.abrirEdicion(nueva.getId()).getEstado()).isEqualTo("EN_EDICION");
     }
@@ -525,6 +543,273 @@ class McasConformidadClienteTest {
     // ============================================================
 
     /** Política PUBLICADA para toda la comercializadora: 100 % los 12 primeros meses. */
+    // ============================================================
+    // Respuestas del cliente a las dudas (05/11/2026)
+    // ============================================================
+
+    @Test
+    void la_comision_se_cobra_con_las_condiciones_de_su_comercializadora() {
+        Escenario e = escenario("COMERCIALIZADORA COBRO A FINAL DE MES");
+        e.regla("IT_FIJA", "FIXED_AMOUNT", "{\"tipo_suministro\":\"LUZ\"}", "{\"importe\":90}");
+        condicionesCobro.save(McasCondicionCobro.builder().idComercializadora(e.idComercializadora).numeroPagos(2)
+                .mesesHastaPrimerCobro(1).diaPrimerCobro(McasCondicionCobro.DiaCobro.ULTIMO_DIA_MES).build());
+        McasPropuesta p = calcular(e, c -> c.mcasNumeroPagos(5));   // el del contrato ya no cuenta
+
+        assertThat(p.getNumeroPagos()).isEqualTo(2);
+        assertThat(p.getFechaPrimeraAplicacion()).isEqualTo(LocalDate.of(2026, 4, 30));
+        assertThat(mcas.obtenerCalendario(p.getId())).extracting(McasCalendarioPago::getFechaPago)
+                .containsExactly(LocalDate.of(2026, 4, 30), LocalDate.of(2026, 5, 31));
+
+        McasPropuesta aprobada = mcas.aprobar(p.getId());
+        Servicio s = servicios.findById(aprobada.getIdServicioCreado()).orElseThrow();
+        assertThat(s.getFechaInicioServicio().toString()).isEqualTo("2026-03-16");   // dura lo que el contrato
+        ServiciosPagos plan = serviciosPagos.findByServicioId(s.getId()).orElseThrow();
+        assertThat(plan.getPrimerPagoFecha().toString()).isEqualTo("2026-04-30");
+        assertThat(plan.getSegundoPagoFecha().toString()).isEqualTo("2026-05-31");
+    }
+
+    @Test
+    void si_solo_cambia_la_fecha_de_inicio_de_un_contrato_comisionado_se_mueven_las_cuotas_pendientes() {
+        Escenario e = escenario("COMERCIALIZADORA CAMBIO DE FECHA");
+        e.regla("IT_FIJA", "FIXED_AMOUNT", "{\"tipo_suministro\":\"LUZ\"}", "{\"importe\":100}");
+        condicionesCobro.save(McasCondicionCobro.builder().idComercializadora(e.idComercializadora).numeroPagos(2).build());
+        McasPropuesta aprobada = mcas.aprobar(calcular(e, c -> { }).getId());
+        ServiciosPagos plan = serviciosPagos.findByServicioId(aprobada.getIdServicioCreado()).orElseThrow();
+        plan.setPrimerPagoPagado(true);   // la primera ya se cobró
+        serviciosPagos.save(plan);
+        int propuestasAntes = propuestas.findByIdContratoOrderByCreadoEnDesc(aprobada.getIdContrato()).size();
+
+        Contrato contrato = contratos.findById(aprobada.getIdContrato()).orElseThrow();
+        contrato.setFechaInicio(Date.valueOf("2026-03-18"));
+        contratos.save(contrato);
+        McasPropuesta despues = mcas.triggerDesdeContrato(contrato.getId());
+
+        // Sin propuesta nueva ni avisos: la misma comisión, al día con el contrato
+        assertThat(despues.getId()).isEqualTo(aprobada.getId());
+        assertThat(propuestas.findByIdContratoOrderByCreadoEnDesc(contrato.getId())).hasSize(propuestasAntes);
+        ServiciosPagos movido = serviciosPagos.findByServicioId(aprobada.getIdServicioCreado()).orElseThrow();
+        assertThat(movido.getPrimerPagoFecha().toString()).isEqualTo("2026-03-16");   // cobrada: no se toca
+        assertThat(movido.getSegundoPagoFecha().toString()).isEqualTo("2026-04-18");
+        assertThat(servicios.findById(aprobada.getIdServicioCreado()).orElseThrow()
+                .getFechaInicioServicio().toString()).isEqualTo("2026-03-18");
+        assertThat(auditoria(aprobada.getId())).extracting(McasAuditoria::getTipoEvento)
+                .contains("COBROS_MOVIDOS_POR_FECHA_INICIO");
+        // Volver a guardar sin cambios no mueve nada más ni crea propuestas
+        assertThat(mcas.triggerDesdeContrato(contrato.getId()).getId()).isEqualTo(aprobada.getId());
+        assertThat(propuestas.findByIdContratoOrderByCreadoEnDesc(contrato.getId())).hasSize(propuestasAntes);
+
+        // Y si la fecha vuelve a la de antes, las cuotas pendientes también vuelven
+        contrato = contratos.findById(contrato.getId()).orElseThrow();
+        contrato.setFechaInicio(Date.valueOf("2026-03-16"));
+        contratos.save(contrato);
+        assertThat(mcas.triggerDesdeContrato(contrato.getId()).getId()).isEqualTo(aprobada.getId());
+        assertThat(serviciosPagos.findByServicioId(aprobada.getIdServicioCreado()).orElseThrow()
+                .getSegundoPagoFecha().toString()).isEqualTo("2026-04-16");
+        assertThat(propuestas.findByIdContratoOrderByCreadoEnDesc(contrato.getId())).hasSize(propuestasAntes);
+    }
+
+    @Test
+    void cambiar_las_condiciones_de_cobro_avisa_de_las_comisiones_pendientes_calculadas_antes() {
+        Escenario e = escenario("COMERCIALIZADORA CAMBIA SUS COBROS");
+        e.regla("IT_FIJA", "FIXED_AMOUNT", "{\"tipo_suministro\":\"LUZ\"}", "{\"importe\":100}");
+        McasPropuesta pendiente = calcular(e, c -> { });
+        assertThat(pendiente.getEstado()).isEqualTo("PENDIENTE_VALIDACION");
+
+        assertThat(cobros.comisionesPendientesAfectadas(e.idComercializadora, null)).isEqualTo(1);
+        assertThat(cobros.comisionesPendientesAfectadas(e.idComercializadora, 999)).isZero();
+        mcas.aprobar(pendiente.getId());
+        assertThat(cobros.comisionesPendientesAfectadas(e.idComercializadora, null)).isZero();
+    }
+
+    @Test
+    void al_mover_las_cuotas_no_se_pisan_las_que_se_cambiaron_a_mano() {
+        Escenario e = escenario("COMERCIALIZADORA CUOTAS A MANO");
+        e.regla("IT_FIJA", "FIXED_AMOUNT", "{\"tipo_suministro\":\"LUZ\"}", "{\"importe\":90}");
+        condicionesCobro.save(McasCondicionCobro.builder().idComercializadora(e.idComercializadora).numeroPagos(2).build());
+        McasPropuesta aprobada = mcas.aprobar(calcular(e, c -> { }).getId());
+        // Duda 13: la segunda cuota se cambia a mano en el servicio
+        ServiciosPagos plan = serviciosPagos.findByServicioId(aprobada.getIdServicioCreado()).orElseThrow();
+        plan.setSegundoPagoFecha(Date.valueOf("2026-06-30"));
+        serviciosPagos.save(plan);
+
+        Contrato contrato = contratos.findById(aprobada.getIdContrato()).orElseThrow();
+        contrato.setFechaInicio(Date.valueOf("2026-03-20"));
+        contratos.save(contrato);
+        mcas.triggerDesdeContrato(contrato.getId());
+
+        ServiciosPagos despues = serviciosPagos.findByServicioId(aprobada.getIdServicioCreado()).orElseThrow();
+        assertThat(despues.getPrimerPagoFecha().toString()).isEqualTo("2026-03-20");   // automática: se mueve
+        assertThat(despues.getSegundoPagoFecha().toString()).isEqualTo("2026-06-30");  // a mano: se respeta
+    }
+
+    @Test
+    void cambiar_la_fecha_fin_de_un_contrato_comisionado_no_abre_otra_propuesta() {
+        McasPropuesta aprobada = mcas.aprobar(propuestaPendiente().getId());
+        Contrato contrato = contratos.findById(aprobada.getIdContrato()).orElseThrow();
+        contrato.setFechaFin(Date.valueOf("2026-09-30"));
+        contratos.save(contrato);
+
+        assertThat(mcas.triggerDesdeContrato(contrato.getId()).getId()).isEqualTo(aprobada.getId());
+        assertThat(propuestas.findByIdContratoOrderByCreadoEnDesc(contrato.getId())).hasSize(1);
+    }
+
+    @Test
+    void borrar_un_contrato_borra_su_comision_y_su_servicio_pero_no_la_auditoria() {
+        McasPropuesta aprobada = mcas.aprobar(propuestaPendiente().getId());
+        Integer idServicio = aprobada.getIdServicioCreado();
+
+        contratoService.eliminarPorId(aprobada.getIdContrato());
+
+        assertThat(servicios.findById(idServicio)).isEmpty();
+        assertThat(serviciosPagos.findByServicioId(idServicio)).isEmpty();
+        assertThat(propuestas.findByIdContratoOrderByCreadoEnDesc(aprobada.getIdContrato())).isEmpty();
+        assertThat(auditorias.findByIdContratoOrderByFechaEventoAsc(aprobada.getIdContrato()))
+                .extracting(McasAuditoria::getTipoEvento).contains("PROPUESTA_APROBADA", "CONTRATO_ELIMINADO");
+    }
+
+    // ============================================================
+    // Retrocesión automática (duda 20): baja o cambio de comercializadora antes de 365 días
+    // ============================================================
+
+    /** Contrato de 100 € aprobado en un punto propio, con la política del 100 % de 0 a 12 meses. */
+    private McasPropuesta comisionAprobadaEnPunto(Escenario e, api.aura.entity.PuntoSuministro ps) {
+        return mcas.aprobar(calcular(e, c -> c.puntoSuministro(ps)).getId());
+    }
+
+    private Escenario escenarioRetrocesion(String nombre, int pagos) {
+        modulos.activar(McasProposalService.FLAG_RETROCESION);
+        Escenario e = escenario(nombre);
+        e.regla("IT_FIJA", "FIXED_AMOUNT", "{\"tipo_suministro\":\"LUZ\"}", "{\"importe\":100}");
+        if (pagos > 1)
+            condicionesCobro.save(McasCondicionCobro.builder().idComercializadora(e.idComercializadora).numeroPagos(pagos).build());
+        politicaPublicada(e);
+        return e;
+    }
+
+    @Test
+    void la_baja_del_punto_antes_del_anyo_deja_una_retrocesion_pendiente_y_al_aprobarla_crea_el_servicio_en_negativo() {
+        Escenario e = escenarioRetrocesion("COMERCIALIZADORA RETRO BAJA", 1);
+        api.aura.entity.PuntoSuministro ps = punto("Murcia", "ES0031");
+        McasPropuesta comision = comisionAprobadaEnPunto(e, ps);
+        assertThat(retrocesiones.revisarPunto(ps.getId())).isEmpty();   // sigue activo: nada
+
+        ps.setFechaBaja(Date.valueOf("2026-06-20"));
+        puntos.save(ps);
+        List<api.aura.entity.mcas.McasRetrocesion> detectadas = retrocesiones.revisarPunto(ps.getId());
+
+        assertThat(detectadas).hasSize(1);
+        api.aura.entity.mcas.McasRetrocesion r = detectadas.get(0);
+        assertThat(r.getEstado()).isEqualTo("PENDIENTE");
+        assertThat(r.getMotivo()).isEqualTo("BAJA_PUNTO");
+        assertThat(r.getDiasActivo()).isEqualTo(96);
+        assertThat(r.getImporteCalculado()).isEqualByComparingTo("100.00");
+        assertThat(retrocesiones.pendientes()).isGreaterThanOrEqualTo(1);
+        // Revisar otra vez no la duplica
+        assertThat(retrocesiones.revisarPunto(ps.getId())).extracting(api.aura.entity.mcas.McasRetrocesion::getId)
+                .containsExactly(r.getId());
+
+        api.aura.entity.mcas.McasRetrocesion aprobada = retrocesiones.aprobar(r.getId(), null);
+
+        assertThat(aprobada.getEstado()).isEqualTo("APROBADA");
+        Servicio negativo = servicios.findById(aprobada.getIdServicioCreado()).orElseThrow();
+        assertThat(negativo.getImporteFinal()).isEqualTo(-100.0);
+        assertThat(negativo.getDescripcion()).contains("Retrocesión");
+        assertThat(serviciosPagos.findByServicioId(negativo.getId()).orElseThrow().getPrimerPagoImporte()).isEqualTo(-100.0);
+        // La comisión cobrada se queda como estaba
+        assertThat(servicios.findById(comision.getIdServicioCreado()).orElseThrow().getImporteFinal()).isEqualTo(100.0);
+        assertThat(auditoria(comision.getId())).extracting(McasAuditoria::getTipoEvento)
+                .contains("RETROCESION_DETECTADA", "RETROCESION_APROBADA");
+        // Ya resuelta: ni se vuelve a aprobar ni se vuelve a detectar
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> retrocesiones.aprobar(r.getId(), null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(retrocesiones.revisarPunto(ps.getId())).isEmpty();
+
+        // Si el contrato se borra (no llegó a hacerse), se van la retrocesión y su servicio en negativo
+        contratoService.eliminarPorId(comision.getIdContrato());
+        retrocesiones.revisarPunto(ps.getId());
+        assertThat(retrocesionesRepo.findById(r.getId())).isEmpty();
+        assertThat(servicios.findById(negativo.getId())).isEmpty();
+    }
+
+    @Test
+    void al_aprobar_la_retrocesion_se_anulan_las_cuotas_sin_cobrar_posteriores_a_la_baja() {
+        Escenario e = escenarioRetrocesion("COMERCIALIZADORA RETRO CUOTAS", 2);
+        api.aura.entity.PuntoSuministro ps = punto("Murcia", "ES0031");
+        McasPropuesta comision = comisionAprobadaEnPunto(e, ps);
+        Contrato contrato = contratos.findById(comision.getIdContrato()).orElseThrow();
+        contrato.setFechaBaja(Date.valueOf("2026-04-01"));   // cuotas: 16/03 y 16/04
+        contratos.save(contrato);
+
+        api.aura.entity.mcas.McasRetrocesion r = retrocesiones.revisarPunto(ps.getId()).get(0);
+
+        assertThat(r.getMotivo()).isEqualTo("BAJA_CONTRATO");
+        assertThat(r.getCuotasAnuladas()).isEqualTo("2");
+        assertThat(r.getImporteCuotasAnuladas()).isEqualByComparingTo("50.00");
+        assertThat(r.getImporteCalculado()).isEqualByComparingTo("50.00");   // 100 % de lo cobrado
+
+        retrocesiones.aprobar(r.getId(), new BigDecimal("30"));   // el administrador puede corregir el importe
+
+        ServiciosPagos plan = serviciosPagos.findByServicioId(comision.getIdServicioCreado()).orElseThrow();
+        assertThat(plan.getPrimerPagoImporte()).isEqualTo(50.0);
+        assertThat(plan.getSegundoPagoImporte()).isEqualTo(0.0);
+        Servicio servicio = servicios.findById(comision.getIdServicioCreado()).orElseThrow();
+        assertThat(servicio.getImporteFinal()).isEqualTo(50.0);
+        assertThat(servicio.getObservaciones()).contains("anuladas");
+        api.aura.entity.mcas.McasRetrocesion aprobada = retrocesionesRepo.findById(r.getId()).orElseThrow();
+        assertThat(servicios.findById(aprobada.getIdServicioCreado()).orElseThrow().getImporteFinal()).isEqualTo(-30.0);
+    }
+
+    @Test
+    void renovar_con_la_misma_comercializadora_no_retrocede_y_cambiar_a_otra_antes_del_anyo_si() {
+        Escenario e = escenarioRetrocesion("COMERCIALIZADORA RETRO CAMBIO", 1);
+        api.aura.entity.PuntoSuministro ps = punto("Murcia", "ES0031");
+        McasPropuesta comision = comisionAprobadaEnPunto(e, ps);
+        Contrato original = contratos.findById(comision.getIdContrato()).orElseThrow();
+        original.setFechaBaja(Date.valueOf("2026-09-01"));   // lo que hace la renovación
+        contratos.save(original);
+        Contrato renovado = nuevoContrato(e, c -> c.puntoSuministro(ps).fechaInicio(Date.valueOf("2026-09-01")));
+
+        assertThat(retrocesiones.revisarPunto(ps.getId())).isEmpty();
+
+        // El siguiente contrato pasa a ser de otra comercializadora
+        renovado.setIdComercializadoraActual(escenario("COMERCIALIZADORA RETRO NUEVA").idComercializadora);
+        contratos.save(renovado);
+        api.aura.entity.mcas.McasRetrocesion r = retrocesiones.revisarPunto(ps.getId()).get(0);
+
+        assertThat(r.getMotivo()).isEqualTo("CAMBIO_COMERCIALIZADORA");
+        assertThat(r.getIdContratoNuevo()).isEqualTo(renovado.getId());
+        assertThat(r.getDiasActivo()).isEqualTo(169);
+
+        // Y si el cambio llega cumplido el año, la pendiente se descarta sola
+        renovado.setFechaInicio(Date.valueOf("2027-03-16"));
+        contratos.save(renovado);
+        assertThat(retrocesiones.revisarPunto(ps.getId())).extracting(api.aura.entity.mcas.McasRetrocesion::getEstado)
+                .containsExactly("DESCARTADA");
+    }
+
+    @Test
+    void con_el_interruptor_apagado_no_se_genera_retrocesion_y_descartar_pide_motivo() {
+        Escenario e = escenarioRetrocesion("COMERCIALIZADORA RETRO APAGADA", 1);
+        api.aura.entity.PuntoSuministro ps = punto("Murcia", "ES0031");
+        comisionAprobadaEnPunto(e, ps);
+        ps.setFechaBaja(Date.valueOf("2026-05-01"));
+        puntos.save(ps);
+
+        modulos.desactivar(McasProposalService.FLAG_RETROCESION);
+        assertThat(retrocesiones.revisarPunto(ps.getId())).isEmpty();
+
+        modulos.activar(McasProposalService.FLAG_RETROCESION);
+        api.aura.entity.mcas.McasRetrocesion r = retrocesiones.revisarPunto(ps.getId()).get(0);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> retrocesiones.descartar(r.getId(), " "))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(retrocesiones.descartar(r.getId(), "Acordado con la comercializadora").getEstado()).isEqualTo("DESCARTADA");
+        assertThat(retrocesiones.listar()).anySatisfy(v -> {
+            assertThat(v.retrocesion().getId()).isEqualTo(r.getId());
+            assertThat(v.comercializadora()).isEqualTo("COMERCIALIZADORA RETRO APAGADA");
+            assertThat(v.politica()).contains("100 %");
+        });
+    }
+
     private McasPoliticaRetrocesion politicaPublicada(Escenario e) {
         McasPoliticaRetrocesion politica = politicas.save(McasPoliticaRetrocesion.builder()
                 .codigo("RET-CONF-" + e.idComercializadora).idComercializadora(e.idComercializadora)
@@ -580,6 +865,85 @@ class McasConformidadClienteTest {
     }
 
     /** Comercializadora propia con un conjunto PUBLICADO (versión «2») sin reglas. */
+    // ------------------------------------------------------------------ duda 5: zona por provincia
+
+    @Test
+    void la_zona_sale_de_la_provincia_del_punto_y_no_de_lo_escrito_en_el_contrato() {
+        Escenario e = escenario("COMERCIALIZADORA CON ZONAS");
+        e.regla("ZONA_ZAR", "FIXED_AMOUNT", "{\"zona_comision\":\"ZAR\"}", "{\"importe\":100}");
+        e.regla("ZONA_ZBR", "FIXED_AMOUNT", "{\"zona_comision\":\"ZBR\"}", "{\"importe\":60}");
+        zonasRepo.save(api.aura.entity.mcas.McasZonaComision.builder().idComercializadora(e.idComercializadora).zona("ZAR")
+                .provincias(new java.util.ArrayList<>(List.of("03", "30"))).build());
+        zonasRepo.save(api.aura.entity.mcas.McasZonaComision.builder().idComercializadora(e.idComercializadora).zona("ZBR")
+                .esResto(true).build());
+
+        // Murcia escrita a mano en mayúsculas, con un CUPS que por la regla del CUPS sería ZBR
+        // y con «ZBR» escrito en el contrato: manda la provincia
+        McasPropuesta murcia = calcular(e, c -> c.puntoSuministro(punto("MURCIA", "ES0031")).mcasZonaComision("ZBR"));
+        assertThat(murcia.getImporteCalculado()).isEqualByComparingTo("100.00");
+        assertThat(contratos.findById(murcia.getIdContrato()).orElseThrow().getMcasZonaComision()).isEqualTo("ZAR");
+
+        // Almería no está en la ZAR: va a la zona del resto aunque su CUPS empiece por ES0021
+        McasPropuesta almeria = calcular(e, c -> c.puntoSuministro(punto("Almería", "ES0021")));
+        assertThat(almeria.getImporteCalculado()).isEqualByComparingTo("60.00");
+
+        // Una provincia que no se reconoce no se manda al resto: faltan datos y se dice qué corregir
+        McasPropuesta rara = calcular(e, c -> c.puntoSuministro(punto("Mursia", "ES0021")));
+        assertThat(rara.getEstado()).isEqualTo("REQUIERE_DATOS");
+        assertThat(rara.getAdvertenciasJson()).contains("No se reconoce la provincia del punto de suministro (Mursia)");
+    }
+
+    @Test
+    void sin_zonas_configuradas_la_zona_sigue_saliendo_del_cups_de_luz() {
+        Escenario e = escenario("COMERCIALIZADORA SIN ZONAS");
+        e.regla("ZONA_ZAR", "FIXED_AMOUNT", "{\"zona_comision\":\"ZAR\"}", "{\"importe\":100}");
+        e.regla("ZONA_ZBR", "FIXED_AMOUNT", "{\"zona_comision\":\"ZBR\"}", "{\"importe\":60}");
+
+        assertThat(calcular(e, c -> c.puntoSuministro(punto("Murcia", "ES0021"))).getImporteCalculado())
+                .isEqualByComparingTo("100.00");
+        assertThat(calcular(e, c -> c.puntoSuministro(punto("Murcia", "ES0031"))).getImporteCalculado())
+                .isEqualByComparingTo("60.00");
+    }
+
+    // ------------------------------------------------------------------ duda 22: la vista previa también
+
+    @Test
+    void la_vista_previa_calcula_la_ultima_relacion_igual_que_al_guardar() {
+        Escenario e = escenario("COMERCIALIZADORA QUE NO PAGA SI VUELVE");
+        e.regla("GENERAL", "FIXED_AMOUNT", "{\"tipo_suministro\":\"LUZ\"}", "{\"importe\":120}");
+        reglas.save(McasReglaComision.builder().idConjuntoReglas(e.conjunto.getId()).codigo("VUELVE_PRONTO").prioridad(20)
+                .metodoCalculo("NOT_COMMISSIONABLE")
+                .condicionesJson("{\"tipo_suministro\":\"LUZ\",\"meses_ultima_relacion_max\":12}")
+                .motivoManual("Volvió antes de un año").activo(true).build());
+        api.aura.entity.PuntoSuministro punto = punto("Murcia", "ES0031");
+        // El ejemplo del cliente: con esta comercializadora hasta el 15/05/2025
+        contratos.save(Contrato.builder().cliente(punto.getCliente()).puntoSuministro(punto)
+                .contrato("ANT-" + System.nanoTime())
+                .fechaInicio(Date.valueOf("2024-05-15")).fechaFin(Date.valueOf("2025-05-15"))
+                .idComercializadoraActual(e.idComercializadora).mcasTipoPrecio("FIJO").mcasTipoSuministro("LUZ").build());
+
+        com.fasterxml.jackson.databind.node.ObjectNode cuerpo = mapper.createObjectNode()
+                .put("contrato", "NUEVO-" + System.nanoTime()).put("fechaInicio", "2026-02-13")
+                .put("idComercializadoraActual", e.idComercializadora)
+                .put("mcasTipoPrecio", "FIJO").put("mcasTipoSuministro", "LUZ").put("consumoAnual", 5000);
+        cuerpo.putObject("puntoSuministro").put("id", punto.getId());
+
+        // Vuelve a los 8 meses: no comisiona, y la estimación ya lo dice antes de guardar
+        assertThat(vistaPrevia.calcular(cuerpo).getEstado())
+                .isEqualTo(api.aura.dto.mcas.McasVistaPreviaDTO.Estado.NO_COMISIONABLE);
+        // Pasado el año, la regla general
+        cuerpo.put("fechaInicio", "2026-06-01");
+        assertThat(vistaPrevia.calcular(cuerpo).getImporte()).isEqualByComparingTo("120.00");
+    }
+
+    /** Punto de suministro en esa provincia con un CUPS de luz que empieza así. */
+    private api.aura.entity.PuntoSuministro punto(String provincia, String prefijoCups) {
+        Cliente titular = clientes.save(Cliente.builder().nombre("Titular zona").cif("Z" + System.nanoTime()).build());
+        return puntos.save(api.aura.entity.PuntoSuministro.builder().cliente(titular).direccion("Calle Mayor 1")
+                .codigoPostal("30001").poblacion("Murcia").provincia(provincia)
+                .CUPSluz(prefijoCups + String.format("%014d", System.nanoTime() % 100_000_000_000_000L) + "AA").build());
+    }
+
     private Escenario escenario(String nombreComercializadora) {
         TBComercializadoras com = comercializadoras.save(
                 TBComercializadoras.builder().nombre(nombreComercializadora).build());

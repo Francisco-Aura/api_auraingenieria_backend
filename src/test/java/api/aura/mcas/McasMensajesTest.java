@@ -31,8 +31,8 @@ class McasMensajesTest {
         assertThat(McasMensajes.campo("tipo_precio_FIJO_o_INDEXADO")).isEqualTo("Tipo de precio");
         assertThat(McasMensajes.campo("tipo_suministro_LUZ_o_GAS")).isEqualTo("Tipo de suministro");
         assertThat(McasMensajes.campo("codigo_producto")).isEqualTo("Tarifa de precios (producto)");
-        assertThat(McasMensajes.campo("zona_comision")).isEqualTo("Zona de comisión");
-        assertThat(McasMensajes.campo("ambito")).isEqualTo("Ámbito");
+        // La zona ya no se escribe: sale de la provincia del punto, y el rótulo lo dice
+        assertThat(McasMensajes.campo("zona_comision")).isEqualTo("Zona de comisión (provincia del punto de suministro)");
         assertThat(McasMensajes.campo("tarifa_acceso")).isEqualTo("Tarifa de acceso");
         assertThat(McasMensajes.campo("es_renovacion")).isEqualTo("Renovación");
         assertThat(McasMensajes.campo("tipo_renovacion")).isEqualTo("Tipo de renovación");
@@ -45,7 +45,7 @@ class McasMensajesTest {
     @Test
     void campo_acepta_el_nombre_del_enum_McasCampo() {
         assertThat(McasMensajes.campo("CONSUMO")).isEqualTo("Consumo anual");
-        assertThat(McasMensajes.campo("ZONA_COMISION")).isEqualTo("Zona de comisión");
+        assertThat(McasMensajes.campo("ZONA_COMISION")).isEqualTo("Zona de comisión (provincia del punto de suministro)");
         assertThat(McasMensajes.campo("GESTORA")).isEqualTo("Gestora");
     }
 
@@ -153,7 +153,7 @@ class McasMensajesTest {
         assertThat(McasMensajes.paraOperador("MATRIX_LOOKUP: dato requerido 'potencia_kw'"))
                 .isEqualTo("Falta un dato para calcular la comisión: potencias contratadas (P1 a P6).");
         assertThat(McasMensajes.paraOperador("RANGE_LOOKUP: dato requerido 'zona_comision'"))
-                .isEqualTo("Falta un dato para calcular la comisión: zona de comisión.");
+                .isEqualTo("Falta un dato para calcular la comisión: zona de comisión (provincia del punto de suministro).");
         // La matriz pide a la vez todas las dimensiones que faltan.
         assertThat(McasMensajes.paraOperador("MATRIX_LOOKUP: dato requerido 'consumo_kwh', 'potencia_kw'"))
                 .isEqualTo("Faltan datos para calcular la comisión: consumo anual y potencias contratadas (P1 a P6).");

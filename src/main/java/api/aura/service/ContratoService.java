@@ -92,6 +92,7 @@ public class ContratoService {
                 logger.info("Campos del contrato actualizados. Guardando en base de datos...");
                 Contrato guardado = contratoRepository.save(contratoActual);
                 dispararMcasSiProcede(guardado);
+                avisarCambioEnElPunto(guardado);
                 return guardado;
             } else {
                 logger.error("No se encontró el contrato con ID: {}", contrato.getId());
@@ -132,6 +133,7 @@ public class ContratoService {
         rellenarUltimaRelacion(contrato);
         Contrato guardado = contratoRepository.save(contrato);
         dispararMcasSiProcede(guardado);
+        avisarCambioEnElPunto(guardado);
         return guardado;
     }
 
@@ -146,6 +148,7 @@ public class ContratoService {
         rellenarUltimaRelacion(contrato);
         Contrato guardado = contratoRepository.save(contrato);
         dispararMcasSiProcede(guardado);
+        avisarCambioEnElPunto(guardado);
         return guardado;
     }
 
@@ -157,18 +160,22 @@ public class ContratoService {
      * En una renovación cuenta su fecha fin: la baja del original la pone la propia
      * renovación (el día en que se renueva) y no es una baja del cliente.
      */
-    void rellenarUltimaRelacion(Contrato contrato) {
+    public void rellenarUltimaRelacion(Contrato contrato) {
         contrato.setMcasFechaUltimaRelacionComercializadora(null);
         Integer idPunto = contrato.getPuntoSuministro() != null ? contrato.getPuntoSuministro().getId() : null;
         Integer comercializadora = contrato.getIdComercializadoraActual();
         if (idPunto == null || comercializadora == null || comercializadora == 0) return;
+        // El último contrato anterior del punto CON ESA comercializadora, aunque después
+        // hubiera otra (Endesa, luego Iberdrola, otra vez Endesa: cuenta la relación con
+        // Endesa; respuesta del cliente a la duda 22). Antes solo se miraba el inmediatamente
+        // anterior y en ese caso salía vacía.
         contratoRepository.findByPuntoSuministroId(idPunto).stream()
                 .filter(otro -> otro.getId() != null && !otro.getId().equals(contrato.getId()))
+                .filter(otro -> comercializadora.equals(otro.getIdComercializadoraActual()))
                 .filter(otro -> esAnterior(otro, contrato))
                 .max(java.util.Comparator.comparing((Contrato otro) -> FechaNegocio.aLocalDate(otro.getFechaInicio()),
                                 java.util.Comparator.nullsFirst(java.util.Comparator.<LocalDate>naturalOrder()))
                         .thenComparing(Contrato::getId))
-                .filter(anterior -> comercializadora.equals(anterior.getIdComercializadoraActual()))
                 .map(anterior -> finDeRelacion(anterior, Boolean.TRUE.equals(contrato.getMcasEsRenovacion())))
                 .ifPresent(contrato::setMcasFechaUltimaRelacionComercializadora);
     }
@@ -197,16 +204,26 @@ public class ContratoService {
         destino.setMcasSegmento(origen.getMcasSegmento());
         destino.setMcasEsRenovacion(origen.getMcasEsRenovacion());
         destino.setMcasTipoRenovacion(origen.getMcasTipoRenovacion());
-        destino.setMcasAmbito(origen.getMcasAmbito());
         destino.setMcasIdGestora(origen.getMcasIdGestora());
         destino.setMcasIdProductoComercial(origen.getMcasIdProductoComercial());
-        destino.setMcasZonaComision(origen.getMcasZonaComision());
-        // Ya no se rellenan a mano: la potencia es siempre la mayor contratada y la
-        // primera cuota va en la fecha de inicio (los valores antiguos se borran)
+        // Ya no se rellenan a mano: la potencia es siempre la mayor contratada, el nº de
+        // pagos y el primer cobro salen de las condiciones de cobro de la comercializadora
+        // (Configuración MCAS), la zona sale de la provincia del punto (la pone MCAS al
+        // calcular) y el ámbito era lo mismo que la zona. Los valores antiguos se borran
+        destino.setMcasAmbito(null);
         destino.setMcasPotenciaCalculo(null);
-        destino.setMcasNumeroPagos(origen.getMcasNumeroPagos());
+        destino.setMcasNumeroPagos(null);
         destino.setMcasFechaPrimeraAplicacion(null);
         destino.setMcasAltaNueva(origen.getMcasAltaNueva());
+    }
+
+    /**
+     * Cualquier cambio en los contratos de un punto puede dar lugar a una retrocesión (baja,
+     * cambio de comercializadora) o dejar una sin sentido: se revisa tras el COMMIT.
+     */
+    private void avisarCambioEnElPunto(Contrato contrato) {
+        if (contrato.getPuntoSuministro() != null && contrato.getPuntoSuministro().getId() != null)
+            eventPublisher.publishEvent(new api.aura.service.mcas.McasBajaEvent(contrato.getPuntoSuministro().getId()));
     }
 
     private void dispararMcasSiProcede(Contrato contrato) {
@@ -294,8 +311,12 @@ public class ContratoService {
     public void eliminarPorId(Integer id) {
         // Su PDF se quedaba huérfano en disco: se borra cuando el borrado queda confirmado
         contratoRepository.findById(id).ifPresent(contrato -> {
+            // Un contrato borrado no llegó a hacerse: su comisión y su servicio tampoco
+            // (en la misma transacción; una baja del contrato no pasa por aquí)
+            mcasProposalService.eliminarComisionesDelContrato(id);
             contratoFileStorageService.eliminarPdfSiExiste(contrato);
             contratoRepository.delete(contrato);
+            avisarCambioEnElPunto(contrato);
         });
     }
 
@@ -349,6 +370,7 @@ public class ContratoService {
             contratoRepository.save(original);
         }
         dispararMcasSiProcede(guardado);
+        avisarCambioEnElPunto(guardado);
 
         logger.info("Contrato {} renovado. Nuevo contrato ID: {}. Original marcado como vencido.", idContratoOriginal, guardado.getId());
         return guardado;

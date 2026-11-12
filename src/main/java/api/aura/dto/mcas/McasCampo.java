@@ -17,8 +17,8 @@ public enum McasCampo {
     ES_RENOVACION("Renovación"),
     TIPO_RENOVACION("Tipo de renovación"),
     ALTA_NUEVA("Alta nueva"),
-    AMBITO("Ámbito"),
-    ZONA_COMISION("Zona de comisión"),
+    // Sale de la provincia del punto de suministro (Configuración MCAS, pestaña Zonas)
+    ZONA_COMISION("Zona de comisión (provincia del punto de suministro)", "zona_comision"),
     TARIFA_ACCESO("Tarifa de acceso"),
     PRODUCTO("Tarifa de precios (producto)", "codigo_producto", "producto_comercial_activo_y_compatible"),
     CONSUMO("Consumo anual", "consumo_kwh", "consumo_mwh", "consumo_anual", "consumo_anual_no_negativo"),

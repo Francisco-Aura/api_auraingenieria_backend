@@ -113,6 +113,8 @@ public final class McasMensajes {
                     "Según la tabla de comisiones, este contrato no genera comisión."),
             new Traduccion("^La pol[ií]tica de pago de la regla .+ no se puede leer; se reparte en un solo pago$", m ->
                     "No se ha podido leer el número de pagos de la regla; la comisión se reparte en un solo pago."),
+            new Traduccion("^La pol[ií]tica de pago de la regla .+ no se puede leer; se usan los pagos de la comercializadora$", m ->
+                    "No se ha podido leer el número de pagos de la regla; se usan los de la comercializadora (o un solo pago)."),
             new Traduccion("^Sin pol[ií]tica de retroces[ií][oó]n asignada: .*\\bcoinciden\\b.*$", m ->
                     "No se ha podido mostrar la retrocesión potencial: hay varias políticas de retrocesión "
                             + "publicadas que encajan con este contrato. " + AVISE_ADMINISTRADOR),

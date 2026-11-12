@@ -154,6 +154,14 @@
 					<exclude>BBDD/**</exclude>
 				</excludes>
 			</resource>
+			<!-- Excepción: los del Planificador sí van en el jar, porque los aplica él solo
+			     al arrancar (ScriptsBBDD, classpath*:BBDD/*_Planificador_*.sql). -->
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes>
+					<include>BBDD/*_Planificador_*.sql</include>
+				</includes>
+			</resource>
 		</resources>
 		<plugins>
 			<!-- Configuración del compilador de Maven -->

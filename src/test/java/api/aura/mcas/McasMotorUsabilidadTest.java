@@ -127,7 +127,7 @@ class McasMotorUsabilidadTest {
         assertThat(r.getResultado()).isEqualTo(ResultadoCalculo.Resultado.REQUIERE_DATOS);
         assertThat(r.getCamposFaltantes()).containsExactly("potencia_kw", "zona_comision");
         assertThat(r.getAdvertencias())
-                .containsExactly("Faltan datos para calcular la comisión: potencias contratadas (P1 a P6) y zona de comisión.");
+                .containsExactly("Faltan datos para calcular la comisión: potencias contratadas (P1 a P6) y zona de comisión (provincia del punto de suministro).");
     }
 
     @Test
@@ -210,7 +210,7 @@ class McasMotorUsabilidadTest {
         ResultadoCalculo r = motor.evaluar(ctx(5).build());
 
         assertThat(r.getAdvertencias()).containsExactly(
-                "No se ha podido leer el número de pagos de la regla; la comisión se reparte en un solo pago.");
+                "No se ha podido leer el número de pagos de la regla; se usan los de la comercializadora (o un solo pago).");
         assertThat(mapper.readTree(r.getTrazaJson()).path("avisos").get(0).asText()).contains("POLITICA");
     }
 

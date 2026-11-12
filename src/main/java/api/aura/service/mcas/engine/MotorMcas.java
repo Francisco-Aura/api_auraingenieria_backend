@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -123,6 +124,11 @@ public class MotorMcas {
         List<McasReglaComision> coincidentes = evaluaciones.stream()
                 .filter(e -> e.coincide() && e.faltantes().isEmpty())
                 .map(EvaluacionCondicion::regla).collect(Collectors.toList());
+        // Las reglas que miran la última relación con la comercializadora son excepciones de
+        // las generales («volvió hace menos de 12 meses: no comisiona»): si coincide alguna,
+        // gana a las demás en vez de contar como solapamiento.
+        List<McasReglaComision> excepciones = coincidentes.stream().filter(this::miraUltimaRelacion).toList();
+        if (!excepciones.isEmpty()) coincidentes = new ArrayList<>(excepciones);
 
         if (coincidentes.isEmpty()) {
             List<String> faltantes = evaluaciones.stream().filter(EvaluacionCondicion::coincide)
@@ -199,7 +205,6 @@ public class MotorMcas {
             if (!evaluarTexto(c, "tipo_suministro", ctx.getTipoSuministro(), faltantes)
                     || !evaluarTexto(c, "segmento", ctx.getSegmento(), faltantes)
                     || !evaluarTexto(c, "tipo_renovacion", ctx.getTipoRenovacion(), faltantes)
-                    || !evaluarTexto(c, "ambito", ctx.getAmbito(), faltantes)
                     || !evaluarTexto(c, "zona_comision", ctx.getZonaComision(), faltantes)
                     || !evaluarTexto(c, "tarifa_acceso", ctx.getCodigoTarifaAcceso(), faltantes)
                     || !evaluarTexto(c, "codigo_producto", ctx.getCodigoProductoComercial(), faltantes)
@@ -210,7 +215,9 @@ public class MotorMcas {
                     || !evaluarRango(c, "consumo_min_mwh", "consumo_max_mwh",
                     "consumo_min_mwh_inc", "consumo_max_mwh_inc", "consumo_mwh", ctx.getConsumoAnualMwh(), faltantes)
                     || !evaluarRango(c, "potencia_min_kw", "potencia_max_kw",
-                    "potencia_min_inc", "potencia_max_inc", "potencia_kw", ctx.getPotenciaCalculoKw(), faltantes))
+                    "potencia_min_inc", "potencia_max_inc", "potencia_kw", ctx.getPotenciaCalculoKw(), faltantes)
+                    || !evaluarRangoSiHay(c, "meses_ultima_relacion_min", "meses_ultima_relacion_max",
+                    "meses_ultima_relacion_min_inc", "meses_ultima_relacion_max_inc", ctx.getMesesDesdeUltimaRelacion()))
                 return new EvaluacionCondicion(regla, false, List.of());
             return new EvaluacionCondicion(regla, true, List.copyOf(faltantes));
         } catch (Exception e) {
@@ -240,6 +247,29 @@ public class MotorMcas {
         return matchRango(c, minKey, maxKey, minIncKey, maxIncKey, valor);
     }
 
+    /**
+     * Rango sobre un dato que puede no existir sin que falte nada: los meses desde la última
+     * relación con la comercializadora solo existen si el punto ya estuvo con ella. Sin ese
+     * dato la regla no coincide (p. ej. «menos de 12 meses: no comisiona» no se aplica a quien
+     * nunca estuvo), en vez de dejar la propuesta en «Faltan datos».
+     */
+    /** ¿La regla tiene condición sobre los meses desde la última relación con la comercializadora? */
+    private boolean miraUltimaRelacion(McasReglaComision regla) {
+        if (regla.getCondicionesJson() == null || regla.getCondicionesJson().isBlank()) return false;
+        try {
+            JsonNode c = mapper.readTree(regla.getCondicionesJson());
+            return c.hasNonNull("meses_ultima_relacion_min") || c.hasNonNull("meses_ultima_relacion_max");
+        } catch (Exception e) {
+            return false; // condiciones ilegibles: la regla ya no coincide (evaluarCondicion)
+        }
+    }
+
+    private boolean evaluarRangoSiHay(JsonNode c, String minKey, String maxKey, String minIncKey,
+                                      String maxIncKey, Integer valor) {
+        if (!c.has(minKey) && !c.has(maxKey)) return true;
+        return valor != null && matchRango(c, minKey, maxKey, minIncKey, maxIncKey, BigDecimal.valueOf(valor));
+    }
+
     private record EvaluacionCondicion(McasReglaComision regla, boolean coincide, List<String> faltantes) {}
 
     private boolean matchRango(JsonNode c, String minKey, String maxKey,
@@ -267,8 +297,8 @@ public class MotorMcas {
 
     private ResultadoCalculo ejecutarRegla(ContextoCalculo ctx, McasReglaComision regla,
                                             McasConjuntoReglas conjunto) {
-        List<ResultadoCalculo.LineaResultado> lineas = estrategias.obtener(regla.getMetodoCalculo())
-                .calcular(ctx, regla, rangoRepo);
+        List<ResultadoCalculo.LineaResultado> lineas = conPorcentajeDelResultado(regla,
+                estrategias.obtener(regla.getMetodoCalculo()).calcular(ctx, regla, rangoRepo));
 
         BigDecimal totalRaw = lineas.stream().map(ResultadoCalculo.LineaResultado::getImporte)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -289,6 +319,7 @@ public class MotorMcas {
             ObjectNode node = mapper.createObjectNode();
             anotarReglaYContexto(node, ctx, regla, conjunto);
             if (porcentajeFee != null) node.put("porcentaje_aplicacion_fee", porcentajeFee);
+            if (aplicaPorcentaje(regla)) node.put("porcentaje_resultado", regla.getPorcentajeResultado().toPlainString());
             node.put("total_sin_redondeo", totalRaw.toPlainString());
             node.put("total_redondeado", total.toPlainString());
             if (!avisos.isEmpty()) avisos.forEach(node.putArray("avisos")::add);
@@ -306,6 +337,34 @@ public class MotorMcas {
                 .trazaJson(traza)
                 .advertencias(List.copyOf(advertencias))
                 .build();
+    }
+
+    private static final BigDecimal CIEN = BigDecimal.valueOf(100);
+
+    private static boolean aplicaPorcentaje(McasReglaComision regla) {
+        return regla.getPorcentajeResultado() != null && regla.getPorcentajeResultado().compareTo(CIEN) != 0;
+    }
+
+    /**
+     * Regla que cobra solo una parte de lo calculado (respuesta del cliente a la duda 19: una
+     * renovación tácita de TotalEnergies Rock se cobra al 80 % de consumo × FEE × %). Se añade
+     * una línea de ajuste con la diferencia, para que el desglose enseñe lo calculado y lo que
+     * se descuenta, y el total quede en el porcentaje pedido.
+     */
+    private List<ResultadoCalculo.LineaResultado> conPorcentajeDelResultado(
+            McasReglaComision regla, List<ResultadoCalculo.LineaResultado> lineas) {
+        if (!aplicaPorcentaje(regla)) return lineas;
+        BigDecimal calculado = lineas.stream().map(ResultadoCalculo.LineaResultado::getImporte)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal factor = regla.getPorcentajeResultado().divide(CIEN, MathContext.DECIMAL128);
+        List<ResultadoCalculo.LineaResultado> conAjuste = new ArrayList<>(lineas);
+        conAjuste.add(ResultadoCalculo.LineaResultado.builder()
+                .tipoLinea("AJUSTE_PORCENTAJE").metodo("PORCENTAJE_RESULTADO")
+                .descripcion("Se cobra el " + FormatoMcas.porcentaje(factor) + " de lo calculado")
+                .valorBase(calculado).valorPorcentaje(factor)
+                .importe(calculado.multiply(factor, MathContext.DECIMAL128).subtract(calculado))
+                .idRegla(regla.getId()).build());
+        return conAjuste;
     }
 
     // -----------------------------------------------
@@ -329,23 +388,26 @@ public class MotorMcas {
     }
 
     /**
-     * Numero de pagos de la comision. Si la politica de la regla no se puede leer se
-     * mantiene el reparto en un pago —igual que antes—, pero se deja aviso: el error
-     * de configuracion tiene que verse en la propuesta, no quedarse en silencio.
+     * Numero de pagos de la comision: el de la regla si lo tiene (es la excepcion, p. ej. los
+     * tramos de consumo que se cobran en 3 pagos); si no, el de la comercializadora o su
+     * gestora (condiciones de cobro, en el contexto); si tampoco, un pago. Si la politica de
+     * la regla no se puede leer se sigue con los demas, pero se deja aviso: el error de
+     * configuracion tiene que verse en la propuesta, no quedarse en silencio.
      */
     private int resolverNumeroPagos(ContextoCalculo ctx, McasReglaComision regla, List<String> advertencias) {
-        if (ctx.getNumeroPagos() != null && ctx.getNumeroPagos() > 0) return ctx.getNumeroPagos();
         if (regla.getPoliticaPagoJson() != null && !regla.getPoliticaPagoJson().isBlank()) {
             try {
                 JsonNode j = mapper.readTree(regla.getPoliticaPagoJson());
-                if (j.has("numero_pagos_sugerido")) return j.get("numero_pagos_sugerido").asInt(1);
+                if (j.hasNonNull("numero_pagos_sugerido") && j.get("numero_pagos_sugerido").asInt(0) > 0)
+                    return j.get("numero_pagos_sugerido").asInt();
             } catch (Exception e) {
                 String aviso = "La politica de pago de la regla " + regla.getCodigo()
-                        + " no se puede leer; se reparte en un solo pago";
+                        + " no se puede leer; se usan los pagos de la comercializadora";
                 log.warn("MCAS contrato={} {}: {}", ctx.getIdContrato(), aviso, e.getMessage());
                 advertencias.add(aviso);
             }
         }
+        if (ctx.getNumeroPagos() != null && ctx.getNumeroPagos() > 0) return ctx.getNumeroPagos();
         return 1;
     }
 
@@ -360,8 +422,17 @@ public class MotorMcas {
                 ctx, causa, regla, conjunto, List.of());
     }
 
+    /** Lo único que falta es la zona y se sabe por qué no ha salido (provincia del punto). */
+    private static boolean soloFaltaLaZona(List<String> campos, ContextoCalculo ctx) {
+        return campos != null && campos.size() == 1 && "zona_comision".equals(campos.get(0))
+                && ctx.getMotivoSinZona() != null;
+    }
+
     private ResultadoCalculo resultadoDatos(ContextoCalculo ctx, String causa, McasReglaComision regla,
                                             McasConjuntoReglas conjunto, List<String> campos) {
+        // La zona no se escribe: sale de la provincia del punto. Si es lo único que falta,
+        // se dice por qué no se ha podido saber (qué corregir y dónde).
+        if (soloFaltaLaZona(campos, ctx)) causa = ctx.getMotivoSinZona();
         log.info("MCAS contrato={} REQUIERE_DATOS: {}", ctx.getIdContrato(), causa);
         return sinImporte(ResultadoCalculo.Resultado.REQUIERE_DATOS, "requiere_datos", ctx, causa, regla, conjunto,
                 campos);
@@ -404,7 +475,8 @@ public class MotorMcas {
         } catch (Exception ex) {
             traza = "{\"" + claveCausa + "\":\"" + escapar(causa) + "\"}";
         }
-        String advertencia = campos.isEmpty() ? McasMensajes.paraOperador(causa) : McasMensajes.faltanDatos(campos);
+        String advertencia = campos.isEmpty() || soloFaltaLaZona(campos, ctx)
+                ? McasMensajes.paraOperador(causa) : McasMensajes.faltanDatos(campos);
         return ResultadoCalculo.builder()
                 .resultado(resultado)
                 .idRegla(regla != null ? regla.getId() : null)

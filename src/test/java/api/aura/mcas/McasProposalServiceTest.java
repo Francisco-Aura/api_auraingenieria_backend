@@ -13,6 +13,10 @@ import api.aura.entity.tablas_maestras.TBPagoPlazos;
 import api.aura.entity.tablas_maestras.TBProductos;
 import api.aura.repository.tablas_maestras.TBPagoPlazosRepository;
 import api.aura.repository.tablas_maestras.TBProductosRepository;
+import api.aura.repository.mcas.McasCondicionCobroRepository;
+import api.aura.repository.tablas_maestras.TBComercializadorasRepository;
+import api.aura.repository.tablas_maestras.TBGestorasRepository;
+import api.aura.service.mcas.McasCondicionesCobroService;
 import api.aura.repository.tablas_maestras.TBTarifasGasRepository;
 import api.aura.repository.tablas_maestras.TBTarifasLuzRepository;
 import api.aura.service.ModuloConfiguracionService;
@@ -82,7 +86,11 @@ class McasProposalServiceTest {
         service = new McasProposalService(contratoRepo, propuestaRepo, lineaRepo, calendarioRepo,
                 auditoriaRepo, productoRepo, motor, auditoria, flags, mapper, snapshots,
                 retrocesionPolicies, servicioRepo, pagosRepo, plazosRepo, tarifasLuzRepo, tarifasGasRepo,
-                productosServicioRepo);
+                productosServicioRepo, new McasCondicionesCobroService(mock(McasCondicionCobroRepository.class),
+                mock(TBComercializadorasRepository.class), mock(TBGestorasRepository.class),
+                mock(TBPagoPlazosRepository.class)),
+                new api.aura.service.mcas.McasZonasService(mock(api.aura.repository.mcas.McasZonaComisionRepository.class),
+                mock(TBComercializadorasRepository.class), mock(api.aura.repository.PuntoSuministroRepository.class)));
         // Catalogo minimo de modalidades de pago: sin el, aprobar avisa de que falta.
         lenient().when(plazosRepo.findFirstByNumeroCuotas(anyInt())).thenAnswer(inv ->
                 Optional.of(TBPagoPlazos.builder().id(1).nombre("1 PLAZO")
@@ -312,7 +320,7 @@ class McasProposalServiceTest {
     }
 
     @Test
-    void si_el_servicio_de_la_comision_previa_se_dio_de_baja_se_puede_aprobar_otra() {
+    void una_baja_del_servicio_de_la_comision_previa_no_la_libera_y_no_se_aprueba_otra() {
         Contrato contrato = contratoBase();
         String hash = snapshots.capturar(contrato).hash();
         McasPropuesta previa = McasPropuesta.builder().id(24L).idContrato(42)
@@ -327,13 +335,13 @@ class McasProposalServiceTest {
         when(contratoRepo.findByIdForUpdate(42)).thenReturn(Optional.of(contrato));
         when(servicioRepo.findById(72)).thenReturn(Optional.of(
                 Servicio.builder().id(72).fechaBaja(Date.valueOf("2026-05-01")).build()));
-        when(servicioRepo.save(any())).thenAnswer(inv -> {
-            Servicio s = inv.getArgument(0); s.setId(73); return s;
-        });
-        when(propuestaRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(propuestaRepo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThat(service.aprobar(25L).getIdServicioCreado()).isEqualTo(73);
+        // Dar de baja el servicio es lo que pasa con una retrocesión (contrato o punto de
+        // baja): la comisión cobrada sigue contando (respuesta del cliente a la duda 17).
+        assertThatThrownBy(() -> service.aprobar(25L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ya tiene una comisión aprobada");
+        verify(servicioRepo, never()).save(any());
     }
 
     @Test
@@ -396,8 +404,10 @@ class McasProposalServiceTest {
 
         var claves = service.contratosConComisionVigente(List.of(vigente, deBaja, sinServicio, manual, otroEvento));
 
+        // La de baja sigue contando (retrocesión: duda 17); la borrada, no
         assertThat(claves).containsExactlyInAnyOrder(
-                McasProposalService.claveComision(1, "NUEVO_CONTRATO"));
+                McasProposalService.claveComision(1, "NUEVO_CONTRATO"),
+                McasProposalService.claveComision(2, "NUEVO_CONTRATO"));
         verify(servicioRepo, times(1)).findAllById(any());
         verify(servicioRepo, never()).findById(any());
     }

@@ -28,6 +28,9 @@ public class McasReglaComision {
     private String calculoJson;
     @Column(name = "politica_pago_json", columnDefinition = "TEXT")
     private String politicaPagoJson;
+    /** Parte de lo calculado que se cobra, en %: vacío o 100, todo; 80, el 80 % (renovaciones tácitas). */
+    @Column(name = "porcentaje_resultado", precision = 7, scale = 4)
+    private java.math.BigDecimal porcentajeResultado;
     @Column(name = "motivo_manual", length = 500)
     private String motivoManual;
     @Column(name = "localizador_origen", length = 250)

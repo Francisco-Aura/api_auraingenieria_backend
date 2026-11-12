@@ -11,6 +11,10 @@ import api.aura.repository.ServiciosPagosRepository;
 import api.aura.repository.mcas.*;
 import api.aura.repository.tablas_maestras.TBPagoPlazosRepository;
 import api.aura.repository.tablas_maestras.TBProductosRepository;
+import api.aura.repository.mcas.McasCondicionCobroRepository;
+import api.aura.repository.tablas_maestras.TBComercializadorasRepository;
+import api.aura.repository.tablas_maestras.TBGestorasRepository;
+import api.aura.service.mcas.McasCondicionesCobroService;
 import api.aura.repository.tablas_maestras.TBTarifasGasRepository;
 import api.aura.repository.tablas_maestras.TBTarifasLuzRepository;
 import api.aura.service.ModuloConfiguracionService;
@@ -76,7 +80,12 @@ class McasAuditoriaIntegralTest {
                 mock(McasAuditoriaRepository.class), productoRepo, motor,
                 mock(McasAuditoriaService.class), flags, mapper, snapshots, retrocesionPolicies,
                 servicioRepo, pagosRepo, plazosRepo, mock(TBTarifasLuzRepository.class),
-                mock(TBTarifasGasRepository.class), mock(TBProductosRepository.class));
+                mock(TBTarifasGasRepository.class), mock(TBProductosRepository.class),
+                new McasCondicionesCobroService(mock(McasCondicionCobroRepository.class),
+                mock(TBComercializadorasRepository.class), mock(TBGestorasRepository.class),
+                mock(TBPagoPlazosRepository.class)),
+                new api.aura.service.mcas.McasZonasService(mock(api.aura.repository.mcas.McasZonaComisionRepository.class),
+                mock(TBComercializadorasRepository.class), mock(api.aura.repository.PuntoSuministroRepository.class)));
     }
 
     @Test

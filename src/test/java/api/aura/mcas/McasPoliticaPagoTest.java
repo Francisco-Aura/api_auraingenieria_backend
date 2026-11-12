@@ -62,7 +62,7 @@ class McasPoliticaPagoTest {
         assertThat(resultado.getNumeroPagos()).isEqualTo(1);
         assertThat(resultado.getAdvertencias())
                 .containsExactly("No se ha podido leer el número de pagos de la regla; "
-                        + "la comisión se reparte en un solo pago.");
+                        + "se usan los de la comercializadora (o un solo pago).");
     }
 
     @Test

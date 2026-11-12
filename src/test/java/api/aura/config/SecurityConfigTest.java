@@ -63,6 +63,24 @@ class SecurityConfigTest {
     }
 
     @Test
+    void el_modulo_planificador_tambien_exige_la_sesion_de_la_intranet_y_la_cabecera_ajax_para_guardar() throws Exception {
+        // Su página (/planificador/) es aparte, pero la API es de este backend: mismas reglas
+        mvc.perform(get("/api/planificador/health")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/planificador/health").header("X-Usuario-Id", "1")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/planificador/health").sessionAttr(UsuarioSesion.ATRIBUTO, usuario))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/planificador/suppliers").sessionAttr(UsuarioSesion.ATRIBUTO, usuario)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Proveedor de prueba\"}"))
+                .andExpect(status().isForbidden());
+        // Con la cabecera que envía su pantalla (src/planificador/main.js) la petición llega al módulo
+        int estado = mvc.perform(post("/api/planificador/suppliers").sessionAttr(UsuarioSesion.ATRIBUTO, usuario)
+                        .header("X-Requested-With", "XMLHttpRequest")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Proveedor de prueba\"}"))
+                .andReturn().getResponse().getStatus();
+        assertThat(estado).isNotIn(401, 403);
+    }
+
+    @Test
     void una_modificacion_sin_cabecera_ajax_se_rechaza_aun_con_sesion() throws Exception {
         mvc.perform(post("/api/usuarios/logout").sessionAttr(UsuarioSesion.ATRIBUTO, usuario))
                 .andExpect(status().isForbidden());

@@ -235,6 +235,7 @@ public class McasConjuntoService {
                     .descripcion(regla.getDescripcion()).prioridad(regla.getPrioridad())
                     .metodoCalculo(regla.getMetodoCalculo()).condicionesJson(regla.getCondicionesJson())
                     .calculoJson(regla.getCalculoJson()).politicaPagoJson(regla.getPoliticaPagoJson())
+                    .porcentajeResultado(regla.getPorcentajeResultado())
                     .motivoManual(regla.getMotivoManual()).localizadorOrigen(regla.getLocalizadorOrigen())
                     .activo(regla.getActivo()).build());
             List<McasValorRango> valores = new ArrayList<>();

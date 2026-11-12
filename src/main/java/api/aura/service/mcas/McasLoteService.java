@@ -68,7 +68,11 @@ public class McasLoteService {
         long porValidar = porEstado.getOrDefault("PENDIENTE_VALIDACION", 0L);
         long porRevisar = suma(porEstado, POR_REVISAR) + desactualizadas;
         long enCorreccion = suma(porEstado, EN_CORRECCION);
-        return new McasRecuentoDTO(porValidar, porRevisar, enCorreccion, porValidar + porRevisar + enCorreccion);
+        // Las retrocesiones pendientes de aprobar también cuentan en el aviso del menú
+        long retrocesiones = em.createQuery("SELECT COUNT(r) FROM McasRetrocesion r WHERE r.estado = 'PENDIENTE'",
+                Long.class).getSingleResult();
+        return new McasRecuentoDTO(porValidar, porRevisar, enCorreccion,
+                porValidar + porRevisar + enCorreccion + retrocesiones);
     }
 
     /**

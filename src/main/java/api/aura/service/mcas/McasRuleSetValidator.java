@@ -44,13 +44,15 @@ public class McasRuleSetValidator {
             "tipo_suministro", "tipo de suministro", "zona_comision", "zona de comisión");
 
     private static final Set<String> CONDICIONES_TEXTO = Set.of(
-            "tipo_suministro", "segmento", "tipo_renovacion", "ambito",
+            "tipo_suministro", "segmento", "tipo_renovacion",
             "zona_comision", "tarifa_acceso", "codigo_producto");
     private static final Set<String> CONDICIONES_BOOLEANAS = Set.of("es_renovacion", "alta_nueva");
     private static final List<RangoJson> RANGOS_CONDICION = List.of(
             new RangoJson("consumo_min_kwh", "consumo_max_kwh", "consumo_min_inclusivo", "consumo_max_inclusivo"),
             new RangoJson("consumo_min_mwh", "consumo_max_mwh", "consumo_min_mwh_inc", "consumo_max_mwh_inc"),
-            new RangoJson("potencia_min_kw", "potencia_max_kw", "potencia_min_inc", "potencia_max_inc"));
+            new RangoJson("potencia_min_kw", "potencia_max_kw", "potencia_min_inc", "potencia_max_inc"),
+            new RangoJson("meses_ultima_relacion_min", "meses_ultima_relacion_max",
+                    "meses_ultima_relacion_min_inc", "meses_ultima_relacion_max_inc"));
     private static final Set<String> CONDICIONES_PERMITIDAS;
     private static final Map<String, String> ETIQUETA_CONDICION = Map.ofEntries(
             Map.entry("tipo_suministro", "tipo de suministro"), Map.entry("segmento", "segmento"),
@@ -66,7 +68,11 @@ public class McasRuleSetValidator {
             Map.entry("consumo_max_mwh_inc", "incluir el consumo máximo (MWh)"),
             Map.entry("potencia_min_kw", "potencia mínima (kW)"), Map.entry("potencia_max_kw", "potencia máxima (kW)"),
             Map.entry("potencia_min_inc", "incluir la potencia mínima"),
-            Map.entry("potencia_max_inc", "incluir la potencia máxima"));
+            Map.entry("potencia_max_inc", "incluir la potencia máxima"),
+            Map.entry("meses_ultima_relacion_min", "mínimo de meses desde la última relación con la comercializadora"),
+            Map.entry("meses_ultima_relacion_max", "máximo de meses desde la última relación con la comercializadora"),
+            Map.entry("meses_ultima_relacion_min_inc", "incluir el mínimo de meses"),
+            Map.entry("meses_ultima_relacion_max_inc", "incluir el máximo de meses"));
 
     static {
         Set<String> permitidas = new HashSet<>(CONDICIONES_TEXTO);
@@ -159,6 +165,7 @@ public class McasRuleSetValidator {
             }
             validarParametros(regla, calculo, registro);
             validarPoliticaPago(regla, politicaPago, registro);
+            validarPorcentajeResultado(regla, registro);
         }
         for (int i = 0; i < condicionesValidas.size(); i++) {
             for (int j = i + 1; j < condicionesValidas.size(); j++) {
@@ -379,7 +386,20 @@ public class McasRuleSetValidator {
             registro.regla(regla, "El número de pagos sugerido debe ser un número entero entre 1 y 12.");
     }
 
+    private static boolean miraUltimaRelacion(JsonNode condiciones) {
+        return condiciones.hasNonNull("meses_ultima_relacion_min") || condiciones.hasNonNull("meses_ultima_relacion_max");
+    }
+
+    /** Se cobra una parte (0 a 200 %) de lo calculado: 0 no tiene sentido (eso es «No comisionable»). */
+    private void validarPorcentajeResultado(McasReglaComision regla, Registro registro) {
+        java.math.BigDecimal pct = regla.getPorcentajeResultado();
+        if (pct != null && (pct.signum() <= 0 || pct.compareTo(java.math.BigDecimal.valueOf(200)) > 0))
+            registro.regla(regla, "El porcentaje de lo calculado que se cobra tiene que ser mayor que 0 y como mucho 200.");
+    }
+
     private boolean condicionesSolapan(JsonNode a, JsonNode b) {
+        // Una regla de excepción por la última relación gana a las generales (MotorMcas): no solapan
+        if (miraUltimaRelacion(a) != miraUltimaRelacion(b)) return false;
         for (String campo : CONDICIONES_TEXTO) {
             JsonNode va = a.get(campo), vb = b.get(campo);
             if (va != null && vb != null && va.isTextual() && vb.isTextual()

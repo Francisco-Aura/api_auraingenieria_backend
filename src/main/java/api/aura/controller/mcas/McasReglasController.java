@@ -43,6 +43,7 @@ public class McasReglasController {
             if (datos.getPrioridad() != null) r.setPrioridad(datos.getPrioridad());
             r.setMetodoCalculo(datos.getMetodoCalculo()); r.setCondicionesJson(datos.getCondicionesJson());
             r.setCalculoJson(datos.getCalculoJson()); r.setPoliticaPagoJson(datos.getPoliticaPagoJson());
+            r.setPorcentajeResultado(datos.getPorcentajeResultado());
             r.setMotivoManual(datos.getMotivoManual()); r.setLocalizadorOrigen(datos.getLocalizadorOrigen());
             r.setActivo(datos.getActivo() != null ? datos.getActivo() : Boolean.TRUE);
             return ResponseEntity.ok(reglaRepo.save(r));

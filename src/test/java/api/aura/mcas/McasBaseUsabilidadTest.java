@@ -273,7 +273,7 @@ class McasBaseUsabilidadTest {
         JsonNode json = mapper.readTree(mapper.writeValueAsString(dto));
 
         assertThat(campos(json)).containsExactlyInAnyOrder("estado", "mensaje", "importe", "numeroPagos",
-                "calendario", "regla", "avisos", "campos");
+                "calendario", "regla", "avisos", "zonaComision", "campos");
         assertThat(json.get("estado").asText()).isEqualTo("CALCULADO");
         assertThat(campos(json.get("calendario").get(0))).containsExactlyInAnyOrder("numero", "fecha", "importe");
         assertThat(json.get("calendario").get(0).get("fecha").asText()).isEqualTo("2026-10-01");
@@ -294,7 +294,7 @@ class McasBaseUsabilidadTest {
     @Test
     void enum_McasCampo_con_las_claves_del_contrato_de_api_y_su_etiqueta() {
         assertThat(McasCampo.values()).extracting(Enum::name).containsExactly("TIPO_PRECIO", "TIPO_SUMINISTRO",
-                "SEGMENTO", "ES_RENOVACION", "TIPO_RENOVACION", "ALTA_NUEVA", "AMBITO", "ZONA_COMISION",
+                "SEGMENTO", "ES_RENOVACION", "TIPO_RENOVACION", "ALTA_NUEVA", "ZONA_COMISION",
                 "TARIFA_ACCESO", "PRODUCTO", "CONSUMO", "POTENCIA", "FEE", "GESTORA");
         assertThat(McasCampo.FEE.getEtiqueta()).isEqualTo("FEE del contrato");
         assertThat(McasCampo.desdeCodigo("consumo_mwh")).contains(McasCampo.CONSUMO);
