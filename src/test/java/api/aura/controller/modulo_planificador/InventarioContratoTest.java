@@ -208,6 +208,17 @@ class InventarioContratoTest {
     }
 
     @Test
+    void laCubiertaDeUnaEstructuraEsUnaListaCerradaConLosTiposNuevos() throws Exception {
+        for (String tipo : new String[]{"Todas", "Teja", "Chapa", "Chapa minionda", "Chapa grecada", "Plana", "Suelo", "Parking", "Flotante", "Pérgola", "Panel sándwich"}) {
+            peticionPost("/equipment", "{\"category\":\"estructura\",\"group\":\"modulos\",\"attrs\":{\"cubierta\":\"" + tipo + "\"}}").andExpect(status().isCreated());
+        }
+        // Sin importar mayúsculas ni acentos se guarda el nombre de la lista
+        JsonNode e = leer(peticionPost("/equipment", "{\"category\":\"estructura\",\"group\":\"modulos\",\"attrs\":{\"cubierta\":\"panel sandwich\"}}").andExpect(status().isCreated()));
+        assertEquals("Panel sándwich", e.get("attrs").get("cubierta").asText());
+        peticionPost("/equipment", "{\"category\":\"estructura\",\"group\":\"modulos\",\"attrs\":{\"cubierta\":\"Volcán\"}}").andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
     void precioNegativoOFaltarCategoriaEsError422() throws Exception {
         peticionPost("/equipment", "{\"category\":\"contadores\",\"group\":\"electricidad\",\"unit_price\":-1}")
                 .andExpect(status().isUnprocessableEntity());
