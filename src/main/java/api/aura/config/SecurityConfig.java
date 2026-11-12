@@ -64,6 +64,9 @@ public class SecurityConfig {
                         .requestMatchers("/error", "/actuator/health", "/actuator/health/**").permitAll()
                         .anyRequest().access(sesionIniciada))
                 .addFilterBefore(new CabeceraAjaxFilter(), AuthorizationFilter.class)
+                // Francisco (Planificador): por defecto Spring envía X-Frame-Options: DENY y el navegador no deja incrustar ni los PDF propios
+                // (fichas técnicas, presupuestos) en un iframe de la intranet. Con SAMEORIGIN solo se pueden incrustar desde la propia intranet.
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) ->
                                 escribirError(res, HttpServletResponse.SC_UNAUTHORIZED,

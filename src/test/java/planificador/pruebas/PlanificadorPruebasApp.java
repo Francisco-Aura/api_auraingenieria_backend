@@ -34,6 +34,8 @@ public class PlanificadorPruebasApp {
     @Bean
     SecurityFilterChain sinLogin(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                // Igual que SecurityConfig: los PDF se pueden incrustar solo desde la propia intranet
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());

@@ -231,6 +231,31 @@ class PresupuestosContratoTest {
     }
 
     @Test
+    void losPresupuestosDelMismoClienteYProyectoSonDeLaMismaOfertaSinCrearVariantes() throws Exception {
+        String a = crear("Pepe · Nave 2");
+        assertEquals("", leer(mvc.perform(get(BASE + "/budgets/" + a))).get("offer_id").asText(), "solo no tiene oferta");
+        // Mismo cliente y mismo proyecto (sin mirar mayúsculas, tildes, espacios ni «v2»): entra en su oferta y se la da al primero
+        JsonNode b = leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · nave  2 v2", "existente", "")).andExpect(status().isCreated()));
+        String oferta = b.get("offer_id").asText();
+        assertFalse(oferta.isEmpty());
+        assertEquals(oferta, leer(mvc.perform(get(BASE + "/budgets/" + a))).get("offer_id").asText());
+        // Otro proyecto del mismo cliente, o el mismo proyecto de otro cliente, o sin proyecto: cada uno por su lado
+        assertEquals("", leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · Nave 3", "existente", "")).andExpect(status().isCreated())).get("offer_id").asText());
+        assertEquals("", leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · Nave 2", "potencial", "")).andExpect(status().isCreated())).get("offer_id").asText());
+        String sinProyecto = crear("Pepe");
+        crear("Pepe");
+        assertEquals("", leer(mvc.perform(get(BASE + "/budgets/" + sinProyecto))).get("offer_id").asText());
+        // Guardar con otro proyecto lo saca de la oferta; guardarlo con el de otra oferta lo mete en ella
+        String c = leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · Nave 2 ", "existente", "")).andExpect(status().isCreated())).get("id").asText();
+        String cuerpo = presupuesto("Pepe · Nave 9", "existente", "").replace("}}", "},\"version\":1}");
+        assertEquals("", leer(ana(put(BASE + "/budgets/" + c), cuerpo).andExpect(status().isOk())).get("offer_id").asText());
+        assertEquals(oferta, leer(mvc.perform(get(BASE + "/budgets/" + a))).get("offer_id").asText(), "los demás siguen juntos");
+        String d = crear("Pepe · Nave 9b");
+        String volver = presupuesto("Pepe · Nave 2", "existente", "").replace("}}", "},\"version\":1}");
+        assertEquals(oferta, leer(ana(put(BASE + "/budgets/" + d), volver).andExpect(status().isOk())).get("offer_id").asText());
+    }
+
+    @Test
     void soloQuienValidaPuedeValidarYSeDescartaElRestoDeLaOferta() throws Exception {
         String a = enviado("A");
         String b = leer(ana(post(BASE + "/budgets/" + a + "/variant"), null).andExpect(status().isCreated())).get("id").asText();

@@ -15,7 +15,12 @@ public final class PropuestaDatos {
 
     private static final Map<String, String> ESTRUCTURA_POR_CUBIERTA = Map.of("teja", "coplanar", "chapa", "coplanar", "plana", "lastrada", "suelo", "hincada");
     private static final Map<String, String> SUMINISTRO = Map.of("monofasico", "Monofásico", "trifasico", "Trifásico");
-    private static final Pattern NUMERO = Pattern.compile("\\d+(?:[.,]\\d+)?");
+    // Años de garantía cuando el inventario no la trae, en el orden de las tarjetas de la propuesta
+    static final int GARANTIA_MODULO_POR_DEFECTO = 30;
+    static final int GARANTIA_INVERSOR_POR_DEFECTO = 5;
+    static final int GARANTIA_INSTALACION = 2;
+    static final int GARANTIA_BATERIA_POR_DEFECTO = 10;
+    private static final Pattern NUMERO =Pattern.compile("\\d+(?:[.,]\\d+)?");
 
     private PropuestaDatos() {
     }
@@ -120,14 +125,19 @@ public final class PropuestaDatos {
         Map<String, Object> mod = primero.getOrDefault("modulos", Map.of());
         Map<String, Object> inv = primero.getOrDefault("inversores", Map.of());
         Map<String, Object> bat = primero.getOrDefault("baterias", Map.of());
+        double productoModulo = numero(mod.get("garantia_anos"));
+        double produccionModulo = numero(mod.get("garantia_prod_anos"));
         Map<String, Object> g = new LinkedHashMap<>();
-        g.put("panel_years", numero(mod.get("garantia_anos")));
-        g.put("panel_prod_years", numero(mod.get("garantia_prod_anos")));
+        g.put("panel_years", productoModulo);
+        // Garantía vacía en el inventario: la habitual (en el orden de la propuesta: módulo 30, inversor 5, instalación 2, batería 10)
+        g.put("panel_prod_years", productoModulo <= 0 && produccionModulo <= 0 ? GARANTIA_MODULO_POR_DEFECTO : produccionModulo);
         g.put("panel_prod_pct", numero(mod.get("garantia_prod_pct")));
-        g.put("inverter_years", numero(inv.get("garantia_anos")));
-        g.put("battery_years", numero(bat.get("garantia_anos")));
+        double inversor = numero(inv.get("garantia_anos"));
+        g.put("inverter_years", inversor <= 0 && primero.containsKey("inversores") ? GARANTIA_INVERSOR_POR_DEFECTO : inversor);
+        double bateria = numero(bat.get("garantia_anos"));
+        g.put("battery_years", bateria <= 0 && primero.containsKey("baterias") ? GARANTIA_BATERIA_POR_DEFECTO : bateria);
         g.put("battery_cycles", numero(bat.get("ciclos")));
-        g.put("install_years", 2); // la que da Aura, no depende de ningún equipo
+        g.put("install_years", GARANTIA_INSTALACION); // la que da Aura, no depende de ningún equipo
         return g;
     }
 

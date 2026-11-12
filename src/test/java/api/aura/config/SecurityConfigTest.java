@@ -48,7 +48,7 @@ class SecurityConfigTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].pass").doesNotExist())
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().string("X-Frame-Options", "DENY"));
+                .andExpect(header().string("X-Frame-Options", "SAMEORIGIN"));
     }
 
     @Test
