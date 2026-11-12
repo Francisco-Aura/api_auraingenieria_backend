@@ -12,6 +12,7 @@ import api.aura.repository.tablas_maestras.TBTipoContadorRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
 import api.aura.entity.Cliente;
+import api.aura.util.BajaEfectiva;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,14 @@ public class PuntoSuministroService {
     @Autowired
     private ContratoRepository contratoRepository;
 
+    /** Para revisar las retrocesiones MCAS cuando el punto se da de baja o se reactiva. */
+    @Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher eventos;
+
+    private void avisarMcas(Integer idPunto) {
+        if (eventos != null && idPunto != null) eventos.publishEvent(new api.aura.service.mcas.McasBajaEvent(idPunto));
+    }
+
     @Transactional
     public PuntoSuministro guardarPuntoSuministro(PuntoSuministro puntoSuministro) {
         // Si es una actualización, cargamos la entidad gestionada desde BD para
@@ -58,11 +67,11 @@ public class PuntoSuministroService {
         }
 
         // Validar que no se reactive un PS si el cliente está dado de baja
-        if (existente != null && puntoSuministro.getFechaBaja() == null
+        if (existente != null && BajaEfectiva.estaActivo(puntoSuministro.getFechaBaja())
                 && puntoSuministro.getCliente() != null && puntoSuministro.getCliente().getId() != null
-                && existente.getFechaBaja() != null) {
+                && BajaEfectiva.tieneBaja(existente.getFechaBaja())) {
             Cliente cliente = clienteRepository.findById(puntoSuministro.getCliente().getId()).orElse(null);
-            if (cliente != null && cliente.getFechaBaja() != null) {
+            if (cliente != null && BajaEfectiva.tieneBaja(cliente.getFechaBaja())) {
                 throw new IllegalArgumentException(
                         "No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
             }
@@ -178,6 +187,7 @@ public class PuntoSuministroService {
         }
 
         PuntoSuministro saved = puntoSuministroRepository.save(target);
+        avisarMcas(saved.getId());
 
         // SINCRONIZAR CONTRATOS: Actualizar todos los contratos asociados a este punto
         // de suministro
@@ -197,17 +207,18 @@ public class PuntoSuministroService {
         destino.setDireccion(origen.getDireccion());
         destino.setCodigoPostal(origen.getCodigoPostal());
         destino.setPoblacion(origen.getPoblacion());
-        destino.setProvincia(origen.getProvincia());
+        destino.setProvincia(api.aura.util.Provincias.nombreOficial(origen.getProvincia()));
         destino.setIdentificacion(origen.getIdentificacion());
         destino.setUbicacion(origen.getUbicacion());
         destino.setCUPSluz(origen.getCUPSluz());
         destino.setCUPSgas(origen.getCUPSgas());
         destino.setFechaBaja(origen.getFechaBaja());
         destino.setFechaInstalacion(origen.getFechaInstalacion());
-        destino.setModem(origen.getModem());
-        destino.setPropiedadModem(origen.getPropiedadModem());
-        destino.setContador(origen.getContador());
-        destino.setPropiedadContador(origen.getPropiedadContador());
+        // Campos antiguos que el formulario ya no envía: antes cada edición los vaciaba
+        if (origen.getModem() != null) destino.setModem(origen.getModem());
+        if (origen.getPropiedadModem() != null) destino.setPropiedadModem(origen.getPropiedadModem());
+        if (origen.getContador() != null) destino.setContador(origen.getContador());
+        if (origen.getPropiedadContador() != null) destino.setPropiedadContador(origen.getPropiedadContador());
         destino.setObservaciones(origen.getObservaciones());
         destino.setPotenciaBIE(origen.getPotenciaBIE());
         destino.setPotenciaTecnicaRed(origen.getPotenciaTecnicaRed());
@@ -269,12 +280,14 @@ public class PuntoSuministroService {
         return puntoSuministroRepository.findByClienteIdAndFechaBajaIsNotNull(clienteId);
     }
 
+    @Transactional
     public void reactivarPuntoSuministro(Integer id) {
         puntoSuministroRepository.findById(id).ifPresent(ps -> {
-            if (ps.getCliente() != null && ps.getCliente().getFechaBaja() != null) {
+            if (ps.getCliente() != null && BajaEfectiva.tieneBaja(ps.getCliente().getFechaBaja())) {
                 throw new IllegalArgumentException("No se puede reactivar el punto de suministro porque el cliente asociado está dado de baja. Debe reactivar el cliente primero.");
             }
             ps.setFechaBaja(null);
+            avisarMcas(ps.getId());
             puntoSuministroRepository.save(ps);
         });
     }

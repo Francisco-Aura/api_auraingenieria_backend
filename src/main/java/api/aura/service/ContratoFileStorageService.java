@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import api.aura.entity.Contrato;
+import api.aura.util.ArchivosTransaccion;
 
 @Service
 public class ContratoFileStorageService {
@@ -44,8 +46,10 @@ public class ContratoFileStorageService {
             }
 
             try (InputStream contenido = archivo.getInputStream()) {
-                Files.copy(contenido, destino, StandardCopyOption.REPLACE_EXISTING);
+                ArchivosTransaccion.copiar(contenido, destino, StandardCopyOption.REPLACE_EXISTING);
             }
+            // Si el guardado del contrato se deshace, el PDF nuevo no queda huérfano
+            ArchivosTransaccion.borrarSiSeDeshace(destino);
 
             eliminarArchivoAnterior(contrato.getRutaArchivoContrato());
             contrato.setNombreArchivo(nombreOriginal);
@@ -98,7 +102,9 @@ public class ContratoFileStorageService {
 
         try (InputStream contenido = archivo.getInputStream()) {
             byte[] cabecera = contenido.readNBytes(PDF_SIGNATURE.length());
-            if (!PDF_SIGNATURE.equals(new String(cabecera))) {
+            // La firma son bytes ASCII: sin indicar juego de caracteres se leeria
+            // con el del sistema y en una maquina con otro juego no cuadraria.
+            if (!PDF_SIGNATURE.equals(new String(cabecera, StandardCharsets.US_ASCII))) {
                 throw new IllegalArgumentException("El contenido del archivo no corresponde a un PDF válido");
             }
         } catch (IOException e) {
@@ -108,21 +114,22 @@ public class ContratoFileStorageService {
 
     private String nombreOriginalSeguro(MultipartFile archivo) {
         String nombre = archivo.getOriginalFilename() == null ? "contrato.pdf" : archivo.getOriginalFilename();
-        String seguro = Paths.get(nombre).getFileName().toString().replaceAll("[\\r\\n]", "");
+        String seguro = api.aura.util.NombresArchivo.sinControl(Paths.get(nombre).getFileName().toString());
         return seguro.isBlank() ? "contrato.pdf" : seguro;
     }
 
+    /**
+     * El PDF anterior se borra cuando el cambio del contrato queda confirmado: si la
+     * transacción se deshace, el contrato sigue apuntando a su PDF y este existe.
+     */
     private void eliminarArchivoAnterior(String rutaAnterior) {
         if (rutaAnterior == null || rutaAnterior.isBlank()) {
             return;
         }
 
-        try {
-            Path ruta = Paths.get(rutaAnterior).toAbsolutePath().normalize();
-            if (ruta.startsWith(uploadBasePath)) {
-                Files.deleteIfExists(ruta);
-            }
-        } catch (IOException ignored) {
+        Path ruta = Paths.get(rutaAnterior).toAbsolutePath().normalize();
+        if (ruta.startsWith(uploadBasePath)) {
+            ArchivosTransaccion.borrarTrasConfirmar(ruta);
         }
     }
 }

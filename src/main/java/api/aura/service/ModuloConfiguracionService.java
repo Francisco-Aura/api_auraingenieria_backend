@@ -5,6 +5,7 @@ import api.aura.repository.ModuloConfiguracionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +18,10 @@ public class ModuloConfiguracionService {
         return moduloConfiguracionRepository.findByCodigo(codigo)
                 .map(ModuloConfiguracion::getActivo)
                 .orElse(false);
+    }
+
+    public List<ModuloConfiguracion> listarPorPrefijo(String prefijo) {
+        return moduloConfiguracionRepository.findByCodigoStartingWithOrderByCodigoAsc(prefijo);
     }
 
     public ModuloConfiguracion activar(String codigo) {

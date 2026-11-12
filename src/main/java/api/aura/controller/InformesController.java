@@ -1,5 +1,7 @@
 package api.aura.controller;
 
+import api.aura.config.AuraUserHolder;
+
 import java.util.List;
 import java.util.Map;
 
@@ -26,10 +28,10 @@ public class InformesController {
     }
 
     @GetMapping("/contratos-pendientes-renovacion")
-    public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion(
-            @RequestParam(required = false) Integer nivelAcceso,
-            @RequestHeader(value = "X-Aura-Usuario-Nombre", required = false) String usuarioNombre) {
-        return servicio.obtenerContratosPendientesRenovacion(nivelAcceso, usuarioNombre);
+    public List<ContratoPendienteRenovacionDTO> obtenerContratosPendientesRenovacion() {
+        // Nivel y nombre salen de la sesión, no de la petición: con el parámetro
+        // nivelAcceso=1 cualquier usuario veía los contratos de todos.
+        return servicio.obtenerContratosPendientesRenovacion(AuraUserHolder.getNivelAcceso(), AuraUserHolder.get());
     }
 
     @GetMapping("/puntos-suministro-sin-contrato")
@@ -39,6 +41,8 @@ public class InformesController {
 
     @PutMapping("/contratos-pendientes-renovacion/actualizar/{id}")
     public ResponseEntity<?> actualizarContratoPendienteRenovacion(@PathVariable Integer id, @RequestBody ContratoPendienteRenovacionDTO dto) {
+        // Edita datos del contrato/punto saltándose las validaciones normales: solo administradores
+        SesionActual.exigirAdmin();
         try {
             ContratoPendienteRenovacionDTO actualizado = servicio.actualizarContratoPendienteRenovacion(id, dto);
             return ResponseEntity.ok(Map.of("success", true, "data", actualizado));
@@ -51,6 +55,8 @@ public class InformesController {
 
     @PutMapping("/puntos-suministro-sin-contrato/actualizar/{id}")
     public ResponseEntity<?> actualizarPuntoSuministroSinContrato(@PathVariable String id, @RequestBody PuntosSuministroSinContratoDTO dto) {
+        // Edita datos del contrato/punto saltándose las validaciones normales: solo administradores
+        SesionActual.exigirAdmin();
         try {
             PuntosSuministroSinContratoDTO actualizado = servicio.actualizarPuntoSuministroSinContrato(id, dto);
             return ResponseEntity.ok(Map.of("success", true, "data", actualizado));
@@ -66,6 +72,8 @@ public class InformesController {
         @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fechaDesde,
         @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fechaHasta
     ) {
+        // Informe de pagos: el frontend solo lo muestra a administradores
+        SesionActual.exigirAdmin();
         return servicio.obtenerServiciosPendientesPago(fechaDesde, fechaHasta);
     }
 
@@ -75,9 +83,12 @@ public class InformesController {
         @PathVariable int numeroPago,
         @RequestParam boolean pagado
     ) {
+        SesionActual.exigirAdmin();
         try {
             servicio.actualizarPagoParcial(idServicio, numeroPago, pagado);
             return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Pago actualizado correctamente"));
+        } catch (IllegalArgumentException motivo) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", motivo.getMessage()));
         } catch (Exception e) {
             logger.error("Error al actualizar el pago {} del servicio {}", numeroPago, idServicio, e);
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", "No se pudo actualizar el pago"));
@@ -86,9 +97,12 @@ public class InformesController {
 
     @PutMapping("/servicios-pendientes-pago/marcar-siguiente-pago/{idServicio}")
     public ResponseEntity<?> marcarSiguientePagoPendiente(@PathVariable Long idServicio) {
+        SesionActual.exigirAdmin();
         try {
             servicio.marcarSiguientePagoPendiente(idServicio);
             return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Siguiente pago marcado como pagado correctamente"));
+        } catch (IllegalArgumentException sinPendientes) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", sinPendientes.getMessage()));
         } catch (Exception e) {
             logger.error("Error al marcar el siguiente pago pendiente del servicio {}", idServicio, e);
             return ResponseEntity.badRequest().body(java.util.Map.of("success", false, "message", "No se pudo marcar el siguiente pago como pagado"));
@@ -105,6 +119,7 @@ public class InformesController {
         @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fechaDesde,
         @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fechaHasta
     ) {
+        SesionActual.exigirAdmin();
         return servicio.obtenerServiciosVigentes(fechaDesde, fechaHasta);
     }
 

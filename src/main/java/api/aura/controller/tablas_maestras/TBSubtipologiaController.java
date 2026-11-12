@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ public class TBSubtipologiaController {
 
     @PostMapping
     public ResponseEntity<TBSubtipologia> crearSubtipologia(@RequestBody TBSubtipologia subtipologia) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(subtipologiaService.crearSubtipologia(subtipologia));
     }
 
@@ -34,11 +36,13 @@ public class TBSubtipologiaController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TBSubtipologia> actualizarSubtipologia(@PathVariable Integer id, @RequestBody TBSubtipologia subtipologiaActualizada) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(subtipologiaService.actualizarSubtipologia(id, subtipologiaActualizada));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarSubtipologia(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         subtipologiaService.eliminarSubtipologia(id);
         return ResponseEntity.noContent().build();
     }

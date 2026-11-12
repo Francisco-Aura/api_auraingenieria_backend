@@ -1,5 +1,6 @@
 package api.aura.controller.modulo_tareas;
 
+import api.aura.controller.SesionActual;
 import api.aura.entity.modulo_tareas.mt_Categoria;
 import api.aura.repository.modulo_tareas.mt_CategoriaRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class TareaCategoriaController {
     // Crear nueva categoría
     @PostMapping
     public ResponseEntity<Map<String, Object>> crear(@RequestBody Map<String, Object> datos) {
+        SesionActual.exigirAdmin();
         mt_Categoria categoria = mt_Categoria.builder()
                 .nombre((String) datos.get("nombre"))
                 .codigo((String) datos.get("codigo"))
@@ -51,6 +53,7 @@ public class TareaCategoriaController {
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> actualizar(@PathVariable Long id,
             @RequestBody Map<String, Object> datos) {
+        SesionActual.exigirAdmin();
         return categoriaRepository.findById(id)
                 .map(categoria -> {
                     if (datos.containsKey("nombre")) {
@@ -74,6 +77,7 @@ public class TareaCategoriaController {
     // Eliminar categoría
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        SesionActual.exigirAdmin();
         if (categoriaRepository.existsById(id)) {
             categoriaRepository.deleteById(id);
             return ResponseEntity.noContent().build();

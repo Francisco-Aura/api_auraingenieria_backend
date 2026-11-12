@@ -40,7 +40,7 @@ public class TBProductosService {
                     producto.setDescripcion(productoActualizado.getDescripcion());
                     return productosRepository.save(producto);
                 })
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'productos'")

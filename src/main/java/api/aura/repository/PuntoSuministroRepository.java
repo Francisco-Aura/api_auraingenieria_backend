@@ -19,7 +19,9 @@ public interface PuntoSuministroRepository extends JpaRepository<PuntoSuministro
          + "AND (ps.fechaBaja IS NULL OR YEAR(ps.fechaBaja) = 1 OR YEAR(ps.fechaBaja) = 1900)")
     List<PuntoSuministro> findActivosPorClienteId(@Param("clienteId") Integer clienteId);
 
-    // Reactivación selectiva: puntos dados de baja del cliente
+    // Reactivación selectiva: puntos con fecha de baja del cliente. Cualquier fecha cuenta
+    // (también 1900), igual que la pantalla de Puntos de suministro, que los muestra como
+    // dados de baja: así al reactivar se ofrecen y se les quita la fecha, como siempre
     List<PuntoSuministro> findByClienteIdAndFechaBajaIsNotNull(Integer clienteId);
 
     /**
