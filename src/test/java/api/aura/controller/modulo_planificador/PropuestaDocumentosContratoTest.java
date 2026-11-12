@@ -159,6 +159,38 @@ class PropuestaDocumentosContratoTest {
         assertEquals("3 strings: 19 + 18 + 18 paneles", PropuestaDatos.resumenDeStrings(reparto, 0), "sin paneles en el presupuesto no se puede comparar");
     }
 
+    @Test
+    void elCifYElLogoDeLosParametrosDelPresupuestoSalenEnLaPropuesta() throws Exception {
+        JsonNode e = entrada();
+        equipos(e.get("equipos")).values().forEach(q -> {
+            q.setPartida("");
+            equiposRepo.save(q);
+        });
+        JsonNode b = e.get("budget");
+        Map<String, Object> datos = json.convertValue(b.get("datos"), new TypeReference<LinkedHashMap<String, Object>>() {
+        });
+        datos.put("cif", "B12345678");
+        datos.put("clientLogo", "data:image/png;base64,AAAA");
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("name", b.get("name").asText());
+        cuerpo.put("data", datos);
+        cuerpo.put("kwp", b.get("kwp").asDouble());
+        cuerpo.put("panels", b.get("panels").asInt());
+        cuerpo.put("budget_total", b.get("total").asDouble());
+        String salida = mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target", "propuesta-pruebas"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target", "propuesta-pruebas", "propuesta-cif.html"), salida);
+        var m = Pattern.compile("<script id=\"datos\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(salida);
+        assertTrue(m.find());
+        JsonNode d = json.readTree(m.group(1));
+        assertEquals("B12345678", d.get("cif").asText());
+        assertEquals("data:image/png;base64,AAAA", d.get("logo").asText());
+        // Un logo que no es una imagen en data URI no se cuela
+        assertEquals("", PropuestaDatos.logoValido("<script>alert(1)</script>"));
+        assertEquals("", PropuestaDatos.logoValido("data:text/html;base64,AAAA"));
+    }
+
     // --------------------------------------------------------------------------------------- HTML
 
     @Test
