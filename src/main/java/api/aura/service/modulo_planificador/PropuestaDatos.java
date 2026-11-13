@@ -13,7 +13,11 @@ import java.util.regex.Pattern;
  */
 public final class PropuestaDatos {
 
-    private static final Map<String, String> ESTRUCTURA_POR_CUBIERTA = Map.of("teja", "coplanar", "chapa", "coplanar", "plana", "lastrada", "suelo", "hincada");
+    private static final Map<String, String> ESTRUCTURA_POR_CUBIERTA = Map.ofEntries(
+            Map.entry("teja", "coplanar"), Map.entry("chapa", "coplanar"), Map.entry("chapa_minionda", "coplanar"),
+            Map.entry("chapa_grecada", "coplanar"), Map.entry("sandwich", "coplanar"), Map.entry("plana", "lastrada"),
+            Map.entry("suelo", "hincada"), Map.entry("parking", "marquesina"), Map.entry("pergola", "marquesina"),
+            Map.entry("flotante", "marquesina_flotante"));
     private static final Map<String, String> SUMINISTRO = Map.of("monofasico", "Monofásico", "trifasico", "Trifásico");
     // Años de garantía cuando el inventario no la trae, en el orden de las tarjetas de la propuesta
     static final int GARANTIA_MODULO_POR_DEFECTO = 30;
@@ -195,6 +199,9 @@ public final class PropuestaDatos {
         if (cif != null && !String.valueOf(cif).isBlank()) salida.put("cif", String.valueOf(cif).strip());
         String logo = logoValido(datos.get("clientLogo"));
         if (!logo.isEmpty()) salida.put("logo", logo);
+        // «Encaje»: imagen con la disposición de los paneles en el proyecto (opcional); si está, la propuesta añade su diapositiva
+        String encaje = logoValido(datos.get("encaje"));
+        if (!encaje.isEmpty()) salida.put("encaje", encaje);
         salida.put("supply", SUMINISTRO.getOrDefault(String.valueOf(encuesta.getOrDefault("supply", "")), ""));
         salida.put("strings", resumenDeStrings(datos.get("strings"), b.getPaneles()));
         salida.put("warranty", garantias(b, equipos));

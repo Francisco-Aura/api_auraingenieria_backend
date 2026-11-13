@@ -78,6 +78,10 @@ public final class CatalogoEquipos {
 
     /** Características con lista cerrada: las reglas del presupuestador se apoyan en ellas. */
     private static final Map<String, Map<String, List<String>>> OPCIONES = Map.of(
+            // Para qué cubierta es una estructura («Todas» vale para cualquiera; «Chapa» a secas, para las dos chapas)
+            "estructura", Map.of(
+                    "cubierta", List.of("Todas", "Teja", "Chapa minionda", "Chapa grecada", "Chapa", "Plana", "Suelo", "Parking",
+                            "Flotante", "Pérgola", "Panel sándwich")),
             "protecciones", Map.of(
                     "tipo", List.of("CC", "AC", "Cuadro", "Transformador"),
                     "elemento", List.of("Conjunto", "Fusible", "Portafusibles", "Fusible con portafusibles",

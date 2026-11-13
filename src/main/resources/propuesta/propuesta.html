@@ -309,6 +309,16 @@ h2 .hl { display: inline-block; background: var(--y); color: #fff; padding: 0 12
 .gal.g5 { grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(2, 1fr); }
 .gal.g5 img { grid-column: span 2; }
 .gal.g5 img:nth-child(n+4) { grid-column: span 3; }
+
+/* Encaje: disposición de los paneles en el proyecto, justo encima del logo y dentro de un marco con el amarillo de la marca (se amplía al pulsarlo).
+   Con encaje, la columna de la derecha (encaje + logo, del mismo ancho) llega hasta la base del dibujo del panel (el logo termina en su línea de suelo);
+   el encaje ocupa lo que sobra. Sin encaje, el logo queda donde estaba. */
+.rcol { position: absolute; right: 96px; top: 140px; bottom: 66px; width: 380px; display: flex; flex-direction: column; gap: 30px; }
+.rcol .logo-slot { position: relative; right: auto; top: auto; width: 100%; flex: none; }
+.rcol .logo-box { height: 200px; }
+.rcol .logo-tools { position: absolute; left: 0; top: 100%; }
+.encaje { flex: 1 1 auto; min-height: 0; display: flex; margin: 0; padding: 8px; background: #fff; border: 3px solid var(--y); border-radius: 18px; cursor: zoom-in; }
+.encaje img { flex: 1 1 0; min-width: 0; min-height: 0; object-fit: contain; border-radius: 10px; background: #fafafa; }
 .gal img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; box-shadow: 0 8px 22px rgba(0,0,0,.12); display: block; min-height: 0; }
 
 /* Cierre con los datos de contacto */
@@ -532,7 +542,7 @@ const slides = [
     <div class="cweb in pop" style="--i:7"><img src="marca-gris.png" alt="">auraingenieria.es</div></section>`,
 
   `<section class="slide">${deco}<div class="lead in" style="--i:0">Te lo ponemos <em>fácil</em> para que no te preocupes de nada durante el proceso.</div>
-    <div class="turn in" style="--i:2"><b>Proyecto llave en mano</b>Producir tu propia energía es una buena decisión, y nosotros hacemos que también sea fácil. Nos ocupamos de todo de principio a fin.</div><div class="logo-slot in pop" style="--i:4" id="logoSlot"></div>${ART}</section>`,
+    <div class="turn in" style="--i:2"><b>Proyecto llave en mano</b>Producir tu propia energía es una buena decisión, y nosotros hacemos que también sea fácil. Nos ocupamos de todo de principio a fin.</div>${D.encaje ? `<div class="rcol"><figure class="encaje in pop" style="--i:3"><img src="${D.encaje}" alt="Disposición de los paneles solares en tu instalación"></figure><div class="logo-slot in pop" style="--i:4" id="logoSlot"></div></div>` : '<div class="logo-slot in pop" style="--i:4" id="logoSlot"></div>'}${ART}</section>`,
 
   `<section class="slide steps">${deco}<div class="cols"><div class="cwrap">${[
       ['search', 'Análisis y solución global', '#fdc500', 210], ['file', 'Ingeniería y diseño a medida', '#fee07a', 120], ['bolt', 'Instalación con equipo propio', '#c9c9cb', 104],
@@ -647,7 +657,7 @@ const lb = document.createElement('div')
 lb.id = 'lb'
 lb.innerHTML = '<button class="lbx" aria-label="Cerrar">×</button><button class="lbp" aria-label="Anterior">‹</button><img alt=""><button class="lbn" aria-label="Siguiente">›</button><div class="lbc"></div>'
 document.body.appendChild(lb)
-const PHOTOS = '.gal img, .rf img'
+const PHOTOS = '.gal img, .rf img, .encaje img'
 let lbList = [], lbI = 0
 function lbShow(i) {
   lbI = (i + lbList.length) % lbList.length
