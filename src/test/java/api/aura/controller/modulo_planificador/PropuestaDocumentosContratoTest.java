@@ -27,7 +27,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -198,30 +197,21 @@ class PropuestaDocumentosContratoTest {
     // --------------------------------------------------------------------------------------- HTML
 
     @Test
-    void laPresentacionHtmlEsIgualALaDelPlanificadorActualSalvoSusDatos() throws Exception {
+    void laPresentacionHtmlLlevaSusDatosDentroYLasImagenesIncrustadas() throws Exception {
         JsonNode e = entrada();
         Map<String, Object> datos = PropuestaDatos.paraHtml(presupuesto(e.get("budget")), equipos(e.get("equipos")));
         datos.put("logo", "data:image/png;base64,AAAA");
         String generado = html.generar(datos);
-        String neutro = Pattern.compile("(<script id=\"datos\" type=\"application/json\">)(.*?)(</script>)", Pattern.DOTALL).matcher(generado)
-                .replaceFirst(m -> m.group(1) + "@@" + m.group(3));
-        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target", "propuesta-pruebas"));
-        java.nio.file.Files.writeString(java.nio.file.Path.of("target", "propuesta-pruebas", "propuesta.html"), neutro);
-        String[] esperado = recurso("propuesta.sha256").trim().split(" ");
-        assertEquals(Integer.parseInt(esperado[1]), neutro.codePointCount(0, neutro.length()), "mismo tamaño");
-        assertEquals(esperado[0], sha256(neutro), "mismo contenido, con las imágenes incrustadas");
+        // Un único archivo: ninguna imagen queda con ruta relativa (todas van incrustadas)
         assertFalse(generado.contains("src=\"logos/") || generado.contains("src=\"proyectos/"), "ninguna imagen queda con ruta relativa");
+        // La plantilla está completa: las diapositivas principales siguen ahí (no se comprueba el archivo entero, para poder retocarlo sin tocar la prueba)
+        for (String clave : List.of("Te lo ponemos", "Estructura de", "Garantías de la", "Instalaciones de", "Soportes de", "id=\"logoSlot\"")) {
+            assertTrue(generado.contains(clave), "falta en la propuesta: " + clave);
+        }
         // Los datos viajan dentro del propio archivo
         var m = Pattern.compile("<script id=\"datos\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(generado);
         assertTrue(m.find());
         assertEquals(json.readTree(recurso("datos-html.json")), json.readTree(m.group(1)));
-    }
-
-    private static String sha256(String texto) throws Exception {
-        byte[] hash = MessageDigest.getInstance("SHA-256").digest(texto.getBytes(StandardCharsets.UTF_8));
-        StringBuilder sb = new StringBuilder();
-        for (byte b : hash) sb.append(String.format("%02x", b));
-        return sb.toString();
     }
 
     @Test
