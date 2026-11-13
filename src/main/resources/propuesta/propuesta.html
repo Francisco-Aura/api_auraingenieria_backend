@@ -621,7 +621,7 @@ function renderLogo() {
   const slot = document.getElementById('logoSlot')
   if (!slot) return
   slot.innerHTML = D.logo
-    ? `<div class="logo-box"><img alt="Logo de ${esc(D.client)}" src="${D.logo}"></div><div class="logo-tools"><button type="button" data-a="change">Cambiar logo</button><button type="button" data-a="remove">Quitar</button></div>`
+    ? `<div class="logo-box"><img alt="Logo de ${esc(D.client)}" src="${D.logo}"></div>`
     : `<div class="logo-box add" role="button" tabindex="0" data-a="change">+ Añadir el logo de la empresa</div>`
 }
 function setLogo(uri) {
