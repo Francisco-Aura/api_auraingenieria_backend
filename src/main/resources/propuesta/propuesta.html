@@ -310,15 +310,12 @@ h2 .hl { display: inline-block; background: var(--y); color: #fff; padding: 0 12
 .gal.g5 img { grid-column: span 2; }
 .gal.g5 img:nth-child(n+4) { grid-column: span 3; }
 
-/* Encaje: disposición de los paneles en el proyecto, justo encima del logo y dentro de un marco con el amarillo de la marca (se amplía al pulsarlo).
-   Con encaje, la columna de la derecha (encaje + logo, del mismo ancho) llega hasta la base del dibujo del panel (el logo termina en su línea de suelo);
-   el encaje ocupa lo que sobra. Sin encaje, el logo queda donde estaba. */
-.rcol { position: absolute; right: 96px; top: 140px; bottom: 66px; width: 380px; display: flex; flex-direction: column; gap: 30px; }
-.rcol .logo-slot { position: relative; right: auto; top: auto; width: 100%; flex: none; }
-.rcol .logo-box { height: 200px; }
-.rcol .logo-tools { position: absolute; left: 0; top: 100%; }
-.encaje { flex: 1 1 auto; min-height: 0; display: flex; margin: 0; padding: 8px; background: #fff; border: 3px solid var(--y); border-radius: 18px; cursor: zoom-in; }
-.encaje img { flex: 1 1 0; min-width: 0; min-height: 0; object-fit: contain; border-radius: 10px; background: #fafafa; }
+/* Encaje: disposición de los paneles en el proyecto, justo debajo del logo del cliente (que va primero, arriba) y dentro de un marco con el amarillo
+   de la marca que se ajusta a la imagen, sin márgenes en blanco (se amplía al pulsarlo). Con encaje el logo sube a top 150; sin él se queda en 392. */
+.logo-slot.con-encaje { top: 150px; }
+.encaje-wrap { position: absolute; right: 96px; top: 392px; width: 380px; display: flex; justify-content: center; }
+.encaje { margin: 0; max-width: 100%; padding: 8px; background: #fff; border: 3px solid var(--y); border-radius: 18px; cursor: zoom-in; line-height: 0; }
+.encaje img { display: block; width: auto; height: auto; max-width: 100%; max-height: 230px; border-radius: 10px; }
 .gal img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; box-shadow: 0 8px 22px rgba(0,0,0,.12); display: block; min-height: 0; }
 
 /* Cierre con los datos de contacto */
@@ -508,7 +505,8 @@ const ART = `<svg class="art" viewBox="0 0 320 200" aria-hidden="true">
   <g class="in fade" style="--i:7"><ellipse class="glow" style="animation-delay:0.0s" cx="228.7" cy="95.6" rx="15" ry="6" transform="rotate(-18 228.7 95.6)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-0.7s" cx="207.6" cy="102.4" rx="15" ry="6" transform="rotate(-18 207.6 102.4)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-1.4s" cx="186.5" cy="109.3" rx="15" ry="6" transform="rotate(-18 186.5 109.3)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-2.1s" cx="165.4" cy="116.2" rx="15" ry="6" transform="rotate(-18 165.4 116.2)" fill="url(#gg)"/></g></svg>`
 const GALERIAS = {
   equipos: ['eq1', 'eq2', 'eq3', 'eq4', 'eq5', 'eq6'],
-  fijacion: ['fx1', 'fx2', 'fx3', 'fx4', 'fx5', 'fx6', 'fx7', 'fx8'],
+  // Orden original con la 2.ª y la 4.ª intercambiadas (fx4 en segundo lugar y fx2 en cuarto)
+  fijacion: ['fx1', 'fx4', 'fx3', 'fx2', 'fx5', 'fx6', 'fx7', 'fx8'],
   almacenamiento: ['alm1', 'alm2', 'alm3', 'alm4'],
 }
 const galeria = (fotos, base) => `<div class="gal g${fotos.length}">${fotos.map((n, i) => `<img class="in pop" style="--i:${base + i}" src="proyectos/${n}.jpg" alt="">`).join('')}</div>`
@@ -516,13 +514,13 @@ const PROVEEDORES = ['sigenergy', 'fronius', 'aiko', 'jinko', 'longi', 'huawei']
 const CLIENTES = ['jisap', 'jimbofresh', 'jcano', 'primalum', 'peymapiel', 'lario', 'isabelalonso', 'laciezana']
 const SECTORES = ['Sector agrícola', 'Sector ganadero', 'Industria alimentaria', 'Sector industrial', 'Transporte y logística', 'Grandes consumidores de energía']
 const REFS = [
-  // De menos a más potencia: las cuatro primeras van en la fila de arriba y las más grandes, abajo y más anchas
-  ['arenas', 'Arenas del Valle', '240 kWp', '', '2023'],
-  ['levante', 'Levante Sur', '255 kWp de paneles', '430 kWh de baterías', '2025'],
-  ['lorca2', 'Lorca (Murcia)', '300 kWn', 'Autoconsumo', '2020'],
-  ['aledo', 'Comunidad de Regantes de Aledo', '525 kWp', '', '2024'],
-  ['lacadosocana', 'Lacados Ocaña', '800 kW', '', '2022'],
+  // De más a menos potencia: las más grandes salen primero (las tres primeras en la primera diapositiva y las otras tres en la segunda)
   ['primalum', 'Primalum', '1,3 MW', '', '2025'],
+  ['lacadosocana', 'Lacados Ocaña', '800 kW', '', '2022'],
+  ['aledo', 'Comunidad de Regantes de Aledo', '525 kWp', '', '2024'],
+  ['lorca2', 'Lorca (Murcia)', '300 kWn', 'Autoconsumo', '2020'],
+  ['levante', 'Levante Sur', '255 kWp de paneles', '430 kWh de baterías', '2025'],
+  ['arenas', 'Arenas del Valle', '240 kWp', '', '2023'],
 ]
 const ICON = {
   box: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M12 11v5M9.5 13.5h5"/>',
@@ -542,7 +540,7 @@ const slides = [
     <div class="cweb in pop" style="--i:7"><img src="marca-gris.png" alt="">auraingenieria.es</div></section>`,
 
   `<section class="slide">${deco}<div class="lead in" style="--i:0">Te lo ponemos <em>fácil</em> para que no te preocupes de nada durante el proceso.</div>
-    <div class="turn in" style="--i:2"><b>Proyecto llave en mano</b>Producir tu propia energía es una buena decisión, y nosotros hacemos que también sea fácil. Nos ocupamos de todo de principio a fin.</div>${D.encaje ? `<div class="rcol"><figure class="encaje in pop" style="--i:3"><img src="${D.encaje}" alt="Disposición de los paneles solares en tu instalación"></figure><div class="logo-slot in pop" style="--i:4" id="logoSlot"></div></div>` : '<div class="logo-slot in pop" style="--i:4" id="logoSlot"></div>'}${ART}</section>`,
+    <div class="turn in" style="--i:2"><b>Proyecto llave en mano</b>Producir tu propia energía es una buena decisión, y nosotros hacemos que también sea fácil. Nos ocupamos de todo de principio a fin.</div><div class="logo-slot in pop${D.encaje ? ' con-encaje' : ''}" style="--i:3" id="logoSlot"></div>${D.encaje ? `<div class="encaje-wrap"><figure class="encaje in pop" style="--i:4"><img src="${D.encaje}" alt="Disposición de los paneles solares en tu instalación"></figure></div>` : ''}${ART}</section>`,
 
   `<section class="slide steps">${deco}<div class="cols"><div class="cwrap">${[
       ['search', 'Análisis y solución global', '#fdc500', 210], ['file', 'Ingeniería y diseño a medida', '#fee07a', 120], ['bolt', 'Instalación con equipo propio', '#c9c9cb', 104],
