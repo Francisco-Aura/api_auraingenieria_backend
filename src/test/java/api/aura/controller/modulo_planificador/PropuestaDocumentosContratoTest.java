@@ -171,6 +171,7 @@ class PropuestaDocumentosContratoTest {
         });
         datos.put("cif", "B12345678");
         datos.put("clientLogo", "data:image/png;base64,AAAA");
+        datos.put("encaje", "data:image/jpeg;base64,BBBB");
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("name", b.get("name").asText());
         cuerpo.put("data", datos);
@@ -186,6 +187,9 @@ class PropuestaDocumentosContratoTest {
         JsonNode d = json.readTree(m.group(1));
         assertEquals("B12345678", d.get("cif").asText());
         assertEquals("data:image/png;base64,AAAA", d.get("logo").asText());
+        assertEquals("data:image/jpeg;base64,BBBB", d.get("encaje").asText(), "el encaje de los parámetros sale en los datos de la propuesta");
+        // Sin encaje (el presupuesto de ejemplo no lo trae) la propuesta no lleva la clave, y entonces no se añade su diapositiva
+        assertFalse(PropuestaDatos.paraHtml(presupuesto(b), equipos(e.get("equipos"))).containsKey("encaje"));
         // Un logo que no es una imagen en data URI no se cuela
         assertEquals("", PropuestaDatos.logoValido("<script>alert(1)</script>"));
         assertEquals("", PropuestaDatos.logoValido("data:text/html;base64,AAAA"));

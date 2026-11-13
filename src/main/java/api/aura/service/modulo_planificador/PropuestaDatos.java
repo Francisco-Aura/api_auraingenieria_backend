@@ -199,6 +199,9 @@ public final class PropuestaDatos {
         if (cif != null && !String.valueOf(cif).isBlank()) salida.put("cif", String.valueOf(cif).strip());
         String logo = logoValido(datos.get("clientLogo"));
         if (!logo.isEmpty()) salida.put("logo", logo);
+        // «Encaje»: imagen con la disposición de los paneles en el proyecto (opcional); si está, la propuesta añade su diapositiva
+        String encaje = logoValido(datos.get("encaje"));
+        if (!encaje.isEmpty()) salida.put("encaje", encaje);
         salida.put("supply", SUMINISTRO.getOrDefault(String.valueOf(encuesta.getOrDefault("supply", "")), ""));
         salida.put("strings", resumenDeStrings(datos.get("strings"), b.getPaneles()));
         salida.put("warranty", garantias(b, equipos));
