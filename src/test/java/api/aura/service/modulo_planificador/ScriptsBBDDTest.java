@@ -60,6 +60,12 @@ class ScriptsBBDDTest {
         assertTrue(insert.startsWith("INSERT IGNORE INTO pl_equipos"));
         assertEquals(7, insert.split("\\('mod-aiko-", -1).length - 1, "una fila por potencia");
         assertEquals(3, sentencias("BBDD/V20261111_2_Update_Planificador_AIKO_ficha.sql").size(), "SET NAMES, UPDATE y SELECT");
+        // Estructuras de Ennova Metal (tarifa 2026, sin la serie H): un solo INSERT con 55 filas
+        var ennova = sentencias("BBDD/V20261113_1_Insert_Planificador_ENNOVA_2026.sql");
+        assertEquals(4, ennova.size(), "SET NAMES, SET @pos, INSERT y SELECT");
+        assertTrue(ennova.get(2).startsWith("INSERT IGNORE INTO pl_equipos"));
+        assertEquals(55, ennova.get(2).split("\\('est-ennova-", -1).length - 1, "una fila por producto de la tarifa");
+        assertFalse(ennova.get(2).contains("ENBH"), "la serie H no se da de alta de momento");
     }
 
     /** Ejecuta el script contra una conexión simulada que solo anota las sentencias que recibe (así se ve cómo las trocea Spring). */
