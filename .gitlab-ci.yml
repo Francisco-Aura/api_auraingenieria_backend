@@ -6,8 +6,6 @@ default:
     - aura-runner
 
 variables:
-  # El runner es persistente, por lo que reutilizamos directamente
-  # el repositorio Maven del usuario gitlab-runner.
   MAVEN_OPTS: "-Dmaven.repo.local=/home/gitlab-runner/.m2/repository"
 
 
@@ -19,45 +17,53 @@ variables:
   stage: deploy
 
   script:
-    - set -euo pipefail
-
-    - echo "========================================"
-    - echo " AURA - BUILD BACKEND"
-    - echo " Entorno: ${DEPLOY_ENV}"
-    - echo "========================================"
-
-    - echo "=== Informacion del runner ==="
-    - hostname
-    - whoami
-    - java -version
-    - mvn -version
-
-    # ==================================================
-    # Configuracion especifica por entorno
-    # ==================================================
-
     - |
+      set -euo pipefail
+
+      echo "========================================"
+      echo " AURA - BUILD BACKEND"
+      echo " Entorno: ${DEPLOY_ENV}"
+      echo " Destino: ${DEPLOY_HOST}"
+      echo "========================================"
+
+      echo
+      echo "=== Informacion del runner ==="
+      hostname
+      whoami
+      java -version
+      mvn -version
+
+      # ==================================================
+      # Configuracion especifica por entorno
+      # ==================================================
+
+      echo
+      echo "=== Configuracion del entorno ==="
+
       rm -f src/main/resources/application-local.properties
 
       if [ -n "${SESSION_COOKIE_NAME:-}" ]; then
-        echo "=== Cookie de sesion: ${SESSION_COOKIE_NAME} ==="
+        echo "Cookie de sesion: ${SESSION_COOKIE_NAME}"
 
-        echo \
+        printf '%s\n' \
           "server.servlet.session.cookie.name=${SESSION_COOKIE_NAME}" \
           > src/main/resources/application-local.properties
+      else
+        echo "Sin cookie de sesion especifica para este entorno"
       fi
 
-    # ==================================================
-    # Build
-    # ==================================================
+      # ==================================================
+      # Build
+      # ==================================================
 
-    - echo "=== Compilando backend AURA ==="
+      echo
+      echo "=== Compilando backend AURA ==="
 
-    - mvn -B clean package -DskipTests
+      mvn -B clean package -DskipTests
 
-    - echo "=== Localizando JAR ==="
+      echo
+      echo "=== Localizando JAR ==="
 
-    - |
       JAR_FILE="$(
         find target \
           -maxdepth 1 \
@@ -68,7 +74,7 @@ variables:
       )"
 
       if [ -z "$JAR_FILE" ]; then
-        echo "ERROR: No se ha encontrado el JAR"
+        echo "ERROR: No se ha encontrado ningun JAR"
         exit 1
       fi
 
@@ -80,59 +86,67 @@ variables:
       echo "JAR localizado:"
       ls -lh "$JAR_FILE"
 
-      # Lo guardamos para el resto del bloque
-      cp "$JAR_FILE" /tmp/aura-ci-${CI_PIPELINE_ID}.jar
+      TEMP_JAR="/tmp/aura-ci-${CI_PIPELINE_ID}.jar"
 
-    # ==================================================
-    # SSH
-    # ==================================================
+      cp "$JAR_FILE" "$TEMP_JAR"
 
-    - echo "=== Comprobando SSH ${DEPLOY_ENV} ==="
+      if [ ! -s "$TEMP_JAR" ]; then
+        echo "ERROR: No se ha podido preparar el JAR temporal"
+        exit 1
+      fi
 
-    - |
+      # ==================================================
+      # SSH
+      # ==================================================
+
+      echo
+      echo "=== Comprobando SSH con ${DEPLOY_ENV} ==="
+
       ssh \
         -o BatchMode=yes \
         -o ConnectTimeout=10 \
         "babenza@${DEPLOY_HOST}" \
-        "echo SSH_OK && hostname"
+        "echo SSH_OK && hostname && whoami"
 
-    # ==================================================
-    # Transferencia
-    # ==================================================
+      # ==================================================
+      # Transferencia
+      # ==================================================
 
-    - echo "=== Copiando JAR a ${DEPLOY_ENV} ==="
+      echo
+      echo "=== Copiando JAR a ${DEPLOY_ENV} ==="
 
-    - |
       scp \
         -o BatchMode=yes \
         -o ConnectTimeout=10 \
         -o ServerAliveInterval=10 \
         -o ServerAliveCountMax=3 \
-        "/tmp/aura-ci-${CI_PIPELINE_ID}.jar" \
+        "$TEMP_JAR" \
         "babenza@${DEPLOY_HOST}:/tmp/aura.jar"
 
-    - rm -f "/tmp/aura-ci-${CI_PIPELINE_ID}.jar"
+      rm -f "$TEMP_JAR"
 
-    # ==================================================
-    # Deploy
-    # ==================================================
+      # ==================================================
+      # Deploy
+      # ==================================================
 
-    - echo "=== Ejecutando deploy backend ${DEPLOY_ENV} ==="
+      echo
+      echo "=== Ejecutando deploy backend ${DEPLOY_ENV} ==="
 
-    - |
       ssh \
         -o BatchMode=yes \
         -o ConnectTimeout=10 \
+        -o ServerAliveInterval=10 \
+        -o ServerAliveCountMax=3 \
         "babenza@${DEPLOY_HOST}" \
         "bash /home/babenza/deploy_backend.sh"
 
-    # ==================================================
-    # Health check
-    # ==================================================
+      # ==================================================
+      # Health check
+      # ==================================================
 
-    - echo "=== Comprobando backend ${DEPLOY_ENV} ==="
+      echo
+      echo "=== Esperando backend ${DEPLOY_ENV} ==="
 
-    - |
       BACKEND_OK=0
 
       for i in $(seq 1 40); do
@@ -145,6 +159,7 @@ variables:
           | grep -q '"status":"UP"'
         then
           BACKEND_OK=1
+          echo "Backend ${DEPLOY_ENV} disponible"
           break
         fi
 
@@ -153,26 +168,32 @@ variables:
       done
 
       if [ "$BACKEND_OK" -ne 1 ]; then
-
+        echo
         echo "ERROR: Backend ${DEPLOY_ENV} no responde correctamente"
 
         ssh \
           -o BatchMode=yes \
+          -o ConnectTimeout=10 \
           "babenza@${DEPLOY_HOST}" \
-          "systemctl status backend --no-pager -l || true"
+          "systemctl status backend.service --no-pager -l || true"
 
         exit 1
       fi
 
-    - echo "========================================"
-    - echo " BACKEND ${DEPLOY_ENV} DESPLEGADO OK"
-    - echo "========================================"
+      # ==================================================
+      # Resultado
+      # ==================================================
+
+      echo
+      echo "========================================"
+      echo " BACKEND ${DEPLOY_ENV} DESPLEGADO OK"
+      echo "========================================"
 
 
 # ======================================================
 # DES
-# develop -> Raspberry DES
-# LAN: 192.168.100.4:22
+# develop -> aura-des
+# 192.168.100.4
 # ======================================================
 
 deploy_backend_DES:
@@ -189,8 +210,8 @@ deploy_backend_DES:
 
 # ======================================================
 # PRE
-# release -> Raspberry PRE
-# LAN: 192.168.100.3:22
+# release -> aura-pre
+# 192.168.100.3
 # ======================================================
 
 deploy_backend_PRE:
@@ -207,8 +228,8 @@ deploy_backend_PRE:
 
 # ======================================================
 # PRO
-# main -> Raspberry PRO
-# LAN: 192.168.100.2:22
+# main -> aura-pro
+# 192.168.100.2
 # ======================================================
 
 deploy_backend_PRO:
