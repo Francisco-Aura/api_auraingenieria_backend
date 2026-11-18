@@ -15,6 +15,7 @@ variables:
 
 .deploy_backend:
   stage: deploy
+  timeout: 2h
 
   script:
     - |
