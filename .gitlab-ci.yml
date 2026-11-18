@@ -1,137 +1,223 @@
-image: maven:3.9.6-eclipse-temurin-17
-
 stages:
   - deploy
 
-variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+default:
+  tags:
+    - aura-runner
 
-cache:
-  paths:
-    - .m2/repository/
+variables:
+  # El runner es persistente, por lo que reutilizamos directamente
+  # el repositorio Maven del usuario gitlab-runner.
+  MAVEN_OPTS: "-Dmaven.repo.local=/home/gitlab-runner/.m2/repository"
+
+
+# ======================================================
+# PLANTILLA COMUN BACKEND
+# ======================================================
 
 .deploy_backend:
   stage: deploy
 
-  before_script:
-    - apt-get update -y
-    - apt-get install -y openssh-client
-
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-
-    - |
-      if [ -f "$DEPLOY_PRIVATE_KEY" ]; then
-        echo "Usando clave SSH desde variable GitLab tipo File"
-        cp "$DEPLOY_PRIVATE_KEY" ~/.ssh/id_rsa_gitlab
-      else
-        echo "Usando clave SSH desde variable GitLab normal"
-        printf '%s\n' "$DEPLOY_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa_gitlab
-      fi
-
-    - chmod 600 ~/.ssh/id_rsa_gitlab
-
-    - |
-      echo "=== Validando clave SSH ==="
-      ssh-keygen -y -f ~/.ssh/id_rsa_gitlab > /dev/null || {
-        echo "ERROR: La clave privada SSH no es valida"
-        exit 1
-      }
-
-    - |
-      echo "=== Registrando host SSH ==="
-      ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-
-    - chmod 600 ~/.ssh/known_hosts
-
-    - |
-      echo "=== Probando conexion SSH ==="
-      ssh \
-        -p "$DEPLOY_PORT" \
-        -i ~/.ssh/id_rsa_gitlab \
-        -o BatchMode=yes \
-        -o ConnectTimeout=10 \
-        "gitlab-deploy@${DEPLOY_HOST}" \
-        "echo SSH_OK && hostname && whoami"
-
   script:
+    - set -euo pipefail
+
+    - echo "========================================"
+    - echo " AURA - BUILD BACKEND"
+    - echo " Entorno: ${DEPLOY_ENV}"
+    - echo "========================================"
+
+    - echo "=== Informacion del runner ==="
+    - hostname
+    - whoami
+    - java -version
+    - mvn -version
+
+    # ==================================================
+    # Configuracion especifica por entorno
+    # ==================================================
+
     - |
-      if [ -n "$SESSION_COOKIE_NAME" ]; then
-        echo "=== Nombre de la cookie de sesion: $SESSION_COOKIE_NAME ==="
-        # DES, PRE y PRO comparten IP y las cookies no distinguen puerto: con el mismo nombre,
-        # entrar en uno cerraria la sesion del otro. Se empaqueta solo en el jar de ese entorno.
-        echo "server.servlet.session.cookie.name=$SESSION_COOKIE_NAME" > src/main/resources/application-local.properties
+      rm -f src/main/resources/application-local.properties
+
+      if [ -n "${SESSION_COOKIE_NAME:-}" ]; then
+        echo "=== Cookie de sesion: ${SESSION_COOKIE_NAME} ==="
+
+        echo \
+          "server.servlet.session.cookie.name=${SESSION_COOKIE_NAME}" \
+          > src/main/resources/application-local.properties
       fi
+
+    # ==================================================
+    # Build
+    # ==================================================
 
     - echo "=== Compilando backend AURA ==="
-    - mvn -B clean package -DskipTests -U
+
+    - mvn -B clean package -DskipTests
 
     - echo "=== Localizando JAR ==="
-    - JAR_FILE="$(find target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | head -1)"
-    - test -n "$JAR_FILE"
-    - ls -lh "$JAR_FILE"
 
-    - echo "=== Comprobando acceso SSH al servidor ==="
+    - |
+      JAR_FILE="$(
+        find target \
+          -maxdepth 1 \
+          -type f \
+          -name '*.jar' \
+          ! -name '*.original' \
+          | head -1
+      )"
+
+      if [ -z "$JAR_FILE" ]; then
+        echo "ERROR: No se ha encontrado el JAR"
+        exit 1
+      fi
+
+      if [ ! -s "$JAR_FILE" ]; then
+        echo "ERROR: El JAR esta vacio"
+        exit 1
+      fi
+
+      echo "JAR localizado:"
+      ls -lh "$JAR_FILE"
+
+      # Lo guardamos para el resto del bloque
+      cp "$JAR_FILE" /tmp/aura-ci-${CI_PIPELINE_ID}.jar
+
+    # ==================================================
+    # SSH
+    # ==================================================
+
+    - echo "=== Comprobando SSH ${DEPLOY_ENV} ==="
+
     - |
       ssh \
-        -p "$DEPLOY_PORT" \
-        -i ~/.ssh/id_rsa_gitlab \
         -o BatchMode=yes \
         -o ConnectTimeout=10 \
-        "gitlab-deploy@${DEPLOY_HOST}" \
-        "echo SSH_OK"
+        "babenza@${DEPLOY_HOST}" \
+        "echo SSH_OK && hostname"
 
-    - echo "=== Copiando JAR ==="
+    # ==================================================
+    # Transferencia
+    # ==================================================
+
+    - echo "=== Copiando JAR a ${DEPLOY_ENV} ==="
+
     - |
       scp \
+        -o BatchMode=yes \
         -o ConnectTimeout=10 \
         -o ServerAliveInterval=10 \
         -o ServerAliveCountMax=3 \
-        -P "$DEPLOY_PORT" \
-        -i ~/.ssh/id_rsa_gitlab \
-        "$JAR_FILE" \
-        "gitlab-deploy@${DEPLOY_HOST}:/tmp/aura.jar"
+        "/tmp/aura-ci-${CI_PIPELINE_ID}.jar" \
+        "babenza@${DEPLOY_HOST}:/tmp/aura.jar"
 
-    - echo "=== Desplegando backend ==="
+    - rm -f "/tmp/aura-ci-${CI_PIPELINE_ID}.jar"
+
+    # ==================================================
+    # Deploy
+    # ==================================================
+
+    - echo "=== Ejecutando deploy backend ${DEPLOY_ENV} ==="
+
     - |
       ssh \
-        -p "$DEPLOY_PORT" \
-        -i ~/.ssh/id_rsa_gitlab \
         -o BatchMode=yes \
-        "gitlab-deploy@${DEPLOY_HOST}" \
-        "sudo -n /usr/local/sbin/aura-deploy-backend"
+        -o ConnectTimeout=10 \
+        "babenza@${DEPLOY_HOST}" \
+        "bash /home/babenza/deploy_backend.sh"
+
+    # ==================================================
+    # Health check
+    # ==================================================
+
+    - echo "=== Comprobando backend ${DEPLOY_ENV} ==="
+
+    - |
+      BACKEND_OK=0
+
+      for i in $(seq 1 40); do
+
+        if ssh \
+          -o BatchMode=yes \
+          -o ConnectTimeout=10 \
+          "babenza@${DEPLOY_HOST}" \
+          "curl -fsS http://127.0.0.1:8986/actuator/health 2>/dev/null" \
+          | grep -q '"status":"UP"'
+        then
+          BACKEND_OK=1
+          break
+        fi
+
+        echo "Esperando backend ${DEPLOY_ENV}... ${i}/40"
+        sleep 5
+      done
+
+      if [ "$BACKEND_OK" -ne 1 ]; then
+
+        echo "ERROR: Backend ${DEPLOY_ENV} no responde correctamente"
+
+        ssh \
+          -o BatchMode=yes \
+          "babenza@${DEPLOY_HOST}" \
+          "systemctl status backend --no-pager -l || true"
+
+        exit 1
+      fi
+
+    - echo "========================================"
+    - echo " BACKEND ${DEPLOY_ENV} DESPLEGADO OK"
+    - echo "========================================"
+
+
+# ======================================================
+# DES
+# develop -> Raspberry DES
+# LAN: 192.168.100.4:22
+# ======================================================
 
 deploy_backend_DES:
   extends: .deploy_backend
 
   variables:
-    DEPLOY_HOST: "5.34.148.92"
-    DEPLOY_PORT: "2223"
-    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_DES"
+    DEPLOY_ENV: "DES"
+    DEPLOY_HOST: "192.168.100.4"
     SESSION_COOKIE_NAME: "AURA_SESSION_DES"
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
 
+
+# ======================================================
+# PRE
+# release -> Raspberry PRE
+# LAN: 192.168.100.3:22
+# ======================================================
+
 deploy_backend_PRE:
   extends: .deploy_backend
 
   variables:
-    DEPLOY_HOST: "5.34.148.92"
-    DEPLOY_PORT: "2222"
-    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_PRE"
+    DEPLOY_ENV: "PRE"
+    DEPLOY_HOST: "192.168.100.3"
     SESSION_COOKIE_NAME: "AURA_SESSION_PRE"
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "release"'
 
+
+# ======================================================
+# PRO
+# main -> Raspberry PRO
+# LAN: 192.168.100.2:22
+# ======================================================
+
 deploy_backend_PRO:
   extends: .deploy_backend
 
   variables:
-    DEPLOY_HOST: "5.34.148.92"
-    DEPLOY_PORT: "22"
-    DEPLOY_PRIVATE_KEY: "$SSH_PRIVATE_KEY_PRO"
+    DEPLOY_ENV: "PRO"
+    DEPLOY_HOST: "192.168.100.2"
+    SESSION_COOKIE_NAME: ""
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
