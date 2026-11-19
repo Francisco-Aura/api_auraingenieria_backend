@@ -4,9 +4,11 @@ import api.aura.config.ErrorApi;
 import api.aura.config.UsuarioPlanificadorHolder;
 import api.aura.dto.modulo_planificador.PresupuestoGuardarRequest;
 import api.aura.entity.modulo_planificador.pl_Equipo;
+import api.aura.entity.modulo_planificador.pl_Estudio;
 import api.aura.entity.modulo_planificador.pl_Presupuesto;
 import api.aura.entity.modulo_planificador.pl_Propuesta;
 import api.aura.repository.modulo_planificador.pl_EquipoRepository;
+import api.aura.repository.modulo_planificador.pl_EstudioRepository;
 import api.aura.repository.modulo_planificador.pl_PresupuestoRepository;
 import api.aura.repository.modulo_planificador.pl_PropuestaRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,8 +40,7 @@ public class PresupuestoService {
     /** Desconectado: al validar, un cliente potencial ya NO se da de alta en la intranet (sigue siendo potencial en el presupuesto). */
     static final boolean REGISTRAR_CLIENTES_POTENCIALES = false;
 
-    private static final int MAX_DATOS = 1_500_000;
-    private static final Pattern ID_VALIDO = Pattern.compile("^[A-Za-z0-9-]{8,64}$");
+    private static final int MAX_DATOS = 1_500_000;    private static final Pattern ID_VALIDO = Pattern.compile("^[A-Za-z0-9-]{8,64}$");
     private static final int NIVEL_ADMIN = 1;
     private static final String SIN_IDENTIFICAR = "Sin identificar";
     /** El nombre de un presupuesto es «Cliente · Proyecto»: lo que va tras este separador es el proyecto. */
@@ -49,6 +50,7 @@ public class PresupuestoService {
 
     private final pl_PresupuestoRepository presupuestos;
     private final pl_PropuestaRepository propuestas;
+    private final pl_EstudioRepository estudios;
     private final pl_EquipoRepository equipos;
     private final ClientesIntranetPort clientes;
     private final ObjectMapper json;
@@ -87,15 +89,13 @@ public class PresupuestoService {
             r.put("proposals_sent", 0);
             return r;
         }
-        int porValidar = presupuestos.findByEstado("enviado").stream()
-                .map(b -> b.getOfertaId().isEmpty() ? b.getId() : b.getOfertaId()).collect(Collectors.toSet()).size();
-        List<pl_Presupuesto> validados = presupuestos.findByEstado("validado");
-        Map<String, pl_Propuesta> ultimas = ultimasPropuestas(validados.stream().map(pl_Presupuesto::getId).toList());
-        long enviadas = validados.stream().filter(b -> ultimas.get(b.getId()) != null && "enviada".equals(ultimas.get(b.getId()).getEstado())).count();
+        // Lo del validador son las propuestas entregadas cuyo presupuesto está aprobado y su estudio aceptado: ya se pueden validar
+        int porValidar = (int) propuestas.findAll().stream().filter(p -> "enviada".equals(p.getEstado()))
+                .filter(p -> presupuestos.findById(p.getPresupuestoId()).filter(this::estudioAceptado).isPresent()).count();
         r.put("validator", true);
-        r.put("count", porValidar + enviadas);
+        r.put("count", porValidar);
         r.put("to_validate", porValidar);
-        r.put("proposals_sent", enviadas);
+        r.put("proposals_sent", porValidar);
         return r;
     }
 
@@ -123,6 +123,16 @@ public class PresupuestoService {
         b.setPaneles(cuerpo.getPaneles());
         b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
         b.setActualizadoPor(quien);
+        String estudio = cuerpo.getEstudioId() == null ? "" : cuerpo.getEstudioId().strip();
+        if (!estudio.isEmpty()) {
+            pl_Estudio e = estudios.findById(estudio).orElseThrow(() ->
+                    new ErrorApi(HttpStatus.NOT_FOUND, "El estudio ya no existe: puede que lo hayan eliminado."));
+            String motivo = motivoIncompatible(b, e);
+            if (motivo != null) {
+                throw new ErrorApi(HttpStatus.CONFLICT, motivo);
+            }
+            b.setEstudioId(estudio);
+        }
         asignarOferta(b, false);
         presupuestos.save(b);
         return conDatos(b, null);
@@ -152,6 +162,14 @@ public class PresupuestoService {
         b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
         boolean cambioDeProyecto = !proyectoAntes.equals(claveProyecto(b.getNombre()))
                 || !Objects.equals(tipoAntes, b.getClienteTipo()) || !Objects.equals(clienteAntes, b.getClienteId());
+        if (cambioDeProyecto && !b.getEstudioId().isEmpty()) {
+            estudios.findById(b.getEstudioId()).ifPresent(e -> {
+                String motivo = motivoIncompatible(b, e);
+                if (motivo != null) {
+                    throw new ErrorApi(HttpStatus.CONFLICT, "Está asociado a un estudio. Quita la asociación antes de cambiar el cliente o el proyecto. " + motivo);
+                }
+            });
+        }
         asignarOferta(b, cambioDeProyecto);
         marcarCambio(b, null);
         presupuestos.save(b);
@@ -192,6 +210,46 @@ public class PresupuestoService {
         return resumen(b, null);
     }
 
+    /**
+     * Asocia el presupuesto a un estudio (id vacío = quitar la asociación). Solo se asocian los del mismo cliente y del mismo
+     * proyecto: así el grupo de la lista nunca queda incoherente. Es solo un enlace: vale en cualquier estado.
+     */
+    @Transactional
+    public Map<String, Object> asociarEstudio(String id, String estudioId) {
+        pl_Presupuesto b = buscar(id);
+        if ("validado".equals(b.getEstado()) && !b.getEstudioId().isEmpty() && !Objects.equals(b.getEstudioId(), estudioId == null ? "" : estudioId.strip())) {
+            throw new ErrorApi(HttpStatus.CONFLICT, "Un presupuesto aprobado está bloqueado: no se cambia su estudio.");
+        }
+        String destino = estudioId == null ? "" : estudioId.strip();
+        if (!destino.isEmpty()) {
+            pl_Estudio e = estudios.findById(destino).orElseThrow(() ->
+                    new ErrorApi(HttpStatus.NOT_FOUND, "El estudio ya no existe: puede que lo hayan eliminado."));
+            String motivo = motivoIncompatible(b, e);
+            if (motivo != null) {
+                throw new ErrorApi(HttpStatus.CONFLICT, motivo);
+            }
+        }
+        b.setEstudioId(destino);
+        presupuestos.save(b);
+        return resumen(b, ultimasPropuestas(List.of(id)).get(id));
+    }
+
+    /** Por qué un presupuesto y un estudio no pueden asociarse (null si pueden). */
+    static String motivoIncompatible(pl_Presupuesto b, pl_Estudio e) {
+        boolean mismoCliente = "existente".equals(b.getClienteTipo())
+                ? "existente".equals(e.getClienteTipo()) && Objects.equals(b.getClienteId(), e.getClienteId())
+                : "potencial".equals(e.getClienteTipo()) && claveTexto(parteCliente(b.getNombre())).equals(claveTexto(e.getCliente()));
+        if (!mismoCliente) {
+            return "El estudio es de otro cliente: solo se asocian el presupuesto y el estudio del mismo cliente.";
+        }
+        Object proyecto = e.getDatos().get("proyecto");
+        String delEstudio = claveTexto(proyecto == null ? "" : String.valueOf(proyecto));
+        if (!delEstudio.equals(claveProyecto(b.getNombre()))) {
+            return "El estudio es de otro proyecto: cambia el proyecto de uno de los dos para que coincidan.";
+        }
+        return null;
+    }
+
     /** Copia el presupuesto como una variante nueva (borrador) de su misma oferta; si no tenía oferta, se crea. */
     @Transactional
     public Map<String, Object> duplicar(String id, String nombreVariante) {
@@ -210,6 +268,7 @@ public class PresupuestoService {
         copia.setPropietario(quien);
         copia.setPropietarioId(idActor() == null ? "" : String.valueOf(idActor()));
         copia.setOfertaId(origen.getOfertaId());
+        copia.setEstudioId(origen.getEstudioId());
         copia.setClienteId(origen.getClienteId());
         copia.setClienteTipo(origen.getClienteTipo());
         copia.setDatos(copiaProfunda(origen.getDatos()));
@@ -224,19 +283,19 @@ public class PresupuestoService {
     }
 
     /**
-     * El jefe elige este presupuesto: queda validado y el resto de su oferta se descarta. Solo quien valida. Si el cliente es
+     * El presupuesto se aprueba (estado interno «validado»): es el que acepta el cliente, queda bloqueado y el resto de su oferta se
+     * descarta. Lo marca quien lo gestiona; la validación de la propuesta final es la que se reserva al validador. Si el cliente es
      * potencial, se da de alta en la intranet y las variantes de su oferta con ese mismo cliente quedan vinculadas a él.
      */
     @Transactional
     public Map<String, Object> validar(String id, String cif) {
-        exigirValidador();
         pl_Presupuesto b = buscar(id);
         if (!"enviado".equals(b.getEstado())) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "Solo se valida un presupuesto enviado al cliente.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "Solo se aprueba un presupuesto enviado al cliente.");
         }
         List<pl_Presupuesto> otros = oferta(b).stream().filter(o -> !o.getId().equals(b.getId())).toList();
         if (otros.stream().anyMatch(o -> "validado".equals(o.getEstado()))) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "Esta oferta ya tiene un presupuesto validado.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "Esta oferta ya tiene un presupuesto aprobado.");
         }
         if (REGISTRAR_CLIENTES_POTENCIALES && "potencial".equals(b.getClienteTipo())) {
             List<pl_Presupuesto> toda = new ArrayList<>();
@@ -256,17 +315,17 @@ public class PresupuestoService {
         return resumen(b, null);
     }
 
-    /** Deshace una validación (por error): el validado y los descartados de su oferta vuelven a «enviado». */
+    /** Deshace una aprobación (por error): el aprobado y los descartados de su oferta vuelven a «enviado». Solo el validador: reabre un presupuesto bloqueado. */
     @Transactional
     public Map<String, Object> desvalidar(String id) {
         exigirValidador();
         pl_Presupuesto b = buscar(id);
         if (!"validado".equals(b.getEstado())) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "El presupuesto no está validado.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "El presupuesto no está aprobado.");
         }
         List<pl_Propuesta> deEste = propuestas.findByPresupuestoId(b.getId());
         if (deEste.stream().anyMatch(p -> "enviada".equals(p.getEstado()) || "aprobada".equals(p.getEstado()))) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "Este presupuesto tiene una propuesta enviada o aprobada por el cliente: no se puede quitar su validación.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "Este presupuesto tiene una propuesta entregada o validada: no se puede quitar su aprobación.");
         }
         // Los borradores de propuesta no aportan nada sin validación; las rechazadas se conservan como historial
         propuestas.deleteAll(deEste.stream().filter(p -> "borrador".equals(p.getEstado())).toList());
@@ -360,12 +419,19 @@ public class PresupuestoService {
         return u == null ? null : u.nivelAcceso();
     }
 
+    /** ¿El presupuesto está aprobado y su estudio asociado aceptado? Es lo que hace falta para validar la propuesta. */
+    boolean estudioAceptado(pl_Presupuesto b) {
+        return "validado".equals(b.getEstado()) && !b.getEstudioId().isEmpty()
+                && estudios.findById(b.getEstudioId()).filter(e -> "aceptado".equals(e.getEstado())).isPresent();
+    }
+
     private boolean esValidador() {
         Integer id = idActor();
         return id != null && Arrays.asList(validadores.split(",")).contains(String.valueOf(id));
     }
 
-    private void exigirValidador() {
+    /** Solo quien valida los presupuestos: lo usa también la propuesta final (validarla o anularla). */
+    void exigirValidador() {
         if (!esValidador()) {
             throw new ErrorApi(HttpStatus.FORBIDDEN, "Solo quien valida los presupuestos puede hacerlo.");
         }
@@ -397,9 +463,19 @@ public class PresupuestoService {
         if (i < 0) {
             return "";
         }
-        String p = Normalizer.normalize(nombre.substring(i + SEPARADOR_PROYECTO.length()), Normalizer.Form.NFD)
+        return VERSION_FINAL.matcher(claveTexto(nombre.substring(i + SEPARADOR_PROYECTO.length()))).replaceFirst("").strip();
+    }
+
+    /** La parte «cliente» del nombre («Cliente · Proyecto»); el nombre entero si no tiene proyecto. */
+    private static String parteCliente(String nombre) {
+        int i = nombre == null ? -1 : nombre.indexOf(SEPARADOR_PROYECTO);
+        return nombre == null ? "" : i < 0 ? nombre : nombre.substring(0, i);
+    }
+
+    /** Un texto para compararlo: sin mayúsculas, sin tildes y sin espacios de más. */
+    static String claveTexto(String texto) {
+        return Normalizer.normalize(texto == null ? "" : texto, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").strip();
-        return VERSION_FINAL.matcher(p).replaceFirst("").strip();
     }
 
     /**
@@ -539,6 +615,7 @@ public class PresupuestoService {
         r.put("owner_id", b.getPropietarioId());
         r.put("status", b.getEstado());
         r.put("offer_id", b.getOfertaId());
+        r.put("study_id", b.getEstudioId());
         r.put("customer_id", b.getClienteId());
         r.put("customer_kind", b.getClienteTipo());
         r.put("variant_name", b.getNombreVariante());

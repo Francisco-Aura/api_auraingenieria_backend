@@ -30,6 +30,7 @@ public class PropuestaService {
     private static final Pattern PATRON_LOGO =
             Pattern.compile("^data:(image/(?:png|jpeg|webp|svg\\+xml));base64,([A-Za-z0-9+/=]+)$");
     private static final int LOGO_CLIENTE_MAX_BYTES = 1_500_000;
+    static final String SIN_LOGO = "Sube el logo de la empresa del cliente para descargar la propuesta: sale en la presentación.";
 
     private final pl_PropuestaRepository propuestas;
     private final pl_EquipoRepository equipos;
@@ -43,8 +44,13 @@ public class PropuestaService {
     public List<Map<String, Object>> listar(String presupuestoId) {
         presupuestos.buscar(presupuestoId);
         List<Map<String, Object>> salida = new ArrayList<>();
+        // Con el logo ya puesto (en la propuesta o en los parámetros del presupuesto) no hace falta pedirlo para descargar la presentación
+        Map<String, Object> datosPresupuesto = presupuestos.buscar(presupuestoId).getDatos();
+        boolean logoDelPresupuesto = !PropuestaDatos.logoValido(datosPresupuesto == null ? null : datosPresupuesto.get("clientLogo")).isEmpty();
         for (pl_Propuesta p : propuestas.findByPresupuestoIdOrderByVersionDesc(presupuestoId)) {
-            salida.add(dto(p));
+            Map<String, Object> d = dto(p);
+            d.put("has_logo", logoDelPresupuesto || !p.getLogoCliente().isEmpty());
+            salida.add(d);
         }
         return salida;
     }
@@ -58,7 +64,7 @@ public class PropuestaService {
         }
         List<pl_Propuesta> existentes = propuestas.findByPresupuestoId(b.getId());
         if (existentes.stream().anyMatch(p -> "aprobada".equals(p.getEstado()))) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "El cliente ya aprobó una propuesta de este presupuesto.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "Este presupuesto ya tiene una propuesta validada.");
         }
         if (existentes.stream().anyMatch(p -> EN_CURSO.contains(p.getEstado()))) {
             throw new ErrorApi(HttpStatus.CONFLICT, "Ya hay una propuesta en curso: termínala antes de crear otra.");
@@ -90,14 +96,21 @@ public class PropuestaService {
         return dto(p);
     }
 
+    /** Valida la propuesta entregada. Solo quien valida los presupuestos, y con el presupuesto aprobado y su estudio aceptado. */
     @Transactional
     public Map<String, Object> aprobar(String id, String nota) {
-        return decidir(buscar(id), "aprobada", nota);
+        presupuestos.exigirValidador();
+        pl_Propuesta p = buscar(id);
+        if ("enviada".equals(p.getEstado()) && !presupuestos.estudioAceptado(presupuestos.buscar(p.getPresupuestoId()))) {
+            throw new ErrorApi(HttpStatus.CONFLICT, "Para validar la propuesta, el presupuesto tiene que estar aprobado y su estudio asociado, aceptado.");
+        }
+        return decidir(p, "aprobada", nota);
     }
 
-    /** Anota que el cliente rechazó la propuesta (con el motivo, si se sabe): se podrá crear otra versión. */
+    /** Anula la propuesta entregada (con el motivo, si se sabe): se podrá crear otra versión. Solo quien valida los presupuestos. */
     @Transactional
     public Map<String, Object> rechazar(String id, String nota) {
+        presupuestos.exigirValidador();
         return decidir(buscar(id), "rechazada", nota);
     }
 
@@ -182,7 +195,7 @@ public class PropuestaService {
 
     private Map<String, Object> decidir(pl_Propuesta p, String estado, String nota) {
         if (!"enviada".equals(p.getEstado())) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "Solo contesta el cliente a una propuesta enviada.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "Solo se valida o se anula una propuesta entregada.");
         }
         p.setEstado(estado);
         p.setDecididoEl(PresupuestoService.ahora());
@@ -267,7 +280,7 @@ public class PropuestaService {
     /**
      * La misma presentación, pero del presupuesto en curso tal como está en pantalla (cliente, datos, kWp, paneles y total, como al guardarlo):
      * es el documento para el cliente que se saca al terminar de confeccionar el presupuesto, sin esperar a validarlo ni a crear la propuesta.
-     * No guarda nada; sin propuesta no hay logo del cliente (la plantilla lo omite): el logo se sube en la pestaña de la propuesta.
+     * No guarda nada. El logo es el de los parámetros del presupuesto: se puede crear el presupuesto sin él, pero no descargar la propuesta.
      */
     @Transactional(readOnly = true)
     public Documento htmlDeBorrador(PresupuestoGuardarRequest cuerpo) {
@@ -279,10 +292,12 @@ public class PropuestaService {
         b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
         try {
             Map<String, Object> datos = PropuestaDatos.paraHtml(b, catalogo());
-            datos.putIfAbsent("logo", ""); // el del presupuesto, si lo trae
+            exigirLogo(datos); // el de los parámetros del presupuesto
             String nombre = b.getNombre().isEmpty() ? "presupuesto" : b.getNombre();
             return new Documento(propuestaHtml.generar(datos).getBytes(java.nio.charset.StandardCharsets.UTF_8),
                     ("Propuesta " + nombre).replaceAll("[\\\\/:*?\"<>|]+", " ").strip() + ".html");
+        } catch (ErrorApi e) {
+            throw e;
         } catch (RuntimeException e) {
             throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
         }
@@ -309,10 +324,20 @@ public class PropuestaService {
             Map<String, Object> datos = PropuestaDatos.paraHtml(b, catalogo());
             // El logo subido en la propuesta manda; si no hay, el de los parámetros del presupuesto (ya está en los datos)
             if (p.getLogoCliente() != null && !p.getLogoCliente().isEmpty()) datos.put("logo", p.getLogoCliente());
-            else datos.putIfAbsent("logo", "");
+            exigirLogo(datos);
             return new Documento(propuestaHtml.generar(datos).getBytes(java.nio.charset.StandardCharsets.UTF_8), nombreDeArchivo(b, p) + ".html");
+        } catch (ErrorApi e) {
+            throw e;
         } catch (RuntimeException e) {
             throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
+        }
+    }
+
+    /** El presupuesto se puede crear sin logo del cliente, pero la propuesta no se descarga sin él: sale en la presentación. */
+    private static void exigirLogo(Map<String, Object> datos) {
+        Object logo = datos.get("logo");
+        if (logo == null || String.valueOf(logo).isEmpty()) {
+            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, SIN_LOGO);
         }
     }
 }

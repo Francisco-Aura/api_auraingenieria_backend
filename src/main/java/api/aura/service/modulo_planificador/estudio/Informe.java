@@ -108,7 +108,7 @@ public final class Informe {
         pagRentabilidad();
         pagEscenarios();
         h.append("</body></html>");
-        return h.toString();
+        return h.toString().replace("@@TOTAL@@", String.valueOf(pagina));
     }
 
     private void abrirPagina() {
@@ -118,7 +118,7 @@ public final class Informe {
     }
 
     private void cerrarPagina() {
-        h.append("</main><footer>AURA Ingeniería Energética · auraingenieria.es · ").append(pagina).append('/').append(PAGINAS).append("</footer></section>");
+        h.append("</main><footer>AURA Ingeniería Energética · auraingenieria.es · ").append(pagina).append("/@@TOTAL@@</footer></section>");
     }
 
     private void kpis(String[][] k) {
@@ -149,7 +149,8 @@ public final class Informe {
                 .append(bateria ? " y " + n(c.instalacion.bateriaKwh(), 0) + " kWh de batería" : " sin batería").append(", sin vertido a red.</p>");
         h.append("<p>Resultado: ").append(bateria ? "la FV y la batería cubren" : "cubre").append(" el ").append(pct(s.cobertura())).append(" del consumo");
         if (!Double.isNaN(f.retorno())) h.append(" y la inversión se recupera en unos ").append(n(f.retorno(), 1)).append(" años");
-        h.append(", con la energía a ").append(n(c.precioEnergia, 3).replaceAll("0$", "")).append(" €/kWh.</p>");
+        h.append(", con la energía a ").append(n(c.precioEnergia, 3).replaceAll("0$", "")).append(" €/kWh")
+                .append(c.precioPeriodo != null ? " (media de los precios de cada periodo, pesada con la energía solar de cada uno)" : "").append(".</p>");
         h.append("<h2><i>2</i>Consumo actual</h2>");
         kpis(new String[][]{{mwh(c.curva.total()) + " MWh", "Consumo anual"}, {n(c.potenciaMedia, 0) + " kW", "Potencia media"},
                 {n(c.potenciaMaxima, 0) + " kW", "Potencia máxima horaria"}, {pct(c.fraccionDiurna), "Del consumo cae entre las 8 y las 19 h"}});
@@ -165,17 +166,44 @@ public final class Informe {
         Map<String, Object> hor = Calculo.mapa(datos.get("horario"));
         String d = "";
         if (!hor.isEmpty()) {
-            d = "La actividad funciona de " + (int) Calculo.num(hor, "ini", 7) + " a " + (int) Calculo.num(hor, "fin", 19) + " h y baja mucho fuera de ese horario. ";
+            d = "La actividad funciona " + franjas(hor) + " y baja mucho fuera de ese horario. ";
+            if (hor.get("excepciones") instanceof java.util.List<?> ex && !ex.isEmpty()) {
+                String[] meses = {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"};
+                for (Object o : ex) {
+                    Map<String, Object> x = Calculo.mapa(o);
+                    java.util.List<String> nombres = new java.util.ArrayList<>();
+                    if (x.get("meses") instanceof java.util.List<?> ms) for (Object m : ms) nombres.add(meses[((Number) m).intValue() - 1]);
+                    d += "En " + String.join(", ", nombres) + " lo hace " + franjas(x) + ". ";
+                }
+            }
         }
         return d;
     }
 
+    /** «de 7 a 19 h», o «de 8 a 14 h y de 16 a 20 h» si la jornada tiene interrupciones. */
+    private static String franjas(Map<String, Object> m) {
+        java.util.List<int[]> t = new java.util.ArrayList<>();
+        t.add(new int[] {(int) Calculo.num(m, "ini", 7), (int) Calculo.num(m, "fin", 19)});
+        if (m.get("tramos") instanceof java.util.List<?> extra) {
+            for (Object o : extra) {
+                Map<String, Object> x = Calculo.mapa(o);
+                t.add(new int[] {(int) Calculo.num(x, "ini", 0), (int) Calculo.num(x, "fin", 1)});
+            }
+        }
+        t.sort((a, b) -> Integer.compare(a[0], b[0]));
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < t.size(); i++) sb.append(i == 0 ? "de " : (i == t.size() - 1 ? " y de " : ", de ")).append(t.get(i)[0]).append(" a ").append(t.get(i)[1]).append(" h");
+        return sb.toString();
+    }
+
     private String orientacionCorta() {
-        return "sur".equals(c.instalacion.orientacion()) ? "Sur" : "Este-Oeste";
+        return "personalizada".equals(c.orientacionElegida) ? Calculo.rumbo(c.azimut).substring(0, 1).toUpperCase() + Calculo.rumbo(c.azimut).substring(1)
+                : "sur".equals(c.instalacion.orientacion()) ? "Sur" : "Este-Oeste";
     }
 
     private String orientacionLarga() {
-        return "sur".equals(c.instalacion.orientacion()) ? "orientados al sur" : "orientados al este-oeste";
+        return "personalizada".equals(c.orientacionElegida) ? "orientados al " + Calculo.rumbo(c.azimut) + " con " + Math.round(c.inclinacion) + "° de inclinación"
+                : "sur".equals(c.instalacion.orientacion()) ? "orientados al sur" : "orientados al este-oeste";
     }
 
     private void pagConsumo() {
@@ -206,15 +234,37 @@ public final class Informe {
 
     private void pagInstalacion() {
         abrirPagina();
+        contInstalacion(true);
+        Simulacion.Resultado s = c.base.sim();
+        double max = 0;
+        for (int k = 0; k < 7; k++) if (k != 3) for (double v : s.diaTipo()[k]) max = Math.max(max, v);
+        h.append("<h3>Un día laborable, el consumo y la producción solar a lo largo del día</h3>");
+        h.append("<div><b class=\"mes\">Junio</b>")
+                .append(lineas(new double[][]{s.diaTipo()[0], s.diaTipo()[1], s.diaTipo()[2]}, new String[]{OSCURO, AMARILLO, VERDE},
+                        new String[]{"Consumo", "Producción FV", "Solar consumida"}, max))
+                .append("</div><div><b class=\"mes\">Diciembre</b>")
+                .append(lineas(new double[][]{s.diaTipo()[4], s.diaTipo()[5], s.diaTipo()[6]}, new String[]{OSCURO, AMARILLO, VERDE},
+                        new String[]{"Consumo", "Producción FV", "Solar consumida"}, max)).append("</div>");
+        h.append("<p class=\"nota\">Consumo y aportación solar (kW) en un día laborable medio de junio y de diciembre. La producción máxima ronda los ")
+                .append(n(s.produccionMaxima(), 0)).append(" kW.</p>");
+        h.append("<p class=\"nota\">Hipótesis técnicas: producción específica de ").append(n(c.instalacion.produccionEspecifica(), 0))
+                .append(" kWh/kWp al año con perfil medio mensual y horario; día medio de cada mes, sin variación meteorológica diaria")
+                .append(bateria ? "; batería con rendimiento del 90 % ida y vuelta, descarga útil del 90 % y potencia de carga/descarga de C/2." : ".").append("</p>");
+        cerrarPagina();
+    }
+
+
+    private void contInstalacion(boolean titulo2) {
         Simulacion.Resultado s = c.base.sim();
         double wp = 670;
         long modulos = Math.round(c.instalacion.kwp() * 1000 / wp);
-        h.append("<h2><i>3</i>Instalación propuesta</h2><table class=\"t\"><tr><th>Parámetro</th><th>Valor</th></tr>");
+        h.append(titulo2 ? "<h2><i>3</i>Instalación propuesta</h2>" : "<h3>Instalación propuesta</h3>").append("<table class=\"t\"><tr><th>Parámetro</th><th>Valor</th></tr>");
         fila("Potencia pico", n(modulos * wp / 1000, 1) + " kWp (" + n(modulos, 0) + " × " + n(wp, 0) + " Wp)");
         if (bateria) fila("Batería", n(c.instalacion.bateriaKwh(), 0) + " kWh");
-        fila("Orientación", "sur".equals(c.instalacion.orientacion()) ? "Sur, 30° de inclinación" : "Este-Oeste, 15° de inclinación");
+        fila("Orientación", c.orientacionTexto());
         fila("Modalidad", "Autoconsumo sin excedentes (antivertido)");
         fila("Producción anual estimada", n(s.produccion(), 0) + " kWh");
+        if (c.conPvgis) fila("Cálculo de la producción", "PVGIS (Comisión Europea), " + n(c.instalacion.produccionEspecifica(), 0) + " kWh/kWp·año");
         fila(bateria ? "Consumida al momento" : "Energía solar consumida al momento", n(s.directa(), 0) + " kWh/año");
         if (bateria) {
             fila("Consumida desde la batería", n(s.desdeBateria(), 0) + " kWh/año");
@@ -225,21 +275,6 @@ public final class Informe {
         }
         fila("Superficie de cubierta aproximada", "≈ " + n(Math.round(c.instalacion.kwp() * ("sur".equals(c.instalacion.orientacion()) ? 7.5 : 5.5) / 50.0) * 50, 0) + " m²");
         h.append("</table>");
-        double max = 0;
-        for (int k = 0; k < 6; k++) for (double v : s.diaTipo()[k]) max = Math.max(max, v);
-        h.append("<h3>Un día laborable, el consumo y la producción solar a lo largo del día</h3>");
-        h.append("<div><b class=\"mes\">Junio</b>")
-                .append(lineas(new double[][]{s.diaTipo()[0], s.diaTipo()[1], s.diaTipo()[2]}, new String[]{OSCURO, AMARILLO, VERDE},
-                        new String[]{"Consumo", "Producción FV", "Solar consumida"}, max))
-                .append("</div><div><b class=\"mes\">Diciembre</b>")
-                .append(lineas(new double[][]{s.diaTipo()[3], s.diaTipo()[4], s.diaTipo()[5]}, new String[]{OSCURO, AMARILLO, VERDE},
-                        new String[]{"Consumo", "Producción FV", "Solar consumida"}, max)).append("</div>");
-        h.append("<p class=\"nota\">Consumo y aportación solar (kW) en un día laborable medio de junio y de diciembre. La producción máxima ronda los ")
-                .append(n(s.produccionMaxima(), 0)).append(" kW.</p>");
-        h.append("<p class=\"nota\">Hipótesis técnicas: producción específica de ").append(n(c.instalacion.produccionEspecifica(), 0))
-                .append(" kWh/kWp al año con perfil medio mensual y horario; día medio de cada mes, sin variación meteorológica diaria")
-                .append(bateria ? "; batería con rendimiento del 90 % ida y vuelta, descarga útil del 90 % y potencia de carga/descarga de C/2." : ".").append("</p>");
-        cerrarPagina();
     }
 
     private void fila(String a, String b) {
@@ -281,22 +316,41 @@ public final class Informe {
 
     private void pagInversion() {
         abrirPagina();
+        contInversion(true);
+        cerrarPagina();
+    }
+
+    private void contInversion(boolean titulo2) {
         Finanzas.Entrada e = c.base.entrada();
         Finanzas.Resultado f = c.base.fin();
         Simulacion.Resultado s = c.base.sim();
-        h.append("<h2><i>5</i>La inversión</h2>");
+        h.append(titulo2 ? "<h2><i>5</i>La inversión</h2>" : "<h3>La inversión y de dónde sale el ahorro</h3>");
         kpis(new String[][]{{eurRedondeado(e.inversion()), "Inversión total"}, {eurRedondeado(f.ahorroPrimerAno()), "Ahorro neto el primer año"},
                 {Double.isNaN(f.retorno()) ? "—" : n(f.retorno(), 1) + " años", "En recuperar la inversión"}, {Double.isNaN(f.tir()) ? "—" : n(f.tir() * 100, 1) + " %", "Rentabilidad anual (TIR)"}});
         h.append("<table class=\"t\"><tr><th>Concepto</th><th>Importe</th></tr>");
-        fila("Inversión total (" + n(c.instalacion.kwp(), 1) + " kWp a " + n(c.precioWp, 2) + " €/Wp" + (bateria ? " y " + n(c.instalacion.bateriaKwh(), 0) + " kWh de batería" : "") + ")", eur(e.inversion()));
+        fila("Inversión total (" + n(c.instalacion.kwp(), 1) + " kWp " + (c.conPresupuesto() ? "según el presupuesto, a " + n(c.precioWp, 2) + " €/Wp"
+                : "a " + n(c.precioWp, 2) + " €/Wp" + (bateria ? " y " + n(c.instalacion.bateriaKwh(), 0) + " kWh de batería" : "")) + ")", eur(e.inversion()));
         fila("Energía que deja de comprar", n(s.solarConsumida(), 0) + " kWh/año");
         fila("Ahorro en energía (a " + n(c.precioEnergia, 3).replaceAll("0$", "") + " €/kWh)", eur(s.solarConsumida() * c.precioEnergia));
-        if (c.ahorroPotencia > 0) fila("Ahorro en potencia", eur(c.ahorroPotencia));
+        if (c.ahorroPotencia > 0) fila(c.potenciaCalculada ? "Ahorro en potencia (kW que se reducen, a precio BOE «" + esc(c.regulados.nombre()) + "»)" : "Ahorro en potencia", eur(c.ahorroPotencia));
         fila("Mantenimiento y seguro", "−" + eur(e.mantenimiento()) + "/año");
         fila("<b>Ahorro neto el primer año</b>", "<b>" + eur(f.ahorroPrimerAno()) + "</b>");
         h.append("</table>");
-        h.append("<p class=\"nota\">Importes sin IVA. El precio de la energía es un valor medio prudente; la inversión y el mantenimiento son estimaciones que se confirman en la oferta.</p>");
-        cerrarPagina();
+        if (c.precioPeriodo != null) {
+            double[] sol = s.solarPeriodo();
+            int periodos = sol != null && c.regulados != null ? Periodos.periodosEnergia(c.regulados.tarifa()) : c.precioPeriodo[3] == 0 ? 3 : 6;
+            h.append("<p class=\"nota\">Precio de la energía por periodo (€/kWh) y energía solar consumida en cada uno: ");
+            for (int p = 0; p < periodos; p++) {
+                if (p > 0) h.append(" · ");
+                h.append("P").append(p + 1).append(" ").append(n(c.precioPeriodo[p], 4));
+                if (sol != null) h.append(" (").append(mwh(sol[p])).append(" MWh)");
+            }
+            h.append(". ").append(c.regulados != null && !Boolean.TRUE.equals(Calculo.mapa(c.datos.get("economia")).get("incluyePeajes"))
+                    ? "Incluye los peajes y cargos del BOE «" + esc(c.regulados.nombre()) + "» (" + esc(c.regulados.referencia()) + "). " : "")
+                    .append("Importes sin IVA ni impuesto eléctrico; la inversión y el mantenimiento son estimaciones que se confirman en la oferta.</p>");
+        } else {
+            h.append("<p class=\"nota\">Importes sin IVA. El precio de la energía es un valor medio prudente; la inversión y el mantenimiento son estimaciones que se confirman en la oferta.</p>");
+        }
     }
 
     private void pagRentabilidad() {
@@ -307,6 +361,13 @@ public final class Informe {
         h.append(acumulado(f.acumulado()));
         h.append("<p class=\"nota\">Balance acumulado (€) de cada año: ahorro menos mantenimiento, menos la inversión inicial. A 25 años ronda los ")
                 .append(eurRedondeado(f.acumulado()[f.acumulado().length - 1])).append(".</p>");
+        contIndicadores();
+        cerrarPagina();
+    }
+
+    private void contIndicadores() {
+        Finanzas.Entrada e = c.base.entrada();
+        Finanzas.Resultado f = c.base.fin();
         h.append("<table class=\"t\"><tr><th>Indicador</th><th>Valor</th><th>Qué significa</th></tr>");
         h.append("<tr><td>Retorno de la inversión</td><td>").append(Double.isNaN(f.retorno()) ? "—" : n(f.retorno(), 1) + " años").append("</td><td>Lo que tarda en pagarse sola</td></tr>");
         h.append("<tr><td>Retorno descontado</td><td>").append(Double.isNaN(f.retornoDescontado()) ? "—" : n(f.retornoDescontado(), 1) + " años").append("</td><td>Contando el valor del dinero en el tiempo</td></tr>");
@@ -319,18 +380,23 @@ public final class Informe {
                     .append(Double.isNaN(p.fin().retorno()) ? "—" : n(p.fin().retorno(), 1) + " años").append("</td><td>")
                     .append(Double.isNaN(p.fin().tir()) ? "—" : n(p.fin().tir() * 100, 1) + " %").append("</td></tr>");
         }
-        h.append("</table><p class=\"nota\">Cálculo: energía solar consumida por el precio medio de la energía").append(c.ahorroPotencia > 0 ? ", más el ahorro en potencia (sin subida anual)" : "")
+        h.append("</table><p class=\"nota\">Cálculo: energía solar consumida por el precio ").append(c.precioPeriodo != null ? "de su periodo" : "medio de la energía").append(c.ahorroPotencia > 0 ? ", más el ahorro en potencia (sin subida anual)" : "")
                 .append(". Subida del precio de la energía del ").append(n(e.subidaEnergia() * 100, 0)).append(" % anual, degradación de los módulos del ").append(n(e.degradacion() * 100, 1))
                 .append(" % anual").append(e.degradacionBateria() > 0 ? " y de la batería del " + n(e.degradacionBateria() * 100, 0) + " % anual" : "")
                 .append(", mantenimiento y seguro de ").append(eur(e.mantenimiento())).append(" al año (+").append(n(e.subidaMantenimiento() * 100, 0)).append(" % anual)")
                 .append(e.reposicion() > 0 ? ", cambio de equipos en el año " + e.anoReposicion() + " (" + eurRedondeado(e.reposicion()) + ")" : "")
                 .append(", tasa de descuento del ").append(n(e.descuento() * 100, 0)).append(" % y horizonte de ").append(e.anos()).append(" años. Importes sin IVA.</p>");
-        cerrarPagina();
     }
 
     private void pagEscenarios() {
         abrirPagina();
-        h.append("<h2><i>6</i>Escenarios de potencia</h2>");
+        contEscenarios(true);
+        cierre();
+        cerrarPagina();
+    }
+
+    private void contEscenarios(boolean titulo2) {
+        h.append(titulo2 ? "<h2><i>6</i>Escenarios de potencia</h2>" : "<h3>Escenarios de potencia</h3>");
         List<Calculo.Punto> e = c.escenarios;
         h.append("<h3>Cómo cambian el ahorro y el retorno con más o menos paneles</h3><table class=\"t esc\"><tr><th>Escenario</th>");
         for (Calculo.Punto p : e) h.append("<th>").append(c.instalacion.kwp() >= 500 ? n(p.kwp() / 1000.0, 2) + " MWp" : n(p.kwp(), 0) + " kWp").append("</th>");
@@ -350,18 +416,333 @@ public final class Informe {
         escRow("VAN a 25 años", i -> eurRedondeado(e.get(i).fin().van()));
         h.append("</table><p class=\"nota\">VAN: beneficio a 25 años por encima de invertir el dinero al 5 %. La inversión y el mantenimiento de cada escenario se escalan con la potencia; ")
                 .append(bateria ? "la batería es la misma en todos." : "no hay batería.").append("</p>");
-        h.append("<div class=\"cierre\"><b>AURA Ingeniería Energética S.L.</b> · auraingenieria.es<br>Estudio orientativo: las cifras definitivas se fijan en la oferta tras la visita técnica.</div>");
-        cerrarPagina();
     }
 
     private void escRow(String nombre, java.util.function.IntFunction<String> v) {
         h.append("<tr><td>").append(nombre).append("</td>");
-        for (int i = 0; i < c.escenarios.size(); i++) h.append("<td").append(i == 0 ? " class=\"base\"" : "").append('>').append(v.apply(i)).append("</td>");
+        for (int i = 0; i < c.escenarios.size(); i++) h.append("<td").append(i == Calculo.INDICE_BASE ? " class=\"base\"" : "").append('>').append(v.apply(i)).append("</td>");
         h.append("</tr>");
     }
 
     private static String cap(String s) {
         return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    // ------------------------------------------------------------------ informe por módulos
+
+    /** Categorías del informe por módulos, en su orden por defecto. */
+    public static final Map<String, String> CATEGORIAS = new java.util.LinkedHashMap<>();
+    /** Módulo → categoría a la que pertenece. */
+    public static final Map<String, String> CATEGORIA_DE = new java.util.LinkedHashMap<>();
+    /** Módulos que el servidor escribe entero (tablas); el resto son gráficas que llegan dibujadas por la pantalla. */
+    public static final java.util.Set<String> TABLAS = java.util.Set.of("tabla-instalacion", "tabla-escenarios", "tabla-inversion", "tabla-indicadores");
+    private static final Map<String, Double> ALTURA = new java.util.HashMap<>();
+
+    static {
+        CATEGORIAS.put("consumo", "Consumo");
+        CATEGORIAS.put("solar", "Producción solar");
+        CATEGORIAS.put("dimension", "Dimensionado");
+        CATEGORIAS.put("potencia", "Potencia contratada");
+        CATEGORIAS.put("rentabilidad", "Rentabilidad");
+        CATEGORIAS.put("financiacion", "Financiación");
+        CATEGORIAS.put(Informe.RECOMENDACIONES, "Recomendaciones");
+        for (String[] m : new String[][]{{"consumo-periodos", "consumo"}, {"consumo-perfil", "consumo"}, {"solar-dia", "solar"}, {"solar-mensual", "solar"},
+                {"tabla-instalacion", "solar"}, {"dim-potencia", "dimension"}, {"dim-cobertura", "dimension"}, {"dim-bateria", "dimension"}, {"dim-tir-bateria", "dimension"},
+                {"dim-cobertura-bateria", "dimension"}, {"tabla-escenarios", "dimension"}, {"potencia-contratada", "potencia"}, {"rent-acumulado", "rentabilidad"},
+                {"rent-van", "rentabilidad"}, {"tabla-inversion", "rentabilidad"}, {"tabla-indicadores", "rentabilidad"}, {"fin-balance", "financiacion"}}) {
+            CATEGORIA_DE.put(m[0], m[1]);
+        }
+        for (String m : CATEGORIA_DE.keySet()) ALTURA.put(m, 1.0);
+        ALTURA.put("solar-dia", 0.85);
+        ALTURA.put("dim-tir-bateria", 0.9);
+        ALTURA.put("dim-cobertura-bateria", 0.9);
+        ALTURA.put("tabla-instalacion", 1.2);
+        ALTURA.put("tabla-escenarios", 1.5);
+        ALTURA.put("tabla-inversion", 1.6);
+        ALTURA.put("tabla-indicadores", 1.6);
+    }
+
+    /** Categoría de textos libres (recomendaciones): sus módulos no son gráficas, llevan título y texto. */
+    public static final String RECOMENDACIONES = "recomendaciones";
+    private static final java.util.regex.Pattern ID_RECOMENDACION = java.util.regex.Pattern.compile("rec-[0-9A-Za-z_-]{1,40}");
+    private static final int TEXTO_MAX = 6000, TITULO_MAX = 255;
+
+    /**
+     * Lo que el usuario eligió: categorías en su orden y, en cada una, sus módulos en su orden. Las gráficas llegan con su SVG;
+     * las recomendaciones, con su título y su texto (negrita, cursiva, listas y párrafos).
+     */
+    public record ModuloSel(String id, List<String> svgs, String titulo, String texto) {
+        public ModuloSel(String id, List<String> svgs) {
+            this(id, svgs, null, null);
+        }
+    }
+
+    public record CategoriaSel(String id, List<ModuloSel> modulos) {
+    }
+
+    private static final double CAPACIDAD = 2.2;
+
+    /** El informe con solo los módulos elegidos y en el orden elegido; la portada con el resumen va siempre. */
+    public static String generar(Calculo c, LocalDate hoy, List<CategoriaSel> seleccion) {
+        return new Informe(c, fechaLarga(hoy)).construirPorModulos(seleccion);
+    }
+
+    private String construirPorModulos(List<CategoriaSel> seleccion) {
+        h.append("<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><title>Estudio FV · ").append(esc(cliente)).append("</title><style>")
+                .append(CSS).append("</style></head><body>");
+        pagResumen();
+        boolean abierta = false;
+        int numero = 2;
+        double usado = 0;
+        for (CategoriaSel cat : seleccion) {
+            String nombre = CATEGORIAS.get(cat.id());
+            if (nombre == null) continue;
+            List<ModuloSel> validos = new java.util.ArrayList<>();
+            for (ModuloSel m : cat.modulos()) {
+                if (RECOMENDACIONES.equals(cat.id())) {
+                    if (m.id() != null && ID_RECOMENDACION.matcher(m.id()).matches() && m.texto() != null && !m.texto().isBlank()) validos.add(m);
+                    continue;
+                }
+                if (!cat.id().equals(CATEGORIA_DE.get(m.id()))) continue;
+                if (!TABLAS.contains(m.id()) && (m.svgs() == null || m.svgs().isEmpty())) continue;
+                validos.add(m);
+            }
+            if (validos.isEmpty()) continue;
+            numero++;
+            // Una categoría empieza en la misma página si caben su título y su primer módulo; si no, en una nueva
+            if (!abierta || usado + CABECERA + altoDe(cat.id(), validos.get(0)) > CAPACIDAD) {
+                if (abierta) cerrarPagina();
+                abrirPagina();
+                abierta = true;
+                usado = 0;
+            }
+            h.append("<h2><i>").append(numero).append("</i>").append(esc(nombre)).append("</h2>");
+            usado += CABECERA;
+            for (ModuloSel m : validos) {
+                double alto = altoDe(cat.id(), m);
+                if (usado > CABECERA && usado + alto > CAPACIDAD) {
+                    cerrarPagina();
+                    abrirPagina();
+                    h.append("<h2><i>").append(numero).append("</i>").append(esc(nombre)).append(" <small>(continuación)</small></h2>");
+                    usado = CABECERA;
+                }
+                escribirModulo(m);
+                usado += alto;
+            }
+        }
+        if (abierta) {
+            cierre();
+            cerrarPagina();
+        }
+        h.append("</body></html>");
+        return h.toString().replace("@@TOTAL@@", String.valueOf(pagina));
+    }
+
+    /** Lo que ocupa en la página el título de una categoría. */
+    private static final double CABECERA = 0.15;
+
+    /** Lo que ocupa un módulo en la página (en unidades de {@link #CAPACIDAD}). */
+    private static double altoDe(String categoria, ModuloSel m) {
+        return RECOMENDACIONES.equals(categoria) ? 0.2 + Math.min(m.texto().length(), TEXTO_MAX) / 1400.0 : ALTURA.getOrDefault(m.id(), 1.0);
+    }
+
+    private void cierre() {
+        h.append("<div class=\"cierre\"><b>AURA Ingeniería Energética S.L.</b> · auraingenieria.es<br>Estudio orientativo: las cifras definitivas se fijan en la oferta tras la visita técnica.</div>");
+    }
+
+    /** Una recomendación: su título y su texto, con el formato sencillo de la biblioteca. */
+    private void escribirRecomendacion(ModuloSel m) {
+        String titulo = m.titulo() == null || m.titulo().isBlank() ? "Recomendación" : m.titulo().strip();
+        if (titulo.length() > TITULO_MAX) titulo = titulo.substring(0, TITULO_MAX);
+        String texto = m.texto().strip();
+        if (texto.length() > TEXTO_MAX) texto = texto.substring(0, TEXTO_MAX);
+        h.append("<div class=\"modulo recomendacion\"><h3>").append(esc(titulo)).append("</h3>").append(textoEnHtml(texto)).append("</div>");
+    }
+
+    /** **negrita**, *cursiva*, listas con «- » y párrafos separados por una línea en blanco; todo lo demás se escribe tal cual (escapado). */
+    static String textoEnHtml(String texto) {
+        StringBuilder r = new StringBuilder();
+        boolean lista = false;
+        StringBuilder parrafo = new StringBuilder();
+        for (String linea : (texto + "\n").replace("\r", "").split("\n", -1)) {
+            String l = linea.strip();
+            boolean item = l.startsWith("- ") || l.startsWith("* ") && !l.startsWith("**");
+            if (!item && !l.isEmpty() && lista) {
+                r.append("</ul>");
+                lista = false;
+            }
+            if (l.isEmpty() || item) {
+                if (parrafo.length() > 0) {
+                    r.append("<p>").append(formatoEnLinea(parrafo.toString())).append("</p>");
+                    parrafo.setLength(0);
+                }
+                if (l.isEmpty() && lista) {
+                    r.append("</ul>");
+                    lista = false;
+                }
+            }
+            if (item) {
+                if (!lista) {
+                    r.append("<ul>");
+                    lista = true;
+                }
+                r.append("<li>").append(formatoEnLinea(l.substring(2).strip())).append("</li>");
+            } else if (!l.isEmpty()) {
+                if (parrafo.length() > 0) parrafo.append(' ');
+                parrafo.append(l);
+            }
+        }
+        if (lista) r.append("</ul>");
+        return r.toString();
+    }
+
+    private static String formatoEnLinea(String s) {
+        String e = esc(s);
+        e = e.replaceAll("\\*\\*(.+?)\\*\\*", "<b>$1</b>");
+        return e.replaceAll("(?<![*\\w])\\*([^*\\s](?:[^*]*[^*\\s])?)\\*(?![*\\w])", "<i>$1</i>");
+    }
+
+    private void escribirModulo(ModuloSel m) {
+        if (m.id() != null && ID_RECOMENDACION.matcher(m.id()).matches()) {
+            escribirRecomendacion(m);
+            return;
+        }
+        switch (m.id()) {
+            case "tabla-instalacion" -> contInstalacion(false);
+            case "tabla-escenarios" -> contEscenarios(false);
+            case "tabla-inversion" -> contInversion(false);
+            case "tabla-indicadores" -> contIndicadores();
+            default -> {
+                String[] t = textoModulo(m.id());
+                List<String> limpios = new java.util.ArrayList<>();
+                for (String svg : m.svgs()) {
+                    String l = SvgSeguro.limpiar(svg);
+                    if (l != null) limpios.add(l);
+                }
+                if (limpios.isEmpty()) return;
+                h.append("<div class=\"modulo\"><h3>").append(esc(t[0])).append("</h3>");
+                if (limpios.size() > 1) {
+                    h.append("<div class=\"dos\">");
+                    for (String l : limpios) h.append("<div>").append(l).append("</div>");
+                    h.append("</div>");
+                } else {
+                    h.append(limpios.get(0));
+                }
+                h.append("<p class=\"nota\">").append(esc(t[1])).append("</p></div>");
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> lista(String clave) {
+        return c.graficas().get(clave) instanceof List<?> l ? (List<Map<String, Object>>) l : List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> mapaG(String clave) {
+        return c.graficas().get(clave) instanceof Map<?, ?> m ? (Map<String, Object>) m : Map.of();
+    }
+
+    private static double dd(Map<String, Object> m, String clave) {
+        return m.get(clave) instanceof Number x ? x.doubleValue() : 0;
+    }
+
+    private static String sinCeros(double v) {
+        return n(v, 3).replaceAll("0$", "");
+    }
+
+    /** Titular y nota de cada gráfica, con los números del estudio. */
+    @SuppressWarnings("unchecked")
+    private String[] textoModulo(String id) {
+        Simulacion.Resultado s = c.base.sim();
+        Finanzas.Resultado f = c.base.fin();
+        return switch (id) {
+            case "consumo-periodos" -> {
+                double[] m = c.consumoMes;
+                int max1 = 0, max2 = -1, min1 = 0, min2 = -1;
+                for (int i = 1; i < 12; i++) if (m[i] > m[max1]) max1 = i;
+                for (int i = 0; i < 12; i++) if (i != max1 && (max2 < 0 || m[i] > m[max2])) max2 = i;
+                for (int i = 1; i < 12; i++) if (m[i] < m[min1]) min1 = i;
+                for (int i = 0; i < 12; i++) if (i != min1 && (min2 < 0 || m[i] < m[min2])) min2 = i;
+                yield new String[]{cap(MESES_LARGOS[max1]) + " y " + MESES_LARGOS[max2] + " son los meses de más consumo; " + MESES_LARGOS[min1] + " y " + MESES_LARGOS[min2] + ", los de menos",
+                        (c.graficas().get("consumoPeriodoMes") != null ? "Consumo mensual por periodo tarifario (MWh). " : "Consumo mensual (MWh). ")
+                                + (c.curva.estimada() ? "Estimado con las lecturas del SIPS." : "Curva horaria del suministro, último año completo.")};
+            }
+            case "consumo-perfil" -> {
+                double[] lab = c.perfilLaborable, fin = c.perfilFinde;
+                int hmax = 0;
+                for (int i = 1; i < 24; i++) if (lab[i] > lab[hmax]) hmax = i;
+                double finMax = 0;
+                for (double v : fin) finMax = Math.max(finMax, v);
+                yield new String[]{"Los días laborables el consumo llega a unos " + n(lab[hmax], 0) + " kW hacia las " + hmax + " h; el fin de semana no pasa de " + n(finMax, 0) + " kW",
+                        "Potencia media por hora del día (kW), de lunes a viernes, sábados y domingos."};
+            }
+            case "solar-dia" -> new String[]{"Un día laborable, el consumo y la producción solar a lo largo del día",
+                    "Consumo y aportación solar (kW) en un día laborable medio de junio y de diciembre. La producción máxima ronda los " + n(s.produccionMaxima(), 0)
+                            + " kW. Hipótesis: producción específica de " + n(c.instalacion.produccionEspecifica(), 0) + " kWh/kWp al año con perfil medio mensual y horario; día medio de cada mes, sin variación meteorológica diaria"
+                            + (bateria ? "; batería con rendimiento del 90 % ida y vuelta, descarga útil del 90 % y potencia de carga/descarga de C/2." : ".")};
+            case "solar-mensual" -> new String[]{"Se aprovecha el " + pct(s.aprovechamiento()) + " de la producción; lo que se recorta se concentra en los meses y días de menos consumo",
+                    "Energía solar consumida (al momento y desde la batería) y recortada por mes, frente al consumo (MWh). Encima de cada mes, el porcentaje de la producción que se aprovecha."};
+            case "dim-potencia" -> {
+                Calculo.Punto mas = c.barrido.get(c.barrido.size() - 1), antes = c.barrido.get(2), centro = c.base;
+                yield new String[]{"Con " + n(centro.kwp(), 0) + " kWp se cubre el " + pct(centro.sim().cobertura()) + " del consumo; cada tramo de paneles extra rinde menos",
+                        "Energía solar (MWh al año) con cada potencia de paneles. Pasar de " + n(antes.kwp(), 0) + " a " + n(centro.kwp(), 0) + " kWp sube la cobertura del " + pct(antes.sim().cobertura())
+                                + " al " + pct(centro.sim().cobertura()) + "; de " + n(centro.kwp(), 0) + " a " + n(mas.kwp(), 0) + " kWp solo la sube hasta el " + pct(mas.sim().cobertura())
+                                + " y la producción aprovechada baja del " + pct(centro.sim().aprovechamiento()) + " al " + pct(mas.sim().aprovechamiento()) + "."};
+            }
+            case "dim-cobertura" -> new String[]{"Con más paneles se cubre más consumo, pero se aprovecha menos de lo que se produce",
+                    "Porcentaje del consumo que se cubre y de la producción que se aprovecha con cada potencia de paneles (kWp)."};
+            case "dim-bateria" -> {
+                List<Map<String, Object>> b = lista("barridoBateria");
+                Map<String, Object> sin = b.get(0), act = b.stream().filter(x -> Boolean.TRUE.equals(x.get("actual"))).findFirst().orElse(b.get(0));
+                Map<String, Object> ultimo = b.get(b.size() - 1);
+                String titular = bateria
+                        ? "Con " + n(dd(act, "kwh"), 0) + " kWh de batería la cobertura sube " + n((dd(act, "cobertura") - dd(sin, "cobertura")) * 100, 1) + " puntos frente a no tenerla"
+                        : "Con " + n(dd(ultimo, "kwh"), 0) + " kWh de batería la cobertura pasaría del " + pct(dd(sin, "cobertura")) + " al " + pct(dd(ultimo, "cobertura"));
+                yield new String[]{titular, "Energía solar (MWh al año) según la capacidad de batería. Encima de cada barra, el consumo cubierto; debajo, los ciclos de batería al año."};
+            }
+            case "dim-tir-bateria" -> {
+                List<Map<String, Object>> b = lista("barridoBateria");
+                Map<String, Object> sin = b.get(0), act = b.stream().filter(x -> Boolean.TRUE.equals(x.get("actual"))).findFirst().orElse(b.get(0));
+                yield new String[]{"La rentabilidad (TIR) es del " + n(dd(sin, "tir") * 100, 1) + " % sin batería y del " + n(dd(act, "tir") * 100, 1) + " % con " + n(dd(act, "kwh"), 0) + " kWh",
+                        "TIR a 25 años con cada capacidad de batería; la inversión de cada una se calcula con el precio de la batería indicado."};
+            }
+            case "dim-cobertura-bateria" -> {
+                List<Map<String, Object>> b = lista("barridoBateria");
+                Map<String, Object> sin = b.get(0), act = b.stream().filter(x -> Boolean.TRUE.equals(x.get("actual"))).findFirst().orElse(b.get(0)), ultimo = b.get(b.size() - 1);
+                String titular = bateria
+                        ? "Los primeros " + n(dd(act, "kwh"), 0) + " kWh de batería suben la cobertura " + n((dd(act, "cobertura") - dd(sin, "cobertura")) * 100, 1) + " puntos; los " + n(dd(ultimo, "kwh") - dd(act, "kwh"), 0) + " siguientes solo " + n((dd(ultimo, "cobertura") - dd(act, "cobertura")) * 100, 1)
+                        : "Con " + n(dd(ultimo, "kwh"), 0) + " kWh de batería la cobertura subiría " + n((dd(ultimo, "cobertura") - dd(sin, "cobertura")) * 100, 1) + " puntos";
+                yield new String[]{titular, "Consumo cubierto (%) según la capacidad de batería instalada."};
+            }
+            case "potencia-contratada" -> {
+                Map<String, Object> p = mapaG("potencia");
+                double ahorro = 0, kw = 0;
+                if (p.get("ahorro") instanceof List<?> l) for (Object o : l) ahorro += o instanceof Number x ? x.doubleValue() : 0;
+                if (p.get("hoy") instanceof List<?> hoy && p.get("aContratar") instanceof List<?> ac) {
+                    for (int i = 0; i < hoy.size(); i++) kw += ((Number) hoy.get(i)).doubleValue() - ((Number) ac.get(i)).doubleValue();
+                }
+                yield new String[]{kw > 0 ? "Una bajada de unos " + n(kw, 0) + " kW de potencia contratada ahorra unos " + eurRedondeado(ahorro) + " al año" : "Potencia contratada y punta registrada en cada periodo",
+                        "Potencia contratada hoy (o punta registrada), punta registrada y potencia que se propone contratar en cada periodo (kW), con el precio del peaje y cargo del BOE (€/kW·año)."};
+            }
+            case "rent-acumulado" -> new String[]{"El dinero acumulado año a año: " + (Double.isNaN(f.retorno()) ? "la inversión no llega a recuperarse en 25 años" : "la inversión se recupera en unos " + n(f.retorno(), 1) + " años"),
+                    "Balance acumulado (miles de €) de cada año: ahorro menos mantenimiento, menos la inversión inicial. A 25 años ronda los " + eurRedondeado(f.acumulado()[f.acumulado().length - 1]) + "."};
+            case "rent-van" -> {
+                List<Map<String, Object>> items = (List<Map<String, Object>>) mapaG("escenariosVan").get("items");
+                Map<String, Object> mejor = items.get(0);
+                for (Map<String, Object> x : items) if (dd(x, "van") > dd(mejor, "van")) mejor = x;
+                yield new String[]{"El beneficio a 25 años es mayor con " + n(dd(mejor, "kwp"), 0) + " kWp (" + eurRedondeado(dd(mejor, "van")) + ")",
+                        "VAN a 25 años: beneficio por encima de invertir el dinero al " + n(c.base.entrada().descuento() * 100, 0) + " %, con la energía a " + sinCeros(dd(mapaG("escenariosVan"), "precio"))
+                                + " y a " + sinCeros(dd(mapaG("escenariosVan"), "precioAlto")) + " €/kWh."};
+            }
+            case "fin-balance" -> {
+                Map<String, Object> x = mapaG("financiacion");
+                Object rec = x.get("recuperaConstante");
+                yield new String[]{"El cliente pone unos " + eurRedondeado(dd(x, "puestoConstante")) + " en " + n(dd(x, "meses"), 0) + " cuotas y " + (rec instanceof Number r ? "los recupera en el mes " + r.intValue() : "no los recupera en 25 años"),
+                        "Balance acumulado del cliente (miles de €): ahorro menos cuotas. Cuota de " + eur(dd(x, "cuota")) + " al mes con un interés (TAE) del " + n(dd(x, "tae"), 1) + " %. Durante las cuotas el balance baja; después sube con todo el ahorro."};
+            }
+            default -> new String[]{"", ""};
+        };
     }
 
     // ------------------------------------------------------------------ gráficas SVG
@@ -514,6 +895,10 @@ public final class Informe {
             body { margin: 0; background: #fff; color: #2c2c2e; font: 12.5px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
             .pag { width: 210mm; height: 297mm; padding: 14mm 15mm 12mm; position: relative; page-break-after: always; overflow: hidden; display: flex; flex-direction: column }
             .pag:last-child { page-break-after: auto }
+            @media screen { body { background: #d9dde3; padding: 16px 0 }
+              .pag { margin: 0 auto 16px; background: #fff; box-shadow: 0 2px 14px rgba(0, 0, 0, .3) } }
+            @media screen and (max-width: 860px) { body { zoom: .8 } }
+            @media screen and (max-width: 700px) { body { zoom: .62 } }
             header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #fcd700; padding-bottom: 8px; margin-bottom: 14px }
             header .logo { height: 34px }
             header span { font-size: 9.5px; letter-spacing: .08em; color: #98999b; font-weight: 600 }
@@ -542,6 +927,17 @@ public final class Informe {
             .ley { display: flex; gap: 14px; flex-wrap: wrap; font-size: 10.5px; color: #4a4a4c; margin: 2px 0 4px 46px }
             .ley i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px }
             .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px } .mes { font-size: 11px; color: #6b6b6e }
+            .grafica-pdf { --text: #2c2c2e; --text-h: #1c1c1e; --muted: #6b6b6e; --bg: #fff; --bg-alt: #f5f5f6; --brand: #fcd700; --border: #e3e3e6 }
+            .grafica-pdf .eje line { stroke: #e3e3e6; stroke-width: 1 } .grafica-pdf .eje line.cero { stroke: #98999b }
+            .grafica-pdf .eje text { fill: #6b6b6e; font-size: 11px } .grafica-pdf .eje .pequeno { font-size: 9.5px }
+            .grafica-pdf .nota { fill: #6b6b6e; font-size: 12px } .grafica-pdf .banda-fija { fill: #000; opacity: .05 }
+            .grafica-pdf .ref line { stroke: #2c2c2e; stroke-dasharray: 5 4; opacity: .7 } .grafica-pdf .ref text { fill: #2c2c2e; font-size: 11.5px; font-weight: 600 }
+            .grafica-pdf .marca text { fill: #1c1c1e; font-size: 12px; font-weight: 600 }
+            .grafica-pdf .valor-barra { fill: #2c2c2e; font-size: 10.5px; font-weight: 600 } .grafica-pdf .etiqueta { fill: #1c1c1e; font-size: 11.5px; font-weight: 700 }
+            .grafica-pdf .leyenda-svg text { fill: #4a4a4c; font-size: 11px }
+            .modulo { margin-bottom: 6px; break-inside: avoid } .modulo svg { width: 100%; height: auto; display: block }
+            .recomendacion { margin-bottom: 12px } .recomendacion h3 { margin-top: 8px } .recomendacion ul { margin: 6px 0; padding-left: 20px } .recomendacion li { margin: 3px 0 }
+            h2 small { font-size: 11px; font-weight: 500; color: #98999b }
             .cierre { margin-top: 18px; padding: 10px 12px; background: #f5f5f6; border-left: 4px solid #fcd700; font-size: 11px }
             """;
 }

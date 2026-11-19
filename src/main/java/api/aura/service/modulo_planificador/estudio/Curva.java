@@ -118,6 +118,39 @@ public final class Curva {
         return s;
     }
 
+    /** Potencia media (kW) de cada hora del día en los sábados, los domingos o los días de entre semana (dias = tipo de día). */
+    public double[] perfilDeDia(DayOfWeek tipo) {
+        double[] s = new double[24];
+        int[] n = new int[24];
+        for (int i = 0; i < HORAS; i++) {
+            DayOfWeek d = PRIMER_DIA.plus(dia(i));
+            boolean coincide = tipo == DayOfWeek.SATURDAY ? d == DayOfWeek.SATURDAY : tipo == DayOfWeek.SUNDAY ? d == DayOfWeek.SUNDAY : laborable(i);
+            if (coincide) {
+                s[hora(i)] += kwh[i];
+                n[hora(i)]++;
+            }
+        }
+        for (int h = 0; h < 24; h++) s[h] = n[h] == 0 ? 0 : s[h] / n[h];
+        return s;
+    }
+
+    /** Consumo (kWh) de cada mes repartido por periodo tarifario: [mes][periodo]. */
+    public double[][] porMesYPeriodo(int[] periodos, int n) {
+        double[][] r = new double[12][n];
+        for (int i = 0; i < HORAS; i++) r[mes(i)][Math.min(periodos[i], n - 1)] += kwh[i];
+        return r;
+    }
+
+    /** Potencia máxima (kW, media horaria) de cada periodo tarifario. */
+    public double[] puntaPorPeriodo(int[] periodos, int n) {
+        double[] r = new double[n];
+        for (int i = 0; i < HORAS; i++) {
+            int p = Math.min(periodos[i], n - 1);
+            r[p] = Math.max(r[p], kwh[i]);
+        }
+        return r;
+    }
+
     /** Parte del consumo que cae entre las 8:00 y las 19:00 (horas 8 a 18). */
     public double fraccionDiurna() {
         double d = 0;
@@ -150,34 +183,72 @@ public final class Curva {
         String n = nombre == null ? "" : nombre.toLowerCase(Locale.ROOT);
         List<String[]> filas;
         try {
-            filas = n.endsWith(".xlsx") || n.endsWith(".xls") ? filasExcel(contenido) : filasCsv(contenido);
+            filas = Sips.esTablaHtml(contenido) ? filasHtml(contenido)
+                    : n.endsWith(".xlsx") || n.endsWith(".xls") ? filasExcel(contenido) : filasCsv(contenido);
         } catch (IOException | RuntimeException e) {
             throw new ErrorApi(HttpStatus.BAD_REQUEST, "No se pudo leer el fichero de la curva: " + e.getMessage());
         }
         return desdeFilas(filas, nombre);
     }
 
+    // Las cabeceras se reconocen por su sentido (sin tildes ni mayúsculas) para admitir los distintos formatos de cada distribuidora
+    private static final java.util.regex.Pattern P_FECHA = java.util.regex.Pattern.compile(
+            "^(fecha|date|dia|day|datetime|timestamp|fecha y hora|fecha hora|fecha/hora|fecha-hora|fecha medida|fecha lectura|fecha consumo|momento)( .*)?$");
+    private static final java.util.regex.Pattern P_HORA = java.util.regex.Pattern.compile("^(hora|hour|time|hora del dia|h|periodo horario|intervalo)( .*)?$");
+    private static final java.util.regex.Pattern P_VALOR = java.util.regex.Pattern.compile(
+            "kwh|consumo|energia|activa|^ae\\b|^ae[ _(]|^value$|^valor$|^lectura$|^medida$|^demanda$|^kw$|^wh$");
+    // Lo que se parece a un consumo pero no lo es: reactiva, excedentes (autoconsumo), máximos o textos de ayuda
+    private static final java.util.regex.Pattern P_NO_VALOR = java.util.regex.Pattern.compile(
+            "reactiv|exceden|vertid|generaci|produccion|\\bmax|tooltip|color|punto|periodo|precio|coste|importe|estado|calidad|metodo|origen|^r\\b|^ai\\b");
+
     static Curva desdeFilas(List<String[]> filas, String nombre) {
         int cab = -1;
         int cFecha = -1, cHora = -1, cValor = -1;
+        // Telegest (gráfico de curva horaria, hoja de amCharts) pone «date» y «value», y cada fecha es la hora que TERMINA:
+        // «2024-12-09 01:00:00» es el consumo de 0:00 a 1:00 (así cuadran los periodos de su columna «tooltip»)
+        boolean finDeHora = false;
         for (int i = 0; i < Math.min(filas.size(), 30) && cab < 0; i++) {
             String[] f = filas.get(i);
             int fe = -1, ho = -1, va = -1;
+            boolean telegest = false;
             for (int c = 0; c < f.length; c++) {
                 String h = normalizar(f[c]);
-                if (fe < 0 && h.startsWith("fecha")) fe = c;
-                else if (ho < 0 && (h.equals("hora") || h.startsWith("hora "))) ho = c;
-                else if (va < 0 && (h.contains("kwh") || h.contains("consumo") || h.startsWith("ae") || h.contains("activa"))) va = c;
+                if (fe < 0 && P_FECHA.matcher(h).matches()) {
+                    fe = c;
+                    telegest = h.equals("date");
+                } else if (ho < 0 && P_HORA.matcher(h).matches()) ho = c;
+                else if (va < 0 && P_VALOR.matcher(h).find() && !P_NO_VALOR.matcher(h.split(" - ")[0]).find()) va = c;
             }
             if (fe >= 0 && va >= 0) {
                 cab = i;
                 cFecha = fe;
                 cHora = ho;
                 cValor = va;
+                finDeHora = telegest && ho < 0;
+            }
+        }
+        // Hay exportaciones (tablas de gráficas y Excel de las plataformas de las distribuidoras) cuya columna de fechas no lleva cabecera:
+        // solo la del consumo («Energía activa consumida - …»). La fecha es entonces la columna cuyas celdas se leen como fecha.
+        for (int i = 0; i < Math.min(filas.size(), 30) && cab < 0; i++) {
+            String[] f = filas.get(i);
+            int va = -1;
+            for (int c = 0; c < f.length && va < 0; c++) {
+                String h = normalizar(f[c]);
+                if (P_VALOR.matcher(h).find() && !P_NO_VALOR.matcher(h.split(" - ")[0]).find()) va = c;
+            }
+            if (va < 0 || i + 1 >= filas.size()) continue;
+            String[] datos = filas.get(i + 1);
+            for (int c = 0; c < datos.length && cab < 0; c++) {
+                if (c != va && datos[c] != null && instante(datos[c], null) != null && va < datos.length && numero(datos[va]) != null) {
+                    cab = i;
+                    cFecha = c;
+                    cValor = va;
+                    cHora = -1;
+                }
             }
         }
         if (cab < 0) {
-            throw new ErrorApi(HttpStatus.BAD_REQUEST, "No encuentro las columnas de fecha y consumo (kWh) en el fichero. Debe tener una cabecera con «Fecha», «Hora» (si va aparte) y el consumo en kWh.");
+            throw new ErrorApi(HttpStatus.BAD_REQUEST, "No encuentro las columnas de fecha y consumo (kWh) en el fichero. Debe tener una cabecera con «Fecha», «Hora» (si va aparte) y el consumo en kWh, o ser el Excel de Telegest («date» y «value»).");
         }
         Map<LocalDateTime, Double> horas = new TreeMap<>();
         for (int i = cab + 1; i < filas.size(); i++) {
@@ -186,6 +257,7 @@ public final class Curva {
             LocalDateTime t = instante(f[cFecha], cHora >= 0 && cHora < f.length ? f[cHora] : null);
             Double v = numero(f[cValor]);
             if (t == null || v == null) continue;
+            if (finDeHora) t = t.minusHours(1);
             horas.merge(t, v, Double::sum);
         }
         if (horas.isEmpty()) throw new ErrorApi(HttpStatus.BAD_REQUEST, "El fichero no tiene lecturas válidas (fecha y consumo).");
@@ -307,6 +379,15 @@ public final class Curva {
             for (int i = 0; i < c.length; i++) c[i] = c[i].strip().replaceAll("^\"|\"$", "");
             r.add(c);
         }
+        return r;
+    }
+
+    /** Una tabla HTML guardada como «.xls» (la exportan las plataformas de las distribuidoras): sus filas, celda a celda. */
+    static List<String[]> filasHtml(byte[] contenido) {
+        String texto = new String(contenido, StandardCharsets.UTF_8);
+        if (texto.indexOf('�') >= 0) texto = new String(contenido, StandardCharsets.ISO_8859_1);
+        List<String[]> r = new ArrayList<>();
+        for (List<String> f : Sips.filasDeTabla(texto)) r.add(f.toArray(new String[0]));
         return r;
     }
 

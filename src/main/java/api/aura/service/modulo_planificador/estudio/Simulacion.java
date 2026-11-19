@@ -13,13 +13,18 @@ public final class Simulacion {
 
     /** Datos de la instalación. */
     public record Instalacion(double kwp, double bateriaKwh, double produccionEspecifica, String orientacion,
-                              double rendimientoBateria, double descargaUtil, double cRate) {
+                              double rendimientoBateria, double descargaUtil, double cRate, double[] perfil) {
         public Instalacion {
             if (kwp < 0 || bateriaKwh < 0 || produccionEspecifica <= 0) throw new IllegalArgumentException("Instalación no válida");
         }
 
+        public Instalacion(double kwp, double bateriaKwh, double produccionEspecifica, String orientacion,
+                           double rendimientoBateria, double descargaUtil, double cRate) {
+            this(kwp, bateriaKwh, produccionEspecifica, orientacion, rendimientoBateria, descargaUtil, cRate, null);
+        }
+
         public static double produccionPorDefecto(String orientacion) {
-            // De los informes de referencia en Lorca: sur 30° y este-oeste 15°
+            // De los informes de referencia en Lorca: sur 30° y este-oeste 15° (el cálculo actual usa 15° y 10°; estos valores son los del modelo sin PVGIS)
             return "sur".equals(orientacion) ? 1685 : 1420;
         }
 
@@ -28,15 +33,30 @@ public final class Simulacion {
             return new Instalacion(kwp, bateriaKwh, produccion == null || produccion <= 0 ? produccionPorDefecto(o) : produccion, o, 0.90, 0.90, 0.5);
         }
 
+        /**
+         * Con la producción hora a hora real de 1 kWp (PVGIS). Si no se fija la producción específica es la suma de esa serie; si se
+         * fija, la serie se escala a ella.
+         */
+        public static Instalacion conPerfil(double kwp, double bateriaKwh, String orientacion, Double produccion, double[] perfil) {
+            double anual = 0;
+            for (double v : perfil) anual += v;
+            return new Instalacion(kwp, bateriaKwh, produccion == null || produccion <= 0 ? anual : produccion, "sur".equals(orientacion) ? "sur" : "este-oeste",
+                    0.90, 0.90, 0.5, perfil);
+        }
+
+        public Instalacion conBateria(double nueva) {
+            return new Instalacion(kwp, nueva, produccionEspecifica, orientacion, rendimientoBateria, descargaUtil, cRate, perfil);
+        }
+
         public Instalacion conKwp(double nuevos) {
-            return new Instalacion(nuevos, bateriaKwh, produccionEspecifica, orientacion, rendimientoBateria, descargaUtil, cRate);
+            return new Instalacion(nuevos, bateriaKwh, produccionEspecifica, orientacion, rendimientoBateria, descargaUtil, cRate, perfil);
         }
     }
 
     /** Resultado de un año simulado. Las energías en kWh y las potencias en kW. */
     public record Resultado(double kwp, double bateriaKwh, double consumo, double produccion, double directa, double desdeBateria,
                             double recortada, double ciclos, double[] consumoMes, double[] solarMes, double[] recortadaMes,
-                            double[] produccionMes, double[][] diaTipo, double produccionMaxima) {
+                            double[] produccionMes, double[][] diaTipo, double produccionMaxima, double[] solarPeriodo, double[] bateriaMes) {
         public double solarConsumida() {
             return directa + desdeBateria;
         }
@@ -79,16 +99,32 @@ public final class Simulacion {
         return p;
     }
 
+    /** La serie de 1 kWp escalada para que sume la producción específica indicada. */
+    static double[] escalar(double[] perfil, double anual) {
+        double suma = 0;
+        for (double v : perfil) suma += v;
+        double f = suma <= 0 ? 0 : anual / suma;
+        double[] r = new double[perfil.length];
+        for (int i = 0; i < r.length; i++) r[i] = perfil[i] * f;
+        return r;
+    }
+
     public static Resultado simular(Curva curva, Instalacion ins) {
+        return simular(curva, ins, null);
+    }
+
+    /** Con {@code periodos} (el periodo tarifario 0-5 de cada hora) reparte además la solar consumida por periodos. */
+    public static Resultado simular(Curva curva, Instalacion ins, int[] periodos) {
         double[] c = curva.kwh();
-        double[] porKwp = produccionPorKwp(ins.produccionEspecifica(), ins.orientacion());
+        double[] porKwp = ins.perfil() == null ? produccionPorKwp(ins.produccionEspecifica(), ins.orientacion()) : escalar(ins.perfil(), ins.produccionEspecifica());
         double usable = ins.bateriaKwh() * ins.descargaUtil();
         double eta = Math.sqrt(ins.rendimientoBateria());
         double potencia = ins.bateriaKwh() * ins.cRate();
         double soc = 0, directa = 0, bateria = 0, recortada = 0, produccion = 0, descargado = 0, maxProd = 0;
-        double[] consumoMes = new double[12], solarMes = new double[12], recortadaMes = new double[12], produccionMes = new double[12];
+        double[] consumoMes = new double[12], solarMes = new double[12], recortadaMes = new double[12], produccionMes = new double[12], bateriaMes = new double[12];
+        double[] solarPeriodo = periodos == null ? null : new double[6];
         // Día tipo (laborable medio) de cada mes: consumo, producción y solar consumida por hora
-        double[][][] dia = new double[12][3][24];
+        double[][][] dia = new double[12][4][24];
         int[] diasLab = new int[12];
         for (int i = 0; i < Curva.HORAS; i++) {
             int m = Curva.mes(i), h = Curva.hora(i);
@@ -115,27 +151,30 @@ public final class Simulacion {
             maxProd = Math.max(maxProd, pv);
             consumoMes[m] += carga;
             solarMes[m] += d + aportada;
+            bateriaMes[m] += aportada;
+            if (solarPeriodo != null) solarPeriodo[periodos[i]] += d + aportada;
             recortadaMes[m] += rec;
             produccionMes[m] += pv;
             if (Curva.laborable(i)) {
                 dia[m][0][h] += carga;
                 dia[m][1][h] += pv;
                 dia[m][2][h] += d + aportada;
+                dia[m][3][h] += aportada;
                 if (h == 0) diasLab[m]++;
             }
         }
-        // Se guardan junio (índice 5) y diciembre (índice 11): 3 series de 24 horas cada uno
+        // Se guardan junio (índice 5) y diciembre (índice 11): 4 series de 24 horas cada uno (consumo, producción, solar consumida y la parte que sale de la batería)
         int[] meses = {5, 11};
-        double[][] diaTipo = new double[6][24];
+        double[][] diaTipo = new double[8][24];
         for (int k = 0; k < 2; k++) {
             int m = meses[k];
-            for (int s = 0; s < 3; s++) {
-                for (int h = 0; h < 24; h++) diaTipo[k * 3 + s][h] = diasLab[m] == 0 ? 0 : dia[m][s][h] / diasLab[m];
+            for (int s = 0; s < 4; s++) {
+                for (int h = 0; h < 24; h++) diaTipo[k * 4 + s][h] = diasLab[m] == 0 ? 0 : dia[m][s][h] / diasLab[m];
             }
         }
         double ciclos = usable <= 0 ? 0 : descargado / usable;
         return new Resultado(ins.kwp(), ins.bateriaKwh(), curva.total(), produccion, directa, bateria, recortada, ciclos,
-                consumoMes, solarMes, recortadaMes, produccionMes, diaTipo, maxProd);
+                consumoMes, solarMes, recortadaMes, produccionMes, diaTipo, maxProd, solarPeriodo, bateriaMes);
     }
 
     public static Map<String, Object> aMapa(Resultado r) {

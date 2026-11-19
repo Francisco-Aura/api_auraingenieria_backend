@@ -52,3 +52,7 @@ logs/
 ### Copias de seguridad de la BD (datos reales: nunca al repositorio) ###
 src/main/resources/BBDD/Backup_*.sql
 *.dump
+
+### Claude Code ###
+.claude/relevo.md
+.claude/settings.local.json

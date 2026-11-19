@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -122,6 +123,22 @@ class EstudioMotorTest {
     }
 
     @Test
+    void leeElExcelDeTelegestConLaHoraQueTermina() {
+        // Como la hoja «amCharts» de Telegest: «date» es la hora que termina (de 01:00 de un día a 00:00 del mismo día un año después)
+        StringBuilder sb = new StringBuilder("date;value;max;tooltip;c_punto;t_punto\n");
+        LocalDateTime t = LocalDateTime.of(2024, 12, 9, 1, 0);
+        for (int i = 0; i < Curva.HORAS; i++, t = t.plusHours(1)) {
+            double v = t.getHour() == 1 ? 7 : 2;
+            sb.append(t.toString().replace('T', ' ')).append(":00;").append(v).append(';').append(v).append(";Consumo;#00CC00;1\n");
+        }
+        Curva c = Curva.leer(sb.toString().getBytes(StandardCharsets.UTF_8), "Telegest - Grafico Curva Horaria.csv");
+        assertFalse(c.estimada());
+        assertEquals(365 * (7 + 23 * 2.0), c.total(), 1e-6);
+        assertEquals(7.0, c.kwh()[Curva.indice(5, 15, 0)], 1e-9, "lo de las 01:00 es el consumo de 0:00 a 1:00");
+        assertEquals(2.0, c.kwh()[Curva.indice(5, 15, 1)], 1e-9);
+    }
+
+    @Test
     void sumaLosCuartosDeHoraYSeQuedaConElUltimoAno() {
         StringBuilder sb = new StringBuilder("Fecha,Consumo kWh\n");
         for (LocalDate d = LocalDate.of(2024, 6, 1); d.isBefore(LocalDate.of(2026, 1, 1)); d = d.plusDays(1)) {
@@ -131,6 +148,19 @@ class EstudioMotorTest {
         }
         Curva c = Curva.leer(sb.toString().getBytes(StandardCharsets.UTF_8), "cuartos.csv");
         assertEquals(8760.0, c.total(), 30.0, "24 kWh al día durante un año (sin el 29 de febrero)");
+    }
+
+    @Test
+    void leeLaTablaHtmlConExtensionXlsYLaFechaSinCabecera() {
+        StringBuilder sb = new StringBuilder("<html><body><table><thead><tr><th class=\"empty\"></th><th>Energía activa consumida - CLIENTE PUNTO SL_1234AB - 1234AB</th></tr></thead><tbody>");
+        for (LocalDate d = LocalDate.of(2025, 1, 1); d.isBefore(LocalDate.of(2026, 1, 1)); d = d.plusDays(1)) {
+            for (int q = 0; q < 96; q++) {
+                sb.append("<tr><th scope=\"row\">").append(d).append(' ').append(String.format("%02d:%02d:00", q / 4, (q % 4) * 15)).append("</th><td>1</td></tr>");
+            }
+        }
+        sb.append("</tbody></table></body></html>");
+        Curva c = Curva.leer(sb.toString().getBytes(StandardCharsets.UTF_8), "DATOS CUARTOHORARIOS X.xls");
+        assertEquals(8760.0 * 4, c.total(), 120.0, "1 kWh cada cuarto de hora durante un año");
     }
 
     @Test
@@ -210,11 +240,144 @@ class EstudioMotorTest {
         assertThrows(ErrorApi.class, () -> Sips.leer("no es un excel".getBytes(StandardCharsets.UTF_8)));
     }
 
+    /** Doce lecturas mensuales; cada mes tiene el reparto por periodos de un cliente que consume con el horario de ese mes. */
+    private static List<Sips.Lectura> sipsDeCliente(java.util.function.IntFunction<CurvaEstimada.Horario> realDelMes) {
+        int[] periodo = Periodos.delAno("3.0TD");
+        List<Sips.Lectura> l = new ArrayList<>();
+        for (int m = 0; m < 12; m++) {
+            Curva verdad = CurvaEstimada.crear(List.of(), 120_000, realDelMes.apply(m));
+            double[] kwh = new double[6];
+            for (int i = 0; i < Curva.HORAS; i++) if (Curva.mes(i) == m) kwh[periodo[i]] += verdad.kwh()[i];
+            l.add(new Sips.Lectura(LocalDate.of(2025, m + 1, 1), LocalDate.of(2025, m + 1, 1).plusMonths(1), kwh));
+        }
+        return l;
+    }
+
+    @Test
+    void avisaSiElSipsContradiceElHorarioSupuesto() {
+        // El cliente trabaja las 24 h todo el año, pero la estimación supone de 7 a 19 h
+        List<Sips.Lectura> sips = sipsDeCliente(m -> new CurvaEstimada.Horario(0, 24, 1, 1));
+        Curva estimada = CurvaEstimada.crear(sips, 120_000, CurvaEstimada.Horario.porDefecto());
+        String aviso = CurvaEstimada.avisoPeriodos(estimada, sips, "3.0TD");
+        assertNotNull(aviso);
+        assertTrue(aviso.contains("según el SIPS"));
+    }
+
+    @Test
+    void avisaSoloDeLosMesesConOtraJornada() {
+        // De enero a junio trabaja las 24 h; de julio a diciembre, el horario supuesto
+        CurvaEstimada.Horario supuesto = CurvaEstimada.Horario.porDefecto();
+        List<Sips.Lectura> sips = sipsDeCliente(m -> m < 6 ? new CurvaEstimada.Horario(0, 24, 1, 1) : supuesto);
+        Curva estimada = CurvaEstimada.crear(sips, 120_000, supuesto);
+        String aviso = CurvaEstimada.avisoPeriodos(estimada, sips, "3.0TD");
+        assertNotNull(aviso);
+        assertTrue(aviso.contains("enero"));
+        assertFalse(aviso.contains("noviembre") || aviso.contains("diciembre"), "los meses que encajan no se señalan");
+    }
+
+    @Test
+    void conLaTarifaCadaPeriodoCuadraConElSips() {
+        // El cliente trabaja las 24 h; aunque se suponga de 7 a 19 h, con la tarifa los periodos salen como los del SIPS
+        List<Sips.Lectura> sips = sipsDeCliente(m -> new CurvaEstimada.Horario(0, 24, 1, 1));
+        Curva sinTarifa = CurvaEstimada.crear(sips, 120_000, CurvaEstimada.Horario.porDefecto());
+        Curva conTarifa = CurvaEstimada.crear(sips, 120_000, CurvaEstimada.Horario.porDefecto(), "3.0TD");
+        assertNotNull(CurvaEstimada.avisoPeriodos(sinTarifa, sips, "3.0TD"));
+        assertNull(CurvaEstimada.avisoPeriodos(conTarifa, sips, "3.0TD"));
+        double total = 0;
+        for (Sips.Lectura l : sips) total += l.total();
+        assertEquals(total, conTarifa.total(), total * 1e-6, "el consumo anual no cambia");
+    }
+
+    @Test
+    void noAvisaSiElHorarioEncajaConElSips() {
+        CurvaEstimada.Horario h = CurvaEstimada.Horario.porDefecto();
+        List<Sips.Lectura> sips = sipsDeCliente(m -> h);
+        Curva estimada = CurvaEstimada.crear(sips, 120_000, h);
+        assertNull(CurvaEstimada.avisoPeriodos(estimada, sips, "3.0TD"));
+    }
+
+    @Test
+    void unaJornadaDistintaEnAlgunosMesesCambiaSoloEsosMeses() {
+        var verano = new CurvaEstimada.Excepcion(List.of(7, 8), 0, 24, 1, 1);
+        var base = CurvaEstimada.Horario.porDefecto();
+        var conExcepcion = new CurvaEstimada.Horario(7, 19, 0.15, 0.10, List.of(verano));
+        Curva a = CurvaEstimada.crear(List.of(), 120_000, base);
+        Curva b = CurvaEstimada.crear(List.of(), 120_000, conExcepcion);
+        assertEquals(a.total(), b.total(), 1, "el consumo anual no cambia, solo su reparto");
+        // De madrugada en enero igual que antes (en proporción); en agosto, mucho más
+        int enero3 = Curva.indice(0, 8, 3), agosto3 = Curva.indice(7, 8, 3);
+        assertTrue(b.kwh()[agosto3] > 3 * a.kwh()[agosto3], "en agosto trabaja de noche");
+        assertTrue(b.kwh()[enero3] < a.kwh()[enero3], "el resto de meses pierde el peso que gana agosto");
+    }
+
+    @Test
+    void dosJornadasNoPuedenCompartirMes() {
+        var h = new CurvaEstimada.Horario(7, 19, 0.15, 0.10, List.of(
+                new CurvaEstimada.Excepcion(List.of(7, 8), 0, 24, 1, 1), new CurvaEstimada.Excepcion(List.of(8, 9), 8, 15, 0.1, 0.1)));
+        assertThrows(ErrorApi.class, () -> CurvaEstimada.crear(List.of(), 120_000, h));
+    }
+
+    @Test
+    void conLasJornadasDeCadaMesElAvisoNoSalta() {
+        var verano = new CurvaEstimada.Excepcion(List.of(7, 8), 0, 24, 1, 1);
+        var h = new CurvaEstimada.Horario(7, 19, 0.15, 0.10, List.of(verano));
+        List<Sips.Lectura> sips = sipsDeCliente(m -> m == 6 || m == 7 ? new CurvaEstimada.Horario(0, 24, 1, 1) : CurvaEstimada.Horario.porDefecto());
+        assertNull(CurvaEstimada.avisoPeriodos(CurvaEstimada.crear(sips, 120_000, h), sips, "3.0TD"));
+        // Sin declararla, el aviso señala julio y agosto
+        String sin = CurvaEstimada.avisoPeriodos(CurvaEstimada.crear(sips, 120_000, CurvaEstimada.Horario.porDefecto()), sips, "3.0TD");
+        assertNotNull(sin);
+        assertTrue(sin.contains("julio") && sin.contains("agosto"));
+    }
+
+    @Test
+    void unaInterrupcionBajaElConsumoEnESaFranja() {
+        // De 8 a 14 y de 16 a 20 h: a las 15 h para, como fuera de horario
+        var partida = new CurvaEstimada.Horario(8, 14, 0.15, 0.10, List.of(), List.of(new CurvaEstimada.Tramo(16, 20)));
+        var seguida = new CurvaEstimada.Horario(8, 20, 0.15, 0.10);
+        Curva p = CurvaEstimada.crear(List.of(), 120_000, partida);
+        Curva s = CurvaEstimada.crear(List.of(), 120_000, seguida);
+        int h15 = Curva.indice(0, 8, 15), h17 = Curva.indice(0, 8, 17);
+        assertTrue(p.kwh()[h15] < 0.5 * s.kwh()[h15], "a las 15 h la jornada partida para");
+        // El total anual es el mismo, así que con menos horas activas cada una pesa algo más; a las 17 h sigue a plena carga
+        assertTrue(p.kwh()[h17] > s.kwh()[h17], "a las 17 h trabaja a plena carga");
+        assertTrue(p.kwh()[h17] > 3 * p.kwh()[h15], "y mucho más que en la interrupción");
+    }
+
+    @Test
+    void lasFranjasNoPuedenSolaparse() {
+        var h = new CurvaEstimada.Horario(8, 14, 0.15, 0.10, List.of(), List.of(new CurvaEstimada.Tramo(13, 20)));
+        assertThrows(ErrorApi.class, () -> CurvaEstimada.crear(List.of(), 120_000, h));
+    }
+
     @Test
     void unHorarioAbsurdoSeRechaza() throws Exception {
         Sips s = Sips.leer(sipsDePrueba(12));
         assertThrows(ErrorApi.class, () -> CurvaEstimada.crear(s.lecturas(), 0, new CurvaEstimada.Horario(19, 7, 0.1, 0.1)));
         List<Sips.Lectura> sin = new ArrayList<>();
         assertEquals(124494, CurvaEstimada.crear(sin, 124494, CurvaEstimada.Horario.porDefecto()).total(), 1);
+    }
+
+    @Test
+    void aisladaValoraLaSolarConElCosteDelGrupoYNoUsaLaRed() {
+        java.util.function.Function<String, java.util.Map<String, Object>> datos = modo -> {
+            var ins = new java.util.HashMap<String, Object>(java.util.Map.of("kwp", 50, "bateriaKwh", 0, "orientacion", "sur"));
+            var eco = new java.util.HashMap<String, Object>(java.util.Map.of("modo", modo, "precioEnergia", 0.10, "precioGasoil", 1.20,
+                    "consumoGrupo", 0.30, "mantenimientoGrupo", 0.03, "ahorroPotencia", 5000));
+            return new java.util.HashMap<String, Object>(java.util.Map.of("instalacion", ins, "economia", eco));
+        };
+        Curva c = laboral(400);
+        Calculo red = Calculo.de(datos.apply("red"), c);
+        Calculo aislada = Calculo.de(datos.apply("aislada"), c);
+        assertFalse(red.aislada);
+        assertTrue(aislada.aislada);
+        assertEquals(0.39, aislada.precioEnergia, 1e-9);
+        assertEquals(0, aislada.ahorroPotencia, 0);
+        assertEquals(5000, red.ahorroPotencia, 0);
+        double solar = aislada.base.sim().solarConsumida();
+        @SuppressWarnings("unchecked")
+        var g = (java.util.Map<String, Object>) aislada.aMapa().get("grupo");
+        assertEquals(solar * 0.30, (double) g.get("litrosAhorrados"), 1e-6);
+        assertEquals(c.total() * 0.30, (double) g.get("litrosSinSolar"), 1e-6);
+        assertNull(red.aMapa().get("grupo"));
     }
 }

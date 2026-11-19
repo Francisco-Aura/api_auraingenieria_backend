@@ -95,9 +95,37 @@ public final class PropuestaDatos {
         salida.put("inverter", inv.length() == 0 ? "—" : inv.toString());
         salida.put("inverter_count", cuantosInversores == 0 ? 1 : cuantosInversores);
         salida.put("battery", bat.toString());
-        salida.put("structure", ESTRUCTURA_POR_CUBIERTA.getOrDefault(String.valueOf(encuesta.getOrDefault("roof", "")), ""));
+        ponerEstructuras(salida, estructurasDeCubiertas(encuesta));
         salida.put("total", b.getTotalPresupuesto());
         return salida;
+    }
+
+    /**
+     * La estructura habitual de cada cubierta del presupuesto (puede tener varias: nave con teja y plana), sin repetir y en su orden.
+     * Un presupuesto anterior solo trae `roof`. Sin cubierta conocida, lista vacía.
+     */
+    private static List<String> estructurasDeCubiertas(Map<String, Object> encuesta) {
+        List<String> cubiertas = new ArrayList<>();
+        if (encuesta.get("roofs") instanceof List<?> l) {
+            for (Object o : l) cubiertas.add(String.valueOf(o));
+        }
+        if (cubiertas.isEmpty()) cubiertas.add(String.valueOf(encuesta.getOrDefault("roof", "")));
+        List<String> salida = new ArrayList<>();
+        for (String c : cubiertas) {
+            String estructura = ESTRUCTURA_POR_CUBIERTA.get(c);
+            if (estructura != null && !salida.contains(estructura)) salida.add(estructura);
+        }
+        return salida;
+    }
+
+    /**
+     * `structure` = la primera estructura (como siempre: lo que lee quien solo conoce una); `structures` = todas, y solo va si hay más de
+     * una, para que la propuesta de una sola cubierta quede exactamente igual que antes.
+     */
+    private static void ponerEstructuras(Map<String, Object> salida, List<String> estructuras) {
+        salida.put("structure", estructuras.isEmpty() ? "" : estructuras.get(0));
+        salida.remove("structures");
+        if (estructuras.size() > 1) salida.put("structures", List.copyOf(estructuras));
     }
 
     /** «marquesina_flotante» o «marquesina» si alguna estructura del presupuesto lo es (por su nombre o su montaje); si no, vacío. */
@@ -206,8 +234,22 @@ public final class PropuestaDatos {
         salida.put("strings", resumenDeStrings(datos.get("strings"), b.getPaneles()));
         salida.put("warranty", garantias(b, equipos));
         // Si el presupuesto lleva una estructura de marquesina, esa es la que se marca (la cubierta solo da la habitual)
+        // (con varias cubiertas, esa ocupa el lugar de la marquesina de la cubierta que sea; si ninguna lo es y hay más de una, se añade)
         String tipo = marquesina(b, equipos);
-        if (!tipo.isEmpty()) salida.put("structure", tipo);
+        if (!tipo.isEmpty()) {
+            List<String> estructuras = new ArrayList<>(estructurasDeCubiertas(encuesta));
+            int primera = -1;
+            for (int i = estructuras.size() - 1; i >= 0; i--) {
+                if (estructuras.get(i).startsWith("marquesina")) {
+                    if (primera >= 0) estructuras.remove(primera);
+                    primera = i;
+                }
+            }
+            if (primera >= 0) estructuras.set(primera, tipo);
+            else if (estructuras.size() <= 1) estructuras = new ArrayList<>(List.of(tipo));
+            else estructuras.add(tipo);
+            ponerEstructuras(salida, estructuras);
+        }
         // Valores sin dato: en blanco, no un guion (la plantilla decide qué enseñar)
         for (String clave : List.of("panel", "inverter")) {
             if ("—".equals(salida.get(clave))) salida.put(clave, "");

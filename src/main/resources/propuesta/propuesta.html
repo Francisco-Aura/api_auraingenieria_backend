@@ -417,6 +417,7 @@ const suns = `<svg class="suns" viewBox="0 0 1123 794" aria-hidden="true">
 const deco = `<div class="deco">${suns}<img class="mark" src="marca.png" alt=""></div>`
 const title = (gray, hl, sub, kick) => `${kick ? `<div class="kick in" style="--i:0">${kick}</div>` : ''}<h2 class="in" style="--i:1">${gray} <span class="hl">${hl}</span></h2>${sub ? `<div class="sub in" style="--i:2">${sub}</div>` : ''}`
 
+const ELEGIDAS = Array.isArray(D.structures) ? D.structures : [D.structure] // una por cubierta si el presupuesto tiene varias
 const STRUCT = [['coplanar', 'Coplanar a cubierta'], ['inclinada', 'Estructura inclinada'], ['lastrada', 'Lastrada sin perforación'], ['hincada', 'Postes hincados en terreno'], ['marquesina', 'Marquesina'], ['marquesina_flotante', 'Marquesina flotante']]
 // Las garantías salen del inventario (módulo, inversor y batería del presupuesto); la tarjeta que no tiene dato no se enseña
 const W = D.warranty || {}
@@ -566,11 +567,11 @@ const slides = [
       ['panel', 'Módulo', esc(D.panel || ''), esc(D.strings || '')],
       ['plug', 'Inversor', D.inverter ? `${esc(D.inverter)} · ${D.inverter_count || 1} ${(D.inverter_count || 1) === 1 ? 'unidad' : 'unidades'}` : ''],
       ['batt', 'Baterías', esc(D.battery || 'No incluidas')],
-      ['roof', 'Estructura', esc((STRUCT.find((s) => s[0] === D.structure) || [0, ''])[1])],
+      ['roof', 'Estructura', esc(STRUCT.filter((s) => ELEGIDAS.includes(s[0])).map((s) => s[1]).join(' · '))],
     ].map((s, i) => `<div class="spec in" style="--i:${i + 7}"><span class="cicon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[s[0]]}</svg></span><div><i>${s[1]}</i><b>${s[2]}</b>${s[3] ? `<em>${s[3]}</em>` : ''}</div></div>`).join('')}</div></section>`,
 
   `<section class="slide">${deco}${title('Estructura de', 'fijación', '', 'Estructura y soportación')}
-    <div class="opts2">${STRUCT.map((s, i) => `<div class="opt2 in pop ${s[0] === D.structure ? 'on' : ''}" style="--i:${i + 3}">${DRAW[s[0]]}<b>${s[1]}</b>${s[0] === D.structure ? '<small>✓ Incluida en tu propuesta</small>' : ''}</div>`).join('')}</div></section>`,
+    <div class="opts2">${STRUCT.map((s, i) => `<div class="opt2 in pop ${ELEGIDAS.includes(s[0]) ? 'on' : ''}" style="--i:${i + 3}">${DRAW[s[0]]}<b>${s[1]}</b>${ELEGIDAS.includes(s[0]) ? '<small>✓ Incluida en tu propuesta</small>' : ''}</div>`).join('')}</div></section>`,
 
   `<section class="slide">${deco}<div class="kick in" style="--i:0">Propuesta técnica - instalación fotovoltaica</div><h2 class="in" style="--i:1">Garantías de la <span class="hl">instalación</span></h2>
     <div class="wcards">${WAR.map((w, n) => `<div class="wc w${w[0] + 1} in" style="--i:${n + 3}"><span class="wicon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[['box', 'doc', 'shield', 'battery'][w[0]]]}</svg></span><div class="wbody"><div class="big" data-count="${w[1]}"></div><div class="yr">${w[1] === 1 ? 'año' : 'años'}</div><b>${w[2]}</b><p>${w[3]}</p></div><div class="wfoot">✓ ${w[4]}</div></div>`).join('')}</div></section>`,

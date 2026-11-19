@@ -229,6 +229,13 @@ class PropuestaDocumentosContratoTest {
         cuerpo.put("kwp", b.get("kwp").asDouble());
         cuerpo.put("panels", b.get("panels").asInt());
         cuerpo.put("budget_total", b.get("total").asDouble());
+        // Sin logo del cliente en los datos de partida no se descarga: el presupuesto se crea sin él, la propuesta no
+        mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el logo de la empresa del cliente para descargar la propuesta: sale en la presentación."));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
+        datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
         String salida = mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/html")))
@@ -241,7 +248,7 @@ class PropuestaDocumentosContratoTest {
         JsonNode datos = json.readTree(m.group(1));
         assertEquals(b.get("datos").get("customer").get("name").asText(), datos.get("client").asText(), "el cliente es el de los datos del presupuesto");
         assertEquals(b.get("total").asDouble(), datos.get("total").asDouble(), 0.001);
-        assertEquals("", datos.get("logo").asText(), "sin propuesta no hay logo del cliente");
+        assertEquals("data:image/png;base64,AAAA", datos.get("logo").asText(), "el logo de los datos de partida del presupuesto");
         assertTrue(datos.get("warranty").get("panel_prod_years").asDouble() > 0 && datos.get("warranty").get("install_years").asInt() == 2);
         assertEquals(0, propuestas.count(), "no crea ninguna propuesta");
         assertEquals(0, presupuestos.count(), "no guarda el presupuesto");
@@ -262,6 +269,9 @@ class PropuestaDocumentosContratoTest {
         cuerpo.put("kwp", b.get("kwp").asDouble());
         cuerpo.put("panels", b.get("panels").asInt());
         cuerpo.put("budget_total", b.get("total").asDouble());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
+        datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
         var respuesta = mvc.perform(post("/api/planificador/budget/proposal-pdf").contentType("application/json").content(json.writeValueAsString(cuerpo))).andReturn().getResponse();
         if (respuesta.getStatus() == 501) {
             return; // sin Chrome en esta máquina: el cliente imprime el HTML desde el navegador
@@ -274,6 +284,43 @@ class PropuestaDocumentosContratoTest {
             String texto = new org.apache.pdfbox.text.PDFTextStripper().getText(d);
             assertTrue(texto.contains("Firma del cliente"), "lleva la página de aceptación y firma");
         }
+    }
+
+    @Test
+    void conVariasCubiertasLaPropuestaMarcaLaEstructuraDeCadaUna() throws Exception {
+        JsonNode e = entrada();
+        pl_Presupuesto b = presupuesto(e.get("budget"));
+        @SuppressWarnings("unchecked") Map<String, Object> encuesta = (Map<String, Object>) b.getDatos().get("survey");
+        // Una sola cubierta (o un presupuesto anterior, solo con `roof`): como siempre, sin lista
+        Map<String, Object> una = PropuestaDatos.paraPptx(b, equipos(e.get("equipos")));
+        assertEquals("coplanar", una.get("structure"));
+        assertFalse(una.containsKey("structures"));
+        // Teja y plana: la primera sigue en `structure` y van las dos en `structures`; roofs manda sobre roof
+        encuesta.put("roof", "teja");
+        encuesta.put("roofs", List.of("teja", "plana", "teja"));
+        Map<String, Object> varias = PropuestaDatos.paraPptx(b, equipos(e.get("equipos")));
+        assertEquals("coplanar", varias.get("structure"));
+        assertEquals(List.of("coplanar", "lastrada"), varias.get("structures"));
+        // Dos cubiertas con la misma estructura (teja y chapa) no se repiten: una sola, sin lista
+        encuesta.put("roofs", List.of("teja", "chapa_minionda"));
+        Map<String, Object> iguales = PropuestaDatos.paraPptx(b, equipos(e.get("equipos")));
+        assertEquals("coplanar", iguales.get("structure"));
+        assertFalse(iguales.containsKey("structures"));
+        // El PowerPoint marca las dos
+        encuesta.put("roofs", List.of("teja", "plana"));
+        try (XMLSlideShow ppt = new XMLSlideShow(new ByteArrayInputStream(pptx.generar(PropuestaDatos.paraPptx(b, equipos(e.get("equipos"))))))) {
+            List<String> estructura = textosDe(ppt.getSlides().get(3));
+            assertEquals(2, estructura.stream().filter("✓ Incluida"::equals).count(), estructura.toString());
+        }
+        // La presentación HTML las lleva en sus datos; este presupuesto trae además una marquesina flotante entre sus filas, que se añade
+        // (con una sola cubierta ocuparía su lugar, como siempre)
+        Map<String, Object> datosHtml = PropuestaDatos.paraHtml(b, equipos(e.get("equipos")));
+        assertEquals(List.of("coplanar", "lastrada", "marquesina_flotante"), datosHtml.get("structures"));
+        encuesta.put("roofs", List.of("teja", "flotante"));
+        assertEquals(List.of("coplanar", "marquesina_flotante"), PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).get("structures"),
+                "la marquesina ocupa el lugar de la cubierta flotante, sin repetirse");
+        String generado = html.generar(datosHtml);
+        assertTrue(generado.contains("\"structures\""), "los datos incrustados traen la lista");
     }
 
     // ------------------------------------------------------------------------------------ PowerPoint

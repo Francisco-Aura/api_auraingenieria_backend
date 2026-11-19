@@ -21,14 +21,27 @@ public class pl_Estudio {
     @Column(length = 64)
     private String id;
 
+    /** Nombre del cliente (el de la intranet o el del cliente potencial), para la lista y el informe. */
     @Column(nullable = false)
     private String cliente = "";
+
+    /** Id del cliente en la intranet; nulo si es un cliente potencial. */
+    @Column(name = "cliente_id")
+    private Integer clienteId;
+
+    /** «existente» (de la intranet) o «potencial». */
+    @Column(name = "cliente_tipo", nullable = false, length = 20)
+    private String clienteTipo = "potencial";
 
     @Column(nullable = false, length = 40)
     private String cups = "";
 
     @Column(nullable = false, length = 40)
     private String estado = "en_estudio";
+
+    /** Sube con cada guardado: si otra persona guardó mientras se tenía abierto, el guardado avisa (409). */
+    @Column(nullable = false)
+    private int version = 1;
 
     @Lob
     @Column(nullable = false)
@@ -54,6 +67,10 @@ public class pl_Estudio {
 
     @Column(name = "creado_el", nullable = false)
     private LocalDateTime creadoEl;
+
+    /** Quien lo guardó y compartió por primera vez. */
+    @Column(name = "creado_por", nullable = false)
+    private String creadoPor = "";
 
     @Column(name = "actualizado_el", nullable = false)
     private LocalDateTime actualizadoEl;

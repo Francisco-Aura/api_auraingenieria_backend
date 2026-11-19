@@ -33,6 +33,51 @@ public class EstudioController {
         return estudios.crear(cuerpo);
     }
 
+    // ------------------------------------------------------------------ sin guardar (estudios locales y copias de trabajo)
+
+    /** Calcula un estudio que llega entero, sin guardarlo. */
+    @PostMapping("/calculate")
+    public Map<String, Object> calcular(@RequestBody Map<String, Object> cuerpo) {
+        return estudios.calcularSinGuardar(cuerpo);
+    }
+
+    /** Las recomendaciones de la biblioteca para este estudio: con sus números y cuáles se sugieren. */
+    @PostMapping("/recommendations")
+    public Map<String, Object> recomendaciones(@RequestBody Map<String, Object> cuerpo) {
+        return estudios.recomendacionesDe(cuerpo);
+    }
+
+    /** Busca un lugar por su nombre y devuelve sus coordenadas (para la ubicación de la instalación). */
+    @GetMapping("/places")
+    public List<Map<String, Object>> lugares(@RequestParam("q") String texto) {
+        return estudios.buscarLugar(texto);
+    }
+
+    /** Lee un SIPS y devuelve sus datos, sin guardarlo. */
+    @PostMapping(value = "/read-sips", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> leerSips(@RequestParam("file") MultipartFile fichero) {
+        return estudios.leerSips(bytes(fichero));
+    }
+
+    /** Lee una curva horaria y la devuelve como texto, sin guardarla. */
+    @PostMapping(value = "/read-curve", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, Object> leerCurva(@RequestParam("file") MultipartFile fichero) {
+        return estudios.leerCurva(bytes(fichero), fichero.getOriginalFilename());
+    }
+
+    /** El informe de un estudio que llega entero, sin guardarlo. */
+    @PostMapping("/report.html")
+    public ResponseEntity<byte[]> htmlSinGuardar(@RequestBody Map<String, Object> cuerpo) {
+        return descarga(estudios.informeSinGuardar(cuerpo, false), MediaType.parseMediaType("text/html; charset=utf-8"));
+    }
+
+    @PostMapping("/report.pdf")
+    public ResponseEntity<byte[]> pdfSinGuardar(@RequestBody Map<String, Object> cuerpo) {
+        return descarga(estudios.informeSinGuardar(cuerpo, true), MediaType.APPLICATION_PDF);
+    }
+
+    // ------------------------------------------------------------------ estudios compartidos (guardados en el servidor)
+
     @GetMapping("/{id}")
     public Map<String, Object> obtener(@PathVariable String id) {
         return estudios.obtener(id);
@@ -47,16 +92,6 @@ public class EstudioController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable String id) {
         estudios.eliminar(id);
-    }
-
-    @PostMapping(value = "/{id}/sips", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Map<String, Object> sips(@PathVariable String id, @RequestParam("file") MultipartFile fichero) {
-        return estudios.subirSips(id, bytes(fichero));
-    }
-
-    @PostMapping(value = "/{id}/curve", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Map<String, Object> curva(@PathVariable String id, @RequestParam("file") MultipartFile fichero) {
-        return estudios.subirCurva(id, bytes(fichero), fichero.getOriginalFilename());
     }
 
     @GetMapping("/{id}/report.html")
