@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -102,6 +103,65 @@ public class ProyectoComercialService {
             throw invalido("El " + que + " debe ser una imagen PNG, JPG, WebP o SVG de menos de 1,5 MB.");
         }
         return t;
+    }
+
+    /**
+     * La propuesta de un presupuesto o de un estudio según su cliente y el nombre de su proyecto. Si ya tenía una y sigue siendo la
+     * misma (mismo proyecto y mismo cliente, por id o por nombre) la conserva; si no, busca la del cliente y el proyecto o la crea.
+     * Sin nombre de proyecto no hay propuesta: devuelve vacío. {@code clienteJson} es el cliente tal como lo usa la pantalla (opcional).
+     */
+    @Transactional
+    public String resolver(String actualId, String tipo, Integer clienteId, String clienteNombre, Map<?, ?> clienteJson, String nombreProyecto) {
+        String proyecto = corto(nombreProyecto, MAX_PROYECTO);
+        if (proyecto.isEmpty()) {
+            return "";
+        }
+        String tipoCliente = "existente".equals(tipo) && clienteId != null ? "existente" : "potencial";
+        String nombreCliente = corto(clienteNombre, 255);
+        if (actualId != null && !actualId.isEmpty()) {
+            var actual = proyectos.findById(actualId);
+            if (actual.isPresent() && mismaPropuesta(actual.get(), tipoCliente, clienteId, nombreCliente, proyecto)) {
+                return actualId;
+            }
+        }
+        String clave = claveDe(tipoCliente, clienteId, nombreCliente, proyecto);
+        var existente = proyectos.findByClave(clave);
+        if (existente.isPresent()) {
+            return existente.get().getId();
+        }
+        pl_ProyectoComercial p = new pl_ProyectoComercial();
+        p.setId(UUID.randomUUID().toString());
+        p.setClave(clave);
+        p.setClienteTipo(tipoCliente);
+        p.setClienteId("existente".equals(tipoCliente) ? clienteId : null);
+        p.setClienteNombre(nombreCliente);
+        Map<String, Object> cliente = new LinkedHashMap<>();
+        if (clienteJson != null && clienteJson.get("kind") != null) {
+            clienteJson.forEach((k, v) -> cliente.put(String.valueOf(k), v));
+        } else {
+            cliente.put("kind", tipoCliente);
+            if (clienteId != null && "existente".equals(tipoCliente)) cliente.put("id", clienteId);
+            cliente.put("name", nombreCliente);
+        }
+        p.setCliente(cliente);
+        p.setNombre(proyecto);
+        p.setCreadoEl(ahora());
+        p.setCreadoPor(actor());
+        proyectos.save(p);
+        return p.getId();
+    }
+
+    private static boolean mismaPropuesta(pl_ProyectoComercial p, String tipoCliente, Integer clienteId, String nombreCliente, String proyecto) {
+        boolean mismoProyecto = claveTexto(p.getNombre()).equals(claveTexto(proyecto));
+        boolean mismoCliente = "existente".equals(tipoCliente) && "existente".equals(p.getClienteTipo()) && Objects.equals(p.getClienteId(), clienteId)
+                || claveTexto(p.getClienteNombre()).equals(claveTexto(nombreCliente));
+        return mismoProyecto && mismoCliente;
+    }
+
+    /** La clave única de una propuesta: tipo de cliente, cliente (su id en la intranet o su nombre normalizado) y proyecto normalizado. */
+    static String claveDe(String tipoCliente, Integer clienteId, String clienteNombre, String proyecto) {
+        String cliente = "existente".equals(tipoCliente) ? String.valueOf(clienteId) : claveTexto(clienteNombre);
+        return tipoCliente + "|" + cliente + "|" + claveTexto(proyecto);
     }
 
     /** Un proyecto se elimina como cosa vacía; sus estudios y presupuestos, si los tiene, no se tocan. */

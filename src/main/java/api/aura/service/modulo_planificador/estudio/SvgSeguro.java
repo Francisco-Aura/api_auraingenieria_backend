@@ -31,7 +31,8 @@ public final class SvgSeguro {
     private static final Pattern ID = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{0,40}");
     /** Valores de dibujo: números, colores (rgb, hex, var(--x)), listas de números, transformaciones y trazados. */
     private static final Pattern VALOR = Pattern.compile("[A-Za-z0-9#.,()\\s%+\\-_:]*");
-    private static final Pattern TRAZADO = Pattern.compile("[MLZmlz0-9.,\\s\\-eE+]*");
+    /** Órdenes de trazado de la pantalla: líneas (M L H V), arcos de las esquinas redondeadas de las barras (A) y cierre (Z). */
+    private static final Pattern TRAZADO = Pattern.compile("[MLHVAZmlhvaz0-9.,\\s\\-eE+]*");
     private static final Pattern FILL_URL = Pattern.compile("url\\(#[A-Za-z][A-Za-z0-9_-]{0,40}\\)");
 
     private SvgSeguro() {

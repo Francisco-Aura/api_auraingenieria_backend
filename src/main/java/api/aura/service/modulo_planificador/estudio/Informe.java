@@ -325,7 +325,7 @@ public final class Informe {
         Finanzas.Resultado f = c.base.fin();
         Simulacion.Resultado s = c.base.sim();
         h.append(titulo2 ? "<h2><i>5</i>La inversión</h2>" : "<h3>La inversión y de dónde sale el ahorro</h3>");
-        kpis(new String[][]{{eurRedondeado(e.inversion()), "Inversión total"}, {eurRedondeado(f.ahorroPrimerAno()), "Ahorro neto el primer año"},
+        kpis(new String[][]{{eurRedondeado(e.inversion()), "Inversión total"}, {eurRedondeado((e.kwhDirecta() + e.kwhBateria()) * e.precioKwh()), "Ahorro en energía el año 1"},
                 {Double.isNaN(f.retorno()) ? "—" : n(f.retorno(), 1) + " años", "En recuperar la inversión"}, {Double.isNaN(f.tir()) ? "—" : n(f.tir() * 100, 1) + " %", "Rentabilidad anual (TIR)"}});
         h.append("<table class=\"t\"><tr><th>Concepto</th><th>Importe</th></tr>");
         fila("Inversión total (" + n(c.instalacion.kwp(), 1) + " kWp " + (c.conPresupuesto() ? "según el presupuesto, a " + n(c.precioWp, 2) + " €/Wp"
@@ -334,7 +334,7 @@ public final class Informe {
         fila("Ahorro en energía (a " + n(c.precioEnergia, 3).replaceAll("0$", "") + " €/kWh)", eur(s.solarConsumida() * c.precioEnergia));
         if (c.ahorroPotencia > 0) fila(c.potenciaCalculada ? "Ahorro en potencia (kW que se reducen, a precio BOE «" + esc(c.regulados.nombre()) + "»)" : "Ahorro en potencia", eur(c.ahorroPotencia));
         fila("Mantenimiento y seguro", "−" + eur(e.mantenimiento()) + "/año");
-        fila("<b>Ahorro neto el primer año</b>", "<b>" + eur(f.ahorroPrimerAno()) + "</b>");
+        fila("<b>Ahorro del año 1 (energía y potencia, menos el mantenimiento)</b>", "<b>" + eur(f.ahorroPrimerAno()) + "</b>");
         h.append("</table>");
         if (c.precioPeriodo != null) {
             double[] sol = s.solarPeriodo();
@@ -374,7 +374,7 @@ public final class Informe {
         h.append("<tr><td>VAN a ").append(e.anos()).append(" años</td><td>").append(eurRedondeado(f.van())).append("</td><td>Lo que gana por encima de invertir el dinero al ").append(n(e.descuento() * 100, 0)).append(" %</td></tr>");
         h.append("<tr><td>TIR</td><td>").append(Double.isNaN(f.tir()) ? "—" : n(f.tir() * 100, 1) + " %").append("</td><td>Rentabilidad anual del capital invertido</td></tr>");
         h.append("<tr><td>Ahorro acumulado</td><td>").append(eurRedondeado(f.ahorroAcumulado())).append("</td><td>Suma de los ").append(e.anos()).append(" años</td></tr></table>");
-        h.append("<h3>Si la energía vale más, la instalación se paga antes</h3><table class=\"t\"><tr><th>Precio medio de la energía</th><th>Ahorro año 1</th><th>Retorno</th><th>TIR</th></tr>");
+        h.append("<h3>Si la energía vale más, la instalación se paga antes</h3><table class=\"t\"><tr><th>Precio medio de la energía</th><th>Ahorro año 1 (menos mantenimiento)</th><th>Retorno</th><th>TIR</th></tr>");
         for (Calculo.Punto p : c.precios) {
             h.append("<tr><td>").append(n(p.entrada().precioKwh(), 3).replaceAll("0$", "")).append(" €/kWh</td><td>").append(eurRedondeado(p.fin().ahorroPrimerAno())).append("</td><td>")
                     .append(Double.isNaN(p.fin().retorno()) ? "—" : n(p.fin().retorno(), 1) + " años").append("</td><td>")
@@ -410,7 +410,7 @@ public final class Informe {
         escRow("Energía solar consumida", i -> n(e.get(i).sim().solarConsumida() / 1000.0, 0) + " MWh");
         escRow("Consumo cubierto", i -> pct(e.get(i).sim().cobertura()));
         escRow("Producción aprovechada", i -> pct(e.get(i).sim().aprovechamiento()));
-        escRow("Ahorro neto año 1", i -> eurRedondeado(e.get(i).fin().ahorroPrimerAno()));
+        escRow("Ahorro año 1 (menos mantenimiento)", i -> eurRedondeado(e.get(i).fin().ahorroPrimerAno()));
         escRow("Retorno", i -> Double.isNaN(e.get(i).fin().retorno()) ? "—" : n(e.get(i).fin().retorno(), 1) + " años");
         escRow("TIR", i -> Double.isNaN(e.get(i).fin().tir()) ? "—" : n(e.get(i).fin().tir() * 100, 1) + " %");
         escRow("VAN a 25 años", i -> eurRedondeado(e.get(i).fin().van()));
@@ -436,7 +436,6 @@ public final class Informe {
     public static final Map<String, String> CATEGORIA_DE = new java.util.LinkedHashMap<>();
     /** Módulos que el servidor escribe entero (tablas); el resto son gráficas que llegan dibujadas por la pantalla. */
     public static final java.util.Set<String> TABLAS = java.util.Set.of("tabla-instalacion", "tabla-escenarios", "tabla-inversion", "tabla-indicadores");
-    private static final Map<String, Double> ALTURA = new java.util.HashMap<>();
 
     static {
         CATEGORIAS.put("consumo", "Consumo");
@@ -452,14 +451,6 @@ public final class Informe {
                 {"rent-van", "rentabilidad"}, {"tabla-inversion", "rentabilidad"}, {"tabla-indicadores", "rentabilidad"}, {"fin-balance", "financiacion"}}) {
             CATEGORIA_DE.put(m[0], m[1]);
         }
-        for (String m : CATEGORIA_DE.keySet()) ALTURA.put(m, 1.0);
-        ALTURA.put("solar-dia", 0.85);
-        ALTURA.put("dim-tir-bateria", 0.9);
-        ALTURA.put("dim-cobertura-bateria", 0.9);
-        ALTURA.put("tabla-instalacion", 1.2);
-        ALTURA.put("tabla-escenarios", 1.5);
-        ALTURA.put("tabla-inversion", 1.6);
-        ALTURA.put("tabla-indicadores", 1.6);
     }
 
     /** Categoría de textos libres (recomendaciones): sus módulos no son gráficas, llevan título y texto. */
@@ -480,8 +471,6 @@ public final class Informe {
     public record CategoriaSel(String id, List<ModuloSel> modulos) {
     }
 
-    private static final double CAPACIDAD = 2.2;
-
     /** El informe con solo los módulos elegidos y en el orden elegido; la portada con el resumen va siempre. */
     public static String generar(Calculo c, LocalDate hoy, List<CategoriaSel> seleccion) {
         return new Informe(c, fechaLarga(hoy)).construirPorModulos(seleccion);
@@ -491,9 +480,10 @@ public final class Informe {
         h.append("<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><title>Estudio FV · ").append(esc(cliente)).append("</title><style>")
                 .append(CSS).append("</style></head><body>");
         pagResumen();
-        boolean abierta = false;
         int numero = 2;
-        double usado = 0;
+        // Los bloques van en un flujo continuo y la propia página los reparte en hojas midiendo su altura real (script de PAGINAR)
+        h.append("<div id=\"flujo\">");
+        boolean hayContenido = false;
         for (CategoriaSel cat : seleccion) {
             String nombre = CATEGORIAS.get(cat.id());
             if (nombre == null) continue;
@@ -509,41 +499,13 @@ public final class Informe {
             }
             if (validos.isEmpty()) continue;
             numero++;
-            // Una categoría empieza en la misma página si caben su título y su primer módulo; si no, en una nueva
-            if (!abierta || usado + CABECERA + altoDe(cat.id(), validos.get(0)) > CAPACIDAD) {
-                if (abierta) cerrarPagina();
-                abrirPagina();
-                abierta = true;
-                usado = 0;
-            }
-            h.append("<h2><i>").append(numero).append("</i>").append(esc(nombre)).append("</h2>");
-            usado += CABECERA;
-            for (ModuloSel m : validos) {
-                double alto = altoDe(cat.id(), m);
-                if (usado > CABECERA && usado + alto > CAPACIDAD) {
-                    cerrarPagina();
-                    abrirPagina();
-                    h.append("<h2><i>").append(numero).append("</i>").append(esc(nombre)).append(" <small>(continuación)</small></h2>");
-                    usado = CABECERA;
-                }
-                escribirModulo(m);
-                usado += alto;
-            }
+            hayContenido = true;
+            h.append("<h2 class=\"cat\"><i>").append(numero).append("</i>").append(esc(nombre)).append("</h2>");
+            for (ModuloSel m : validos) escribirModulo(m);
         }
-        if (abierta) {
-            cierre();
-            cerrarPagina();
-        }
-        h.append("</body></html>");
+        if (hayContenido) cierre();
+        h.append("</div><script id=\"paginar\">").append(PAGINAR).append("</script></body></html>");
         return h.toString().replace("@@TOTAL@@", String.valueOf(pagina));
-    }
-
-    /** Lo que ocupa en la página el título de una categoría. */
-    private static final double CABECERA = 0.15;
-
-    /** Lo que ocupa un módulo en la página (en unidades de {@link #CAPACIDAD}). */
-    private static double altoDe(String categoria, ModuloSel m) {
-        return RECOMENDACIONES.equals(categoria) ? 0.2 + Math.min(m.texto().length(), TEXTO_MAX) / 1400.0 : ALTURA.getOrDefault(m.id(), 1.0);
     }
 
     private void cierre() {
@@ -602,16 +564,23 @@ public final class Informe {
         return e.replaceAll("(?<![*\\w])\\*([^*\\s](?:[^*]*[^*\\s])?)\\*(?![*\\w])", "<i>$1</i>");
     }
 
+    /** Una tabla con sus títulos en un solo bloque, para que el reparto en hojas no los separe. */
+    private void tabla(Runnable contenido) {
+        h.append("<div class=\"modulo\">");
+        contenido.run();
+        h.append("</div>");
+    }
+
     private void escribirModulo(ModuloSel m) {
         if (m.id() != null && ID_RECOMENDACION.matcher(m.id()).matches()) {
             escribirRecomendacion(m);
             return;
         }
         switch (m.id()) {
-            case "tabla-instalacion" -> contInstalacion(false);
-            case "tabla-escenarios" -> contEscenarios(false);
-            case "tabla-inversion" -> contInversion(false);
-            case "tabla-indicadores" -> contIndicadores();
+            case "tabla-instalacion" -> tabla(() -> contInstalacion(false));
+            case "tabla-escenarios" -> tabla(() -> contEscenarios(false));
+            case "tabla-inversion" -> tabla(() -> contInversion(false));
+            case "tabla-indicadores" -> tabla(this::contIndicadores);
             default -> {
                 String[] t = textoModulo(m.id());
                 List<String> limpios = new java.util.ArrayList<>();
@@ -723,7 +692,7 @@ public final class Informe {
                     for (int i = 0; i < hoy.size(); i++) kw += ((Number) hoy.get(i)).doubleValue() - ((Number) ac.get(i)).doubleValue();
                 }
                 yield new String[]{kw > 0 ? "Una bajada de unos " + n(kw, 0) + " kW de potencia contratada ahorra unos " + eurRedondeado(ahorro) + " al año" : "Potencia contratada y punta registrada en cada periodo",
-                        "Potencia contratada hoy (o punta registrada), punta registrada y potencia que se propone contratar en cada periodo (kW), con el precio del peaje y cargo del BOE (€/kW·año)."};
+                        "Potencia contratada hoy (o punta registrada), punta registrada, potencia que se propone contratar y punta que quedaría con la instalación en cada periodo (kW), con el precio del peaje y cargo del BOE (€/kW·año)."};
             }
             case "rent-acumulado" -> new String[]{"El dinero acumulado año a año: " + (Double.isNaN(f.retorno()) ? "la inversión no llega a recuperarse en 25 años" : "la inversión se recupera en unos " + n(f.retorno(), 1) + " años"),
                     "Balance acumulado (miles de €) de cada año: ahorro menos mantenimiento, menos la inversión inicial. A 25 años ronda los " + eurRedondeado(f.acumulado()[f.acumulado().length - 1]) + "."};
@@ -889,12 +858,51 @@ public final class Informe {
         return logoCache;
     }
 
+    /**
+     * Reparte el flujo de bloques en hojas A4: añade cada bloque a la hoja actual y, si se pasa de alto, lo pasa a una hoja nueva
+     * (con su título de categoría si se había quedado solo al final). Numera los pies con el total real.
+     */
+    private static final String PAGINAR = """
+            (function () {
+              var flujo = document.getElementById('flujo');
+              if (!flujo) return;
+              var primera = document.querySelector('section.pag');
+              var cabecera = primera.querySelector('header');
+              var base = 'AURA Ingeniería Energética · auraingenieria.es · ';
+              function hoja() {
+                var s = document.createElement('section');
+                s.className = 'pag';
+                s.appendChild(cabecera.cloneNode(true));
+                var m = document.createElement('main');
+                s.appendChild(m);
+                s.appendChild(document.createElement('footer'));
+                document.body.insertBefore(s, flujo);
+                return m;
+              }
+              var main = primera.querySelector('main');
+              Array.prototype.slice.call(flujo.children).forEach(function (el) {
+                main.appendChild(el);
+                if (main.scrollHeight <= main.clientHeight + 1 || main.children.length < 2) return;
+                var mover = [el];
+                var antes = el.previousElementSibling;
+                if (antes && antes.classList.contains('cat') && main.children.length > 2) mover.unshift(antes);
+                main = hoja();
+                mover.forEach(function (x) { main.appendChild(x); });
+              });
+              var hojas = document.querySelectorAll('section.pag');
+              Array.prototype.forEach.call(hojas, function (s, i) {
+                s.querySelector('footer').textContent = base + (i + 1) + '/' + hojas.length;
+              });
+              flujo.parentNode.removeChild(flujo);
+            })();
+            """;
+
     private static final String CSS = """
             @page { size: A4; margin: 0 }
             * { box-sizing: border-box }
             body { margin: 0; background: #fff; color: #2c2c2e; font: 12.5px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
             .pag { width: 210mm; height: 297mm; padding: 14mm 15mm 12mm; position: relative; page-break-after: always; overflow: hidden; display: flex; flex-direction: column }
-            .pag:last-child { page-break-after: auto }
+            .pag:last-of-type { page-break-after: auto }
             @media screen { body { background: #d9dde3; padding: 16px 0 }
               .pag { margin: 0 auto 16px; background: #fff; box-shadow: 0 2px 14px rgba(0, 0, 0, .3) } }
             @media screen and (max-width: 860px) { body { zoom: .8 } }
@@ -902,7 +910,7 @@ public final class Informe {
             header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #fcd700; padding-bottom: 8px; margin-bottom: 14px }
             header .logo { height: 34px }
             header span { font-size: 9.5px; letter-spacing: .08em; color: #98999b; font-weight: 600 }
-            main { flex: 1 }
+            main { flex: 1; min-height: 0; overflow: hidden }
             footer { font-size: 10px; color: #98999b; border-top: 1px solid #e8e8ea; padding-top: 6px; text-align: right }
             h1 { font-size: 25px; line-height: 1.2; margin: 6px 0 6px; color: #2c2c2e }
             .sub { color: #6b6b6e; margin: 0 0 14px }
@@ -932,12 +940,14 @@ public final class Informe {
             .grafica-pdf .eje text { fill: #6b6b6e; font-size: 11px } .grafica-pdf .eje .pequeno { font-size: 9.5px }
             .grafica-pdf .nota { fill: #6b6b6e; font-size: 12px } .grafica-pdf .banda-fija { fill: #000; opacity: .05 }
             .grafica-pdf .ref line { stroke: #2c2c2e; stroke-dasharray: 5 4; opacity: .7 } .grafica-pdf .ref text { fill: #2c2c2e; font-size: 11.5px; font-weight: 600 }
-            .grafica-pdf .marca text { fill: #1c1c1e; font-size: 12px; font-weight: 600 }
+            .grafica-pdf .marca text { fill: #1c1c1e; font-size: 12px; font-weight: 600; paint-order: stroke; stroke: #fff; stroke-width: 5px; stroke-linejoin: round }
+            .grafica-pdf .valor-seg { font-size: 9.5px; font-weight: 600 } .grafica-pdf .valor-seg.chico { font-size: 8px }
+            .grafica-pdf .valor-seg.sobre-trama { paint-order: stroke; stroke: #fff; stroke-width: 2.5px; stroke-linejoin: round; stroke-opacity: .85 }
             .grafica-pdf .valor-barra { fill: #2c2c2e; font-size: 10.5px; font-weight: 600 } .grafica-pdf .etiqueta { fill: #1c1c1e; font-size: 11.5px; font-weight: 700 }
             .grafica-pdf .leyenda-svg text { fill: #4a4a4c; font-size: 11px }
             .modulo { margin-bottom: 6px; break-inside: avoid } .modulo svg { width: 100%; height: auto; display: block }
             .recomendacion { margin-bottom: 12px } .recomendacion h3 { margin-top: 8px } .recomendacion ul { margin: 6px 0; padding-left: 20px } .recomendacion li { margin: 3px 0 }
-            h2 small { font-size: 11px; font-weight: 500; color: #98999b }
+            #flujo { display: none } main > :first-child { margin-top: 0 }
             .cierre { margin-top: 18px; padding: 10px 12px; background: #f5f5f6; border-left: 4px solid #fcd700; font-size: 11px }
             """;
 }

@@ -384,6 +384,40 @@ class PresupuestosContratoTest {
                 .andExpect(content().json("{\"validator\":true,\"count\":1,\"to_validate\":1,\"proposals_sent\":1}", true));
     }
 
+    @Test
+    void alEntregarLaPropuestaElEstudioPasaAPteClienteYUnoAceptadoNoSeToca() throws Exception {
+        String c = enviado("C");
+        String estudio = estudio(5, "");
+        ana(post(BASE + "/budgets/" + c + "/study"), "{\"study_id\":\"" + estudio + "\"}").andExpect(status().isOk());
+        ana(post(BASE + "/budgets/" + c + "/validate"), null).andExpect(status().isOk());
+        String p = leer(ana(post(BASE + "/budgets/" + c + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
+        assertEquals("en_estudio", leer(mvc.perform(get(BASE + "/studies/" + estudio))).get("estado").asText());
+        int version = leer(mvc.perform(get(BASE + "/studies/" + estudio))).get("version").asInt();
+        ana(post(BASE + "/proposals/" + p + "/send"), null).andExpect(status().isOk());
+        JsonNode despues = leer(mvc.perform(get(BASE + "/studies/" + estudio)));
+        assertEquals("pte_cliente", despues.get("estado").asText());
+        assertEquals(version + 1, despues.get("version").asInt());
+
+        // Un estudio ya aceptado (lo decide una persona) se queda como está
+        String d = enviado("D");
+        String aceptado = aceptarEstudioDe(d);
+        ana(post(BASE + "/budgets/" + d + "/validate"), null).andExpect(status().isOk());
+        String q = leer(ana(post(BASE + "/budgets/" + d + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
+        ana(post(BASE + "/proposals/" + q + "/send"), null).andExpect(status().isOk());
+        assertEquals("aceptado", leer(mvc.perform(get(BASE + "/studies/" + aceptado))).get("estado").asText());
+
+        // Uno rechazado por el cliente no se acepta solo: la validación se bloquea hasta que una persona lo reabra
+        String e2 = enviado("E");
+        String rechazado = estudio(5, "");
+        ana(post(BASE + "/budgets/" + e2 + "/study"), "{\"study_id\":\"" + rechazado + "\"}").andExpect(status().isOk());
+        ana(post(BASE + "/budgets/" + e2 + "/validate"), null).andExpect(status().isOk());
+        String r = leer(ana(post(BASE + "/budgets/" + e2 + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
+        ana(post(BASE + "/proposals/" + r + "/send"), null).andExpect(status().isOk());
+        ana(put(BASE + "/studies/" + rechazado), "{\"estado\":\"rechazado\"}").andExpect(status().isOk());
+        jefe(post(BASE + "/proposals/" + r + "/approve"), null).andExpect(status().isConflict());
+        assertEquals("rechazado", leer(mvc.perform(get(BASE + "/studies/" + rechazado))).get("estado").asText());
+    }
+
     // -------------------------------------------------------------------- borrado
 
     @Test
@@ -469,11 +503,14 @@ class PresupuestosContratoTest {
         assertEquals(2, p2.get("version").asInt());
         assertEquals(logo, p2.get("client_logo").asText());
         ana(post(BASE + "/proposals/" + p2.get("id").asText() + "/send"), null).andExpect(status().isOk());
-        // Hace falta el estudio asociado y aceptado
+        // Hace falta un estudio asociado
         jefe(post(BASE + "/proposals/" + p2.get("id").asText() + "/approve"), null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("Para validar la propuesta, el presupuesto tiene que estar aprobado y su estudio asociado, aceptado."));
-        aceptarEstudioDe(id);
+                .andExpect(jsonPath("$.detail").value("Para validar la propuesta, el presupuesto tiene que estar aprobado y tener un estudio asociado que no esté rechazado ni cancelado."));
+        // Con estudio (sin aceptar), al validar la propuesta el estudio queda aceptado solo
+        String estudioDelPresupuesto = estudio(5, "");
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"" + estudioDelPresupuesto + "\"}").andExpect(status().isOk());
         jefe(post(BASE + "/proposals/" + p2.get("id").asText() + "/approve"), null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("aprobada"));
+        assertEquals("aceptado", leer(mvc.perform(get(BASE + "/studies/" + estudioDelPresupuesto))).get("estado").asText());
         ana(post(BASE + "/budgets/" + id + "/proposals"), null).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Este presupuesto ya tiene una propuesta validada."));
         // El listado va de la más reciente a la más antigua y el presupuesto enseña el estado de la última

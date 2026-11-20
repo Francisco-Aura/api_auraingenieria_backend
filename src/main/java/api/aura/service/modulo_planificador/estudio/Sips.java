@@ -107,7 +107,7 @@ public final class Sips {
 
     public static Sips leer(byte[] contenido) {
         if (esTablaHtml(contenido)) return leerTabla(contenido);
-        try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(contenido))) {
+        try (Workbook wb = esLibroExcel(contenido) ? WorkbookFactory.create(new ByteArrayInputStream(contenido)) : libroDeCsv(contenido)) {
             DataFormatter fmt = new DataFormatter(Locale.ROOT);
             Sheet hoja = null;
             Row cab = null, val = null, cabLect = null;
@@ -215,6 +215,23 @@ public final class Sips {
         if (inicio.startsWith("﻿")) inicio = inicio.substring(1).stripLeading();
         inicio = inicio.toLowerCase(Locale.ROOT);
         return inicio.startsWith("<") && (inicio.contains("<html") || inicio.contains("<table"));
+    }
+
+    /** Un .xlsx empieza por «PK» y un .xls por el bloque binario D0 CF 11 E0; cualquier otra cosa que no sea una página web es texto (CSV). */
+    static boolean esLibroExcel(byte[] c) {
+        return c.length >= 4 && ((c[0] == 'P' && c[1] == 'K') || ((c[0] & 0xFF) == 0xD0 && (c[1] & 0xFF) == 0xCF && c[2] == 0x11 && (c[3] & 0xFF) == 0xE0));
+    }
+
+    /** Un SIPS en CSV (o texto con tabuladores) se pasa a un libro en memoria, para leerlo igual que uno de Excel: todo son celdas de texto. */
+    private static Workbook libroDeCsv(byte[] contenido) {
+        Workbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+        Sheet hoja = wb.createSheet("SIPS");
+        int r = 0;
+        for (String[] fila : Curva.filasCsv(contenido)) {
+            Row row = hoja.createRow(r++);
+            for (int c = 0; c < fila.length; c++) if (!fila[c].isEmpty()) row.createCell(c).setCellValue(fila[c]);
+        }
+        return wb;
     }
 
     private static Sips leerTabla(byte[] contenido) {

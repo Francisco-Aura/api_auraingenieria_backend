@@ -189,7 +189,7 @@ public final class RecomendacionesGeneradas {
         Finanzas.Resultado f = b.fin();
         Calculo.Punto caro = c.precios.get(2);
         StringBuilder t = new StringBuilder();
-        t.append("Con una inversión de **").append(eur(b.entrada().inversion())).append("**, el ahorro del primer año es de ").append(eur(f.ahorroPrimerAno())).append(" (energía a ")
+        t.append("Con una inversión de **").append(eur(b.entrada().inversion())).append("**, el ahorro del primer año (energía y potencia, menos el mantenimiento) es de ").append(eur(f.ahorroPrimerAno())).append(" (energía a ")
                 .append(num(c.precioEnergia, 3)).append(" €/kWh con una subida anual del ").append(num(b.entrada().subidaEnergia() * 100, 0)).append(" %). ")
                 .append(Double.isNaN(f.retorno()) ? "No se recupera en el periodo estudiado" : "Se recupera en **" + retorno(f.retorno()) + "**").append(", con una TIR del ").append(Double.isNaN(f.tir()) ? "—" : pct(f.tir())).append(" y un VAN a ").append(b.entrada().anos())
                 .append(" años de ").append(eur(f.van())).append(".\n\n");

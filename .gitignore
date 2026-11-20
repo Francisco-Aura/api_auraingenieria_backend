@@ -56,3 +56,6 @@ src/main/resources/BBDD/Backup_*.sql
 ### Claude Code ###
 .claude/relevo.md
 .claude/settings.local.json
+
+### Markdown: no se sube nada ###
+*.md

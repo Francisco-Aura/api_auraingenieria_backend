@@ -123,6 +123,57 @@ class EstudioMotorTest {
     }
 
     @Test
+    void laColumnaDeFechasPuedeLlamarseMes() {
+        StringBuilder sb = new StringBuilder("CUPS;Mes;Hora;Consumo_kWh\n");
+        StringBuilder junto = new StringBuilder("Mes;Consumo (kWh)\n");
+        for (LocalDate d = LocalDate.of(2025, 1, 1); d.isBefore(LocalDate.of(2026, 1, 1)); d = d.plusDays(1)) {
+            for (int h = 1; h <= 24; h++) {
+                String fecha = String.format("%02d/%02d/%d", d.getDayOfMonth(), d.getMonthValue(), d.getYear());
+                sb.append("ES001;").append(fecha).append(';').append(h).append(";1,5\n");
+                junto.append(fecha).append(' ').append(String.format("%02d:00", h - 1)).append(";1,5\n");
+            }
+        }
+        assertEquals(8760 * 1.5, Curva.leer(sb.toString().getBytes(StandardCharsets.UTF_8), "curva.csv").total(), 1e-6);
+        assertEquals(8760 * 1.5, Curva.leer(junto.toString().getBytes(StandardCharsets.UTF_8), "curva.csv").total(), 1e-6);
+    }
+
+    @Test
+    void leeLaCurvaCuartohorariaDeUnExcelConVariasHojas() throws Exception {
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            // Primera hoja: un resumen mensual con una columna «Mes» y totales, que no es la curva
+            Sheet resumen = wb.createSheet("Resumen");
+            Row cab = resumen.createRow(0);
+            String[] titulos = {"Mes", "P1", "P2", "Total kWh", "Potencia máx. kW"};
+            for (int i = 0; i < titulos.length; i++) cab.createCell(i).setCellValue(titulos[i]);
+            Row mes = resumen.createRow(1);
+            mes.createCell(0).setCellValue("2025-01");
+            mes.createCell(3).setCellValue(1000);
+            // Segunda hoja: los cuartos de hora con la fecha-hora como fecha de Excel
+            Sheet datos = wb.createSheet("Cuarto horario");
+            Row c2 = datos.createRow(0);
+            String[] t2 = {"Fecha-hora (inicio del cuarto)", "Mes", "Periodo", "Consumo kWh", "Origen"};
+            for (int i = 0; i < t2.length; i++) c2.createCell(i).setCellValue(t2[i]);
+            var estilo = wb.createCellStyle();
+            estilo.setDataFormat(wb.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+            int fila = 1;
+            for (LocalDateTime t = LocalDateTime.of(2025, 1, 1, 0, 0); t.isBefore(LocalDateTime.of(2026, 1, 1, 0, 0)); t = t.plusMinutes(15)) {
+                Row r = datos.createRow(fila++);
+                var f = r.createCell(0);
+                f.setCellValue(t);
+                f.setCellStyle(estilo);
+                r.createCell(1).setCellValue(t.getYear() + "-" + String.format("%02d", t.getMonthValue()));
+                r.createCell(2).setCellValue("P6");
+                r.createCell(3).setCellValue(0.5);
+                r.createCell(4).setCellValue("real");
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            Curva c = Curva.leer(out.toByteArray(), "curva_cuartohoraria.xlsx");
+            assertEquals(365 * 24 * 4 * 0.5, c.total(), 1e-6, "los cuatro cuartos de cada hora se suman");
+        }
+    }
+
+    @Test
     void leeElExcelDeTelegestConLaHoraQueTermina() {
         // Como la hoja «amCharts» de Telegest: «date» es la hora que termina (de 01:00 de un día a 00:00 del mismo día un año después)
         StringBuilder sb = new StringBuilder("date;value;max;tooltip;c_punto;t_punto\n");
@@ -230,6 +281,35 @@ class EstudioMotorTest {
         assertTrue(c.estimada());
         assertEquals(12 * 8000, c.total(), 12 * 8000 * 0.01);
         assertTrue(c.fraccionDiurna() > 0.6, "con horario de 7 a 19 h casi todo cae de día");
+    }
+
+    @Test
+    void leeElSipsEnCsvIgualQueEnExcel() {
+        StringBuilder csv = new StringBuilder("Datos suministro\n");
+        csv.append(";Distribuidora;Tarifa;Potencia Contratada P1;Potencia Contratada P2;Potencia Contratada P3;Potencia Contratada P4;Potencia Contratada P5;Potencia Contratada P6;kWh Anual\n");
+        csv.append("ES0000000000000000AA;i-DE;3.0TD;21;21;21;21;21;21;124494\n");
+        csv.append("Datos lecturas\n");
+        csv.append(";Fecha Lectura;Fecha Lectura Anterior;;Consumo Activa P1;Consumo Activa P2;Consumo Activa P3;Consumo Activa P4;Consumo Activa P5;Consumo Activa P6\n");
+        for (int m = 1; m <= 12; m++) {
+            LocalDate hasta = LocalDate.of(2025, m, 1).plusMonths(1).minusDays(1), desde = LocalDate.of(2025, m, 1).minusDays(1);
+            csv.append(String.format("ES0000000000000000AA;%02d/%02d/%d;%02d/%02d/%d;;1000,5;1000;3000;1000;1000;1000\n",
+                    hasta.getDayOfMonth(), hasta.getMonthValue(), hasta.getYear(), desde.getDayOfMonth(), desde.getMonthValue(), desde.getYear()));
+        }
+        // Lo mismo guardado como UTF-8, como UTF-16 con marca (lo que da Excel con «Unicode») y como UTF-16 sin marca
+        byte[] utf16 = csv.toString().getBytes(StandardCharsets.UTF_16LE);
+        byte[] conMarca = new byte[utf16.length + 2];
+        conMarca[0] = (byte) 0xFF;
+        conMarca[1] = (byte) 0xFE;
+        System.arraycopy(utf16, 0, conMarca, 2, utf16.length);
+        for (byte[] fichero : List.of(csv.toString().getBytes(StandardCharsets.UTF_8), conMarca, utf16)) {
+            Sips s = Sips.leer(fichero);
+            assertEquals("3.0TD", s.suministro().get("Tarifa"));
+            assertEquals("ES0000000000000000AA", s.suministro().get("CUPS"));
+            assertEquals(21, s.potencias()[5], 1e-9);
+            assertEquals(124494, s.kwhAnual(), 1e-9);
+            assertEquals(12, s.lecturas().size());
+            assertEquals(1000.5, s.lecturas().get(0).kwh()[0], 1e-9);
+        }
     }
 
     @Test

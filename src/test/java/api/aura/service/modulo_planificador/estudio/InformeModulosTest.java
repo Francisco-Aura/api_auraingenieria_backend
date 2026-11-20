@@ -60,6 +60,15 @@ class InformeModulosTest {
     }
 
     @Test
+    void lasBarrasConEsquinasRedondeadasPasanElFiltro() {
+        String barra = "M10,20H30A1.5,1.5 0 0 1 31.5,21.5V60H10V20Z";
+        String limpio = SvgSeguro.limpiar("<svg viewBox=\"0 0 100 100\"><path d=\"" + barra + "\" fill=\"#fcd700\" stroke=\"none\"/></svg>");
+        assertNotNull(limpio);
+        assertTrue(limpio.contains("d=\"" + barra + "\""), "el trazado de la barra no se descarta");
+        assertFalse(SvgSeguro.limpiar("<svg><path d=\"M0,0 javascript:alert(1)\"/></svg>").contains("javascript"));
+    }
+
+    @Test
     void elInformeLlevaSoloLoElegidoYEnElOrdenElegido() {
         List<Informe.CategoriaSel> sel = List.of(
                 new Informe.CategoriaSel("rentabilidad", List.of(new Informe.ModuloSel("tabla-indicadores", List.of()), new Informe.ModuloSel("rent-acumulado", List.of(SVG)))),

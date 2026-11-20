@@ -95,6 +95,8 @@ public final class Finanzas {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("inversion", e.inversion());
         m.put("ahorroPrimerAno", r.ahorroPrimerAno());
+        // Solo la energía que deja de comprar el primer año (sin potencia ni mantenimiento)
+        m.put("ahorroEnergiaPrimerAno", (e.kwhDirecta() + e.kwhBateria()) * e.precioKwh());
         m.put("retorno", nulo(r.retorno()));
         m.put("retornoDescontado", nulo(r.retornoDescontado()));
         m.put("van", r.van());

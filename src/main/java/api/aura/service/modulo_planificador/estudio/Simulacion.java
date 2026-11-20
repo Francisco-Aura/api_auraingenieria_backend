@@ -56,7 +56,8 @@ public final class Simulacion {
     /** Resultado de un año simulado. Las energías en kWh y las potencias en kW. */
     public record Resultado(double kwp, double bateriaKwh, double consumo, double produccion, double directa, double desdeBateria,
                             double recortada, double ciclos, double[] consumoMes, double[] solarMes, double[] recortadaMes,
-                            double[] produccionMes, double[][] diaTipo, double produccionMaxima, double[] solarPeriodo, double[] bateriaMes) {
+                            double[] produccionMes, double[][] diaTipo, double produccionMaxima, double[] solarPeriodo, double[] bateriaMes,
+                            double[] red) {
         public double solarConsumida() {
             return directa + desdeBateria;
         }
@@ -123,6 +124,8 @@ public final class Simulacion {
         double soc = 0, directa = 0, bateria = 0, recortada = 0, produccion = 0, descargado = 0, maxProd = 0;
         double[] consumoMes = new double[12], solarMes = new double[12], recortadaMes = new double[12], produccionMes = new double[12], bateriaMes = new double[12];
         double[] solarPeriodo = periodos == null ? null : new double[6];
+        // Lo que sigue pidiendo a la red cada hora (kWh = kW medios) tras el sol y la batería: de ahí sale la potencia que queda por contratar
+        double[] red = new double[Curva.HORAS];
         // Día tipo (laborable medio) de cada mes: consumo, producción y solar consumida por hora
         double[][][] dia = new double[12][4][24];
         int[] diasLab = new int[12];
@@ -143,6 +146,7 @@ public final class Simulacion {
                     soc += cargada * eta;
                 }
             }
+            red[i] = Math.max(0, falta - aportada);
             directa += d;
             bateria += aportada;
             double rec = sobra - cargada;
@@ -174,7 +178,7 @@ public final class Simulacion {
         }
         double ciclos = usable <= 0 ? 0 : descargado / usable;
         return new Resultado(ins.kwp(), ins.bateriaKwh(), curva.total(), produccion, directa, bateria, recortada, ciclos,
-                consumoMes, solarMes, recortadaMes, produccionMes, diaTipo, maxProd, solarPeriodo, bateriaMes);
+                consumoMes, solarMes, recortadaMes, produccionMes, diaTipo, maxProd, solarPeriodo, bateriaMes, red);
     }
 
     public static Map<String, Object> aMapa(Resultado r) {

@@ -53,6 +53,11 @@ public class pl_Presupuesto {
     @Column(name = "estudio_id", nullable = false, length = 64)
     private String estudioId = "";
 
+    /** Propuesta (pl_proyectos_comerciales) a la que pertenece; vacío si el nombre no tiene proyecto. */
+    @org.hibernate.annotations.ColumnDefault("''")
+    @Column(name = "proyecto_id", nullable = false, length = 64)
+    private String proyectoId = "";
+
     @Column(name = "nombre_variante", nullable = false, length = 60)
     private String nombreVariante = "";
 

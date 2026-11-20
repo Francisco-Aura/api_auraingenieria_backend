@@ -53,6 +53,7 @@ public class EstudioService {
     private final pl_PresupuestoRepository presupuestos;
     private final api.aura.repository.modulo_planificador.pl_PropuestaRepository propuestas;
     private final pl_PrecioReguladoRepository preciosRegulados;
+    private final ProyectoComercialService propuestasComerciales;
     private final pl_BoeRepository boes;
     private final PvgisService pvgis;
     private final PropuestaPdf pdf;
@@ -101,6 +102,7 @@ public class EstudioService {
         e.setActualizadoEl(ahora);
         e.setActualizadoPor(actor());
         e.setVersion(1);
+        asignarProyecto(e);
         estudios.save(e);
         return detalle(e, aviso);
     }
@@ -296,11 +298,19 @@ public class EstudioService {
         return detalle(e, aviso);
     }
 
+    /** Pone en el estudio la propuesta de su cliente y proyecto (la crea si no existe); sin proyecto, ninguna. */
+    void asignarProyecto(pl_Estudio e) {
+        Object proyecto = e.getDatos().get("proyecto");
+        e.setProyectoId(propuestasComerciales.resolver(e.getProyectoId(), e.getClienteTipo(), e.getClienteId(), e.getCliente(), clienteDe(e),
+                PresupuestoService.sinVersion(proyecto == null ? "" : String.valueOf(proyecto))));
+    }
+
     /** Anota quién y cuándo guardó, sube la versión y lo guarda. */
     private void guardado(pl_Estudio e) {
         e.setActualizadoEl(ahora());
         e.setActualizadoPor(actor());
         e.setVersion(e.getVersion() + 1);
+        asignarProyecto(e);
         estudios.save(e);
     }
 
@@ -896,6 +906,7 @@ public class EstudioService {
         m.put("customer", clienteDe(e));
         Object proyecto = e.getDatos().get("proyecto");
         m.put("proyecto", proyecto == null ? "" : String.valueOf(proyecto));
+        m.put("project_id", e.getProyectoId());
         m.put("cups", e.getCups());
         m.put("estado", e.getEstado());
         m.put("estadoNombre", ESTADOS.getOrDefault(e.getEstado(), e.getEstado()));

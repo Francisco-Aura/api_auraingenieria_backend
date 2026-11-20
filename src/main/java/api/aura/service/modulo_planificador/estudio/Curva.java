@@ -181,19 +181,32 @@ public final class Curva {
     /** Lee la curva horaria o cuartohoraria que descarga la distribuidora, en CSV o Excel. */
     public static Curva leer(byte[] contenido, String nombre) {
         String n = nombre == null ? "" : nombre.toLowerCase(Locale.ROOT);
-        List<String[]> filas;
+        List<List<String[]>> hojas;
         try {
-            filas = Sips.esTablaHtml(contenido) ? filasHtml(contenido)
-                    : n.endsWith(".xlsx") || n.endsWith(".xls") ? filasExcel(contenido) : filasCsv(contenido);
+            hojas = Sips.esTablaHtml(contenido) ? List.of(filasHtml(contenido))
+                    : n.endsWith(".xlsx") || n.endsWith(".xls") ? hojasExcel(contenido) : List.of(filasCsv(contenido));
         } catch (IOException | RuntimeException e) {
             throw new ErrorApi(HttpStatus.BAD_REQUEST, "No se pudo leer el fichero de la curva: " + e.getMessage());
         }
-        return desdeFilas(filas, nombre);
+        // Un Excel puede traer varias hojas (resumen, datos, huecos rellenados…): vale la primera donde está la curva
+        List<ErrorApi> fallos = new ArrayList<>();
+        for (List<String[]> filas : hojas) {
+            if (filas.isEmpty()) continue;
+            try {
+                return desdeFilas(filas, nombre);
+            } catch (ErrorApi e) {
+                fallos.add(e);
+            }
+        }
+        if (fallos.isEmpty()) throw new ErrorApi(HttpStatus.BAD_REQUEST, "El fichero de la curva está vacío.");
+        // De todos los fallos, el más útil es el de una hoja con datos que no llegan a un año; si no, el de la primera hoja
+        ErrorApi elegido = fallos.stream().filter(e -> String.valueOf(e.getMessage()).contains("solo cubre")).findFirst().orElse(fallos.get(0));
+        throw elegido;
     }
 
     // Las cabeceras se reconocen por su sentido (sin tildes ni mayúsculas) para admitir los distintos formatos de cada distribuidora
     private static final java.util.regex.Pattern P_FECHA = java.util.regex.Pattern.compile(
-            "^(fecha|date|dia|day|datetime|timestamp|fecha y hora|fecha hora|fecha/hora|fecha-hora|fecha medida|fecha lectura|fecha consumo|momento)( .*)?$");
+            "^(fecha|date|dia|day|datetime|timestamp|fecha y hora|fecha hora|fecha/hora|fecha-hora|fecha medida|fecha lectura|fecha consumo|momento|mes|month)( .*)?$");
     private static final java.util.regex.Pattern P_HORA = java.util.regex.Pattern.compile("^(hora|hour|time|hora del dia|h|periodo horario|intervalo)( .*)?$");
     private static final java.util.regex.Pattern P_VALOR = java.util.regex.Pattern.compile(
             "kwh|consumo|energia|activa|^ae\\b|^ae[ _(]|^value$|^valor$|^lectura$|^medida$|^demanda$|^kw$|^wh$");
@@ -361,9 +374,24 @@ public final class Curva {
         return n.replace("﻿", "").replace('_', ' ');
     }
 
+    /**
+     * El texto de un fichero: UTF-16 (con o sin marca, como lo guarda Excel con «Unicode») o UTF-8; y si no es UTF-8 válido, Windows-1252/ISO-8859-1
+     * (lo habitual en lo que descargan las distribuidoras, con las tildes en un solo byte).
+     */
+    static String aTexto(byte[] c) {
+        if (c.length >= 2 && (c[0] & 0xFF) == 0xFF && (c[1] & 0xFF) == 0xFE) return new String(c, 2, c.length - 2, StandardCharsets.UTF_16LE);
+        if (c.length >= 2 && (c[0] & 0xFF) == 0xFE && (c[1] & 0xFF) == 0xFF) return new String(c, 2, c.length - 2, StandardCharsets.UTF_16BE);
+        // Sin marca: en texto latino, uno de cada dos bytes es 0
+        if (c.length >= 4 && c[0] != 0 && c[1] == 0 && c[2] != 0 && c[3] == 0) return new String(c, StandardCharsets.UTF_16LE);
+        if (c.length >= 4 && c[0] == 0 && c[1] != 0 && c[2] == 0 && c[3] != 0) return new String(c, StandardCharsets.UTF_16BE);
+        String texto = new String(c, StandardCharsets.UTF_8);
+        if (texto.startsWith("﻿")) texto = texto.substring(1);
+        if (texto.indexOf('�') >= 0) texto = new String(c, java.nio.charset.Charset.forName("windows-1252"));
+        return texto;
+    }
+
     static List<String[]> filasCsv(byte[] contenido) {
-        String texto = new String(contenido, StandardCharsets.UTF_8);
-        if (texto.indexOf('�') >= 0) texto = new String(contenido, StandardCharsets.ISO_8859_1);
+        String texto = aTexto(contenido);
         String[] lineas = texto.split("\\r?\\n");
         char sep = ';';
         for (String l : lineas) {
@@ -384,8 +412,7 @@ public final class Curva {
 
     /** Una tabla HTML guardada como «.xls» (la exportan las plataformas de las distribuidoras): sus filas, celda a celda. */
     static List<String[]> filasHtml(byte[] contenido) {
-        String texto = new String(contenido, StandardCharsets.UTF_8);
-        if (texto.indexOf('�') >= 0) texto = new String(contenido, StandardCharsets.ISO_8859_1);
+        String texto = aTexto(contenido);
         List<String[]> r = new ArrayList<>();
         for (List<String> f : Sips.filasDeTabla(texto)) r.add(f.toArray(new String[0]));
         return r;
@@ -398,29 +425,49 @@ public final class Curva {
     }
 
     static List<String[]> filasExcel(byte[] contenido) throws IOException {
+        List<List<String[]>> hojas = hojasExcel(contenido);
+        return hojas.isEmpty() ? List.of() : hojas.get(0);
+    }
+
+    /** Las filas de cada hoja del libro, en su orden. */
+    static List<List<String[]>> hojasExcel(byte[] contenido) throws IOException {
         try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(contenido))) {
-            Sheet hoja = wb.getSheetAt(0);
             DataFormatter fmt = new DataFormatter(Locale.ROOT);
-            List<String[]> r = new ArrayList<>();
-            for (Row row : hoja) {
-                int n = Math.max(row.getLastCellNum(), 0);
-                String[] c = new String[n];
-                for (int i = 0; i < n; i++) {
-                    Cell cell = row.getCell(i);
-                    if (cell == null) {
-                        c[i] = "";
-                    } else if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-                        LocalDateTime t = cell.getLocalDateTimeCellValue();
-                        c[i] = t.getHour() == 0 && t.getMinute() == 0 ? t.toLocalDate().toString() : t.toString();
-                    } else if (cell.getCellType() == CellType.NUMERIC) {
-                        c[i] = String.valueOf(cell.getNumericCellValue());
-                    } else {
-                        c[i] = fmt.formatCellValue(cell).strip();
+            List<List<String[]>> hojas = new ArrayList<>();
+            for (int h = 0; h < wb.getNumberOfSheets(); h++) {
+                List<String[]> r = new ArrayList<>();
+                for (Row row : wb.getSheetAt(h)) {
+                    int n = Math.max(row.getLastCellNum(), 0);
+                    String[] c = new String[n];
+                    for (int i = 0; i < n; i++) {
+                        Cell cell = row.getCell(i);
+                        if (cell == null) {
+                            c[i] = "";
+                        } else if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+                            LocalDateTime t = cell.getLocalDateTimeCellValue();
+                            c[i] = t.getHour() == 0 && t.getMinute() == 0 ? t.toLocalDate().toString() : t.toString();
+                        } else if (cell.getCellType() == CellType.NUMERIC) {
+                            c[i] = String.valueOf(cell.getNumericCellValue());
+                        } else if (cell.getCellType() == CellType.FORMULA) {
+                            c[i] = textoDeFormula(cell);
+                        } else {
+                            c[i] = fmt.formatCellValue(cell).strip();
+                        }
                     }
+                    r.add(c);
                 }
-                r.add(c);
+                hojas.add(r);
             }
-            return r;
+            return hojas;
         }
+    }
+
+    /** El valor que guardó el Excel para una fórmula (lo calculado), no el texto de la fórmula. */
+    private static String textoDeFormula(Cell cell) {
+        return switch (cell.getCachedFormulaResultType()) {
+            case NUMERIC -> DateUtil.isCellDateFormatted(cell) ? cell.getLocalDateTimeCellValue().toString() : String.valueOf(cell.getNumericCellValue());
+            case STRING -> cell.getStringCellValue().strip();
+            default -> "";
+        };
     }
 }

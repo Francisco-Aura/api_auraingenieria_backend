@@ -33,6 +33,11 @@ public class pl_Estudio {
     @Column(name = "cliente_tipo", nullable = false, length = 20)
     private String clienteTipo = "potencial";
 
+    /** Propuesta (pl_proyectos_comerciales) a la que pertenece; vacío si el estudio no tiene proyecto. */
+    @org.hibernate.annotations.ColumnDefault("''")
+    @Column(name = "proyecto_id", nullable = false, length = 64)
+    private String proyectoId = "";
+
     @Column(nullable = false, length = 40)
     private String cups = "";
 

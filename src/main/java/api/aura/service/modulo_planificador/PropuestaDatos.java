@@ -111,11 +111,55 @@ public final class PropuestaDatos {
         }
         if (cubiertas.isEmpty()) cubiertas.add(String.valueOf(encuesta.getOrDefault("roof", "")));
         List<String> salida = new ArrayList<>();
+        Map<String, Object> disposiciones = mapa(encuesta.get("roofLayouts"));
         for (String c : cubiertas) {
             String estructura = ESTRUCTURA_POR_CUBIERTA.get(c);
+            // Una cubierta de estructura coplanar a la que se ha elegido inclinada (chapa minionda) lleva estructura inclinada
+            if ("coplanar".equals(estructura) && "inclinada".equals(disposiciones.get(c))) estructura = "inclinada";
             if (estructura != null && !salida.contains(estructura)) salida.add(estructura);
         }
         return salida;
+    }
+
+    private static final Map<String, String> NOMBRE_CUBIERTA = Map.ofEntries(
+            Map.entry("teja", "Teja"), Map.entry("chapa", "Chapa"), Map.entry("chapa_minionda", "Chapa minionda"),
+            Map.entry("chapa_grecada", "Chapa grecada"), Map.entry("sandwich", "Panel sándwich"), Map.entry("plana", "Plana"),
+            Map.entry("suelo", "Suelo"), Map.entry("parking", "Parking"), Map.entry("pergola", "Pérgola"), Map.entry("flotante", "Flotante"));
+    private static final Map<String, String> NOMBRE_DISPOSICION = Map.of("coplanar", "Coplanar", "inclinada", "Inclinada");
+
+    /**
+     * Cada cubierta del presupuesto con su disposición (coplanar o inclinada) y los paneles que lleva: [{name, layout, panels}]. Los paneles
+     * solo van con varias cubiertas y un reparto completo (enteros que suman los paneles del presupuesto); lo que no se sabe va vacío o 0.
+     * Lista vacía si no hay nada que enseñar (un presupuesto anterior, sin disposición ni reparto).
+     */
+    static List<Map<String, Object>> detalleDeCubiertas(Map<String, Object> encuesta, int paneles) {
+        List<String> cubiertas = new ArrayList<>();
+        if (encuesta.get("roofs") instanceof List<?> l) {
+            for (Object o : l) if (!cubiertas.contains(String.valueOf(o))) cubiertas.add(String.valueOf(o));
+        }
+        if (cubiertas.isEmpty() && encuesta.get("roof") != null) cubiertas.add(String.valueOf(encuesta.get("roof")));
+        Map<String, Object> disposiciones = mapa(encuesta.get("roofLayouts"));
+        Map<String, Object> reparto = mapa(encuesta.get("roofPanels"));
+        long suma = 0;
+        boolean completo = cubiertas.size() > 1;
+        for (String c : cubiertas) {
+            if (reparto.get(c) instanceof Number n && n.doubleValue() >= 0 && n.doubleValue() == Math.rint(n.doubleValue())) suma += n.longValue();
+            else completo = false;
+        }
+        completo = completo && suma == paneles;
+        List<Map<String, Object>> salida = new ArrayList<>();
+        boolean algo = false;
+        for (String c : cubiertas) {
+            Map<String, Object> fila = new LinkedHashMap<>();
+            String disposicion = NOMBRE_DISPOSICION.getOrDefault(String.valueOf(disposiciones.get(c)), "");
+            int cuantos = completo ? ((Number) reparto.get(c)).intValue() : 0;
+            fila.put("name", NOMBRE_CUBIERTA.getOrDefault(c, c));
+            fila.put("layout", disposicion);
+            fila.put("panels", cuantos);
+            algo |= !disposicion.isEmpty() || cuantos > 0;
+            salida.add(fila);
+        }
+        return algo ? salida : List.of();
     }
 
     /**
@@ -230,6 +274,9 @@ public final class PropuestaDatos {
         // «Encaje»: imagen con la disposición de los paneles en el proyecto (opcional); si está, la propuesta añade su diapositiva
         String encaje = logoValido(datos.get("encaje"));
         if (!encaje.isEmpty()) salida.put("encaje", encaje);
+        // Disposición (coplanar / inclinada) y paneles de cada cubierta: solo va si hay algo que enseñar
+        List<Map<String, Object>> cubiertas = detalleDeCubiertas(encuesta, b.getPaneles());
+        if (!cubiertas.isEmpty()) salida.put("roofs", cubiertas);
         salida.put("supply", SUMINISTRO.getOrDefault(String.valueOf(encuesta.getOrDefault("supply", "")), ""));
         salida.put("strings", resumenDeStrings(datos.get("strings"), b.getPaneles()));
         salida.put("warranty", garantias(b, equipos));

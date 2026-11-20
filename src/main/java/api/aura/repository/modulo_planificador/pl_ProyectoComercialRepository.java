@@ -11,4 +11,6 @@ public interface pl_ProyectoComercialRepository extends JpaRepository<pl_Proyect
     List<pl_ProyectoComercial> findAllByOrderByCreadoElDesc(Pageable pagina);
 
     boolean existsByClave(String clave);
+
+    java.util.Optional<pl_ProyectoComercial> findByClave(String clave);
 }

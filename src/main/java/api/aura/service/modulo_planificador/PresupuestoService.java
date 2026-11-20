@@ -46,6 +46,7 @@ public class PresupuestoService {
     /** El nombre de un presupuesto es «Cliente · Proyecto»: lo que va tras este separador es el proyecto. */
     private static final String SEPARADOR_PROYECTO = " · ";
     private static final Pattern VERSION_FINAL = Pattern.compile("\\s*(\\(copia\\)|v\\d+)$");
+    private static final Pattern VERSION_FINAL_ORIGINAL = Pattern.compile("\\s*(\\(copia\\)|v\\d+)$", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter ISO_UTC = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSxxx");
 
     private final pl_PresupuestoRepository presupuestos;
@@ -53,6 +54,7 @@ public class PresupuestoService {
     private final pl_EstudioRepository estudios;
     private final pl_EquipoRepository equipos;
     private final ClientesIntranetPort clientes;
+    private final ProyectoComercialService propuestasComerciales;
     private final ObjectMapper json;
 
     /** Ids de la intranet de quienes validan presupuestos (el jefe). */
@@ -89,9 +91,9 @@ public class PresupuestoService {
             r.put("proposals_sent", 0);
             return r;
         }
-        // Lo del validador son las propuestas entregadas cuyo presupuesto está aprobado y su estudio aceptado: ya se pueden validar
+        // Lo del validador son las propuestas entregadas cuyo presupuesto está aprobado y con estudio: ya se pueden validar
         int porValidar = (int) propuestas.findAll().stream().filter(p -> "enviada".equals(p.getEstado()))
-                .filter(p -> presupuestos.findById(p.getPresupuestoId()).filter(this::estudioAceptado).isPresent()).count();
+                .filter(p -> presupuestos.findById(p.getPresupuestoId()).filter(this::listoParaValidar).isPresent()).count();
         r.put("validator", true);
         r.put("count", porValidar);
         r.put("to_validate", porValidar);
@@ -133,6 +135,7 @@ public class PresupuestoService {
             }
             b.setEstudioId(estudio);
         }
+        asignarProyecto(b);
         asignarOferta(b, false);
         presupuestos.save(b);
         return conDatos(b, null);
@@ -162,6 +165,8 @@ public class PresupuestoService {
         b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
         boolean cambioDeProyecto = !proyectoAntes.equals(claveProyecto(b.getNombre()))
                 || !Objects.equals(tipoAntes, b.getClienteTipo()) || !Objects.equals(clienteAntes, b.getClienteId());
+        // Antes de comprobar el estudio: la compatibilidad se mira con la propuesta nueva (si falla, se deshace todo)
+        asignarProyecto(b);
         if (cambioDeProyecto && !b.getEstudioId().isEmpty()) {
             estudios.findById(b.getEstudioId()).ifPresent(e -> {
                 String motivo = motivoIncompatible(b, e);
@@ -236,6 +241,9 @@ public class PresupuestoService {
 
     /** Por qué un presupuesto y un estudio no pueden asociarse (null si pueden). */
     static String motivoIncompatible(pl_Presupuesto b, pl_Estudio e) {
+        if (!b.getProyectoId().isEmpty() && b.getProyectoId().equals(e.getProyectoId())) {
+            return null;
+        }
         boolean mismoCliente = "existente".equals(b.getClienteTipo())
                 ? "existente".equals(e.getClienteTipo()) && Objects.equals(b.getClienteId(), e.getClienteId())
                 : "potencial".equals(e.getClienteTipo()) && claveTexto(parteCliente(b.getNombre())).equals(claveTexto(e.getCliente()));
@@ -269,6 +277,7 @@ public class PresupuestoService {
         copia.setPropietarioId(idActor() == null ? "" : String.valueOf(idActor()));
         copia.setOfertaId(origen.getOfertaId());
         copia.setEstudioId(origen.getEstudioId());
+        copia.setProyectoId(origen.getProyectoId());
         copia.setClienteId(origen.getClienteId());
         copia.setClienteTipo(origen.getClienteTipo());
         copia.setDatos(copiaProfunda(origen.getDatos()));
@@ -419,10 +428,37 @@ public class PresupuestoService {
         return u == null ? null : u.nivelAcceso();
     }
 
-    /** ¿El presupuesto está aprobado y su estudio asociado aceptado? Es lo que hace falta para validar la propuesta. */
-    boolean estudioAceptado(pl_Presupuesto b) {
+    /**
+     * Orden en que un estudio avanza solo con lo que ocurre en su proceso (se entrega el informe, se entrega la propuesta, se valida la
+     * propuesta). Rechazado y cancelado los decide una persona y quedan fuera: el estudio no sale de ahí por su cuenta.
+     */
+    private static final List<String> FASES_AUTOMATICAS = List.of("en_estudio", "pte_doc", "entregado", "pte_cliente", "aceptado");
+
+    /**
+     * Pasa el estudio del presupuesto a esta fase. Solo avanza: si ya está en esa fase o en una posterior, o si es uno rechazado o
+     * cancelado, no lo toca.
+     */
+    void avanzarEstudio(pl_Presupuesto b, String destino) {
+        if (b == null || b.getEstudioId() == null || b.getEstudioId().isEmpty()) return;
+        estudios.findById(b.getEstudioId()).ifPresent(e -> {
+            int actual = FASES_AUTOMATICAS.indexOf(e.getEstado());
+            if (actual < 0 || actual >= FASES_AUTOMATICAS.indexOf(destino)) return;
+            e.setEstado(destino);
+            e.setActualizadoEl(ahora());
+            String nombre = nombreActor();
+            e.setActualizadoPor(nombre.isEmpty() ? SIN_IDENTIFICAR : nombre);
+            e.setVersion(e.getVersion() + 1);
+            estudios.save(e);
+        });
+    }
+
+    /**
+     * ¿Se puede validar su propuesta? El presupuesto tiene que estar aprobado y tener un estudio asociado que no esté rechazado ni
+     * cancelado: al validar la propuesta, ese estudio pasa solo a aceptado.
+     */
+    boolean listoParaValidar(pl_Presupuesto b) {
         return "validado".equals(b.getEstado()) && !b.getEstudioId().isEmpty()
-                && estudios.findById(b.getEstudioId()).filter(e -> "aceptado".equals(e.getEstado())).isPresent();
+                && estudios.findById(b.getEstudioId()).filter(e -> FASES_AUTOMATICAS.contains(e.getEstado())).isPresent();
     }
 
     private boolean esValidador() {
@@ -464,6 +500,26 @@ public class PresupuestoService {
             return "";
         }
         return VERSION_FINAL.matcher(claveTexto(nombre.substring(i + SEPARADOR_PROYECTO.length()))).replaceFirst("").strip();
+    }
+
+    /** El nombre del proyecto tal como está escrito (sin «v2» ni «(copia)» al final); vacío si el nombre no tiene proyecto. */
+    static String nombreProyecto(String nombre) {
+        int i = nombre == null ? -1 : nombre.indexOf(SEPARADOR_PROYECTO);
+        return i < 0 ? "" : sinVersion(nombre.substring(i + SEPARADOR_PROYECTO.length()));
+    }
+
+    /** Un nombre de proyecto sin «v2» o «(copia)» al final, escrito como esté. */
+    static String sinVersion(String proyecto) {
+        return proyecto == null ? "" : VERSION_FINAL_ORIGINAL.matcher(proyecto.strip()).replaceFirst("").strip();
+    }
+
+    /** Pone en el presupuesto la propuesta de su cliente y proyecto (la crea si no existe); sin proyecto en el nombre, ninguna. */
+    void asignarProyecto(pl_Presupuesto b) {
+        Map<?, ?> cliente = b.getDatos().get("customer") instanceof Map<?, ?> m ? m : null;
+        String nombreCliente = "existente".equals(b.getClienteTipo()) && cliente != null && cliente.get("name") != null
+                ? String.valueOf(cliente.get("name")).strip() : parteCliente(b.getNombre()).strip();
+        b.setProyectoId(propuestasComerciales.resolver(b.getProyectoId(), b.getClienteTipo(), b.getClienteId(), nombreCliente, cliente,
+                nombreProyecto(b.getNombre())));
     }
 
     /** La parte «cliente» del nombre («Cliente · Proyecto»); el nombre entero si no tiene proyecto. */
@@ -616,6 +672,7 @@ public class PresupuestoService {
         r.put("status", b.getEstado());
         r.put("offer_id", b.getOfertaId());
         r.put("study_id", b.getEstudioId());
+        r.put("project_id", b.getProyectoId());
         r.put("customer_id", b.getClienteId());
         r.put("customer_kind", b.getClienteTipo());
         r.put("variant_name", b.getNombreVariante());

@@ -1,5 +1,7 @@
 package api.aura.service.modulo_planificador;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +29,8 @@ public class PropuestaPdf {
             "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
             "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe", "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe");
     private static final long ESPERA_SEGUNDOS = 120;
+    private static final long ESPERA_ARCHIVO_SEGUNDOS = 60;
+    private static final Logger log = LoggerFactory.getLogger(PropuestaPdf.class);
 
     private final String rutaConfigurada;
 
@@ -69,13 +73,17 @@ public class PropuestaPdf {
             List<String> orden = List.of(chrome, "--headless=new", "--disable-gpu", "--no-sandbox", "--no-pdf-header-footer",
                     "--user-data-dir=" + carpeta.resolve("perfil"), "--virtual-time-budget=20000",
                     "--print-to-pdf=" + salida, entrada.toUri().toString());
-            Process proceso = new ProcessBuilder(orden).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
+            Path registro = carpeta.resolve("chrome.log");
+            Process proceso = new ProcessBuilder(orden).redirectErrorStream(true).redirectOutput(registro.toFile()).start();
             if (!proceso.waitFor(ESPERA_SEGUNDOS, TimeUnit.SECONDS)) {
                 proceso.destroyForcibly();
                 throw new IllegalStateException("el navegador tardó más de " + ESPERA_SEGUNDOS + " segundos");
             }
+            esperarArchivo(salida);
             if (!Files.isRegularFile(salida) || Files.size(salida) == 0) {
-                throw new IllegalStateException("el navegador no generó el archivo");
+                String detalle = ultimasLineas(registro);
+                log.warn("Chrome ({}) terminó con código {} sin generar el PDF. Salida: {}", chrome, proceso.exitValue(), detalle);
+                throw new IllegalStateException("el navegador no generó el archivo (código " + proceso.exitValue() + ")");
             }
             return Files.readAllBytes(salida);
         } catch (IOException e) {
@@ -85,6 +93,27 @@ public class PropuestaPdf {
             throw new IllegalStateException("se interrumpió la generación del PDF", e);
         } finally {
             borrar(carpeta);
+        }
+    }
+
+    /** Chrome puede terminar el proceso que lanzamos antes de acabar de escribir el PDF: se espera a que exista y deje de crecer. */
+    private static void esperarArchivo(Path salida) throws IOException, InterruptedException {
+        long limite = System.nanoTime() + TimeUnit.SECONDS.toNanos(ESPERA_ARCHIVO_SEGUNDOS);
+        long anterior = -1;
+        while (System.nanoTime() < limite) {
+            long tamano = Files.isRegularFile(salida) ? Files.size(salida) : 0;
+            if (tamano > 0 && tamano == anterior) return;
+            anterior = tamano;
+            Thread.sleep(300);
+        }
+    }
+
+    private static String ultimasLineas(Path registro) {
+        try {
+            String t = Files.readString(registro, StandardCharsets.UTF_8).strip();
+            return t.length() > 1500 ? t.substring(t.length() - 1500) : t;
+        } catch (IOException | RuntimeException e) {
+            return "(sin salida)";
         }
     }
 

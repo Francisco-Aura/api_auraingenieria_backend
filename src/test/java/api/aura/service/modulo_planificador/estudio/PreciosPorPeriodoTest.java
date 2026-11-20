@@ -128,4 +128,34 @@ class PreciosPorPeriodoTest {
         assertFalse(sin.potenciaCalculada);
         assertEquals(999, sin.ahorroPotencia, 1e-9);
     }
+
+    @Test
+    void sugiereBajarSoloLoQueLaInstalacionConsigue() {
+        Map<String, Object> eco = new HashMap<>();
+        eco.put("precioEnergia", 0.12);
+        Map<String, Object> d = datos(eco);
+        d.put("potencias", List.of(50, 50, 50, 50, 50, 50));
+        Calculo c = Calculo.de(d, laboral(), BOE_30TD_2026);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> pot = (Map<String, Object>) ((Map<String, Object>) c.aMapa().get("graficas")).get("potencia");
+        @SuppressWarnings("unchecked")
+        List<Double> sugerida = (List<Double>) pot.get("sugerida"), punta = (List<Double>) pot.get("punta"), conSol = (List<Double>) pot.get("puntaConInstalacion");
+        assertEquals(6, sugerida.size());
+        for (int p = 0; p < 6; p++) {
+            // Nunca más de lo que baja la punta con el sol, ni se queda por debajo de la punta que queda más el margen
+            assertTrue(sugerida.get(p) >= 0);
+            assertTrue(sugerida.get(p) <= punta.get(p) - conSol.get(p) + 1e-9);
+            assertTrue(50 - sugerida.get(p) >= conSol.get(p) * 1.05 - 1e-9 || sugerida.get(p) == 0);
+        }
+        assertTrue(sugerida.stream().anyMatch(v -> v > 0), "con tanto sol de día algún periodo baja");
+
+        // Un cliente que consume lo mismo a todas horas está sobrecontratado, pero eso no es mérito de la instalación: no se sugiere nada
+        double[] plana = new double[Curva.HORAS];
+        Arrays.fill(plana, 10);
+        Calculo p2 = Calculo.de(d, new Curva(plana, false, "prueba"), BOE_30TD_2026);
+        @SuppressWarnings("unchecked")
+        List<Double> s2 = (List<Double>) ((Map<String, Object>) ((Map<String, Object>) p2.aMapa().get("graficas")).get("potencia")).get("sugerida");
+        assertEquals(0.0, s2.get(5), 1e-9);
+        assertFalse(c.potenciaCalculada);
+    }
 }

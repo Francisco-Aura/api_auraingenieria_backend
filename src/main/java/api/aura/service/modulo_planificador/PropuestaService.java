@@ -93,6 +93,8 @@ public class PropuestaService {
         p.setEnviadoEl(PresupuestoService.ahora());
         p.setEnviadoPor(nombreActor());
         propuestas.save(p);
+        // Entregada la propuesta, el estudio queda a la espera de la respuesta del cliente
+        presupuestos.avanzarEstudio(presupuestos.buscarOpcional(p.getPresupuestoId()), "pte_cliente");
         return dto(p);
     }
 
@@ -101,8 +103,13 @@ public class PropuestaService {
     public Map<String, Object> aprobar(String id, String nota) {
         presupuestos.exigirValidador();
         pl_Propuesta p = buscar(id);
-        if ("enviada".equals(p.getEstado()) && !presupuestos.estudioAceptado(presupuestos.buscar(p.getPresupuestoId()))) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "Para validar la propuesta, el presupuesto tiene que estar aprobado y su estudio asociado, aceptado.");
+        if ("enviada".equals(p.getEstado())) {
+            pl_Presupuesto b = presupuestos.buscar(p.getPresupuestoId());
+            if (!presupuestos.listoParaValidar(b)) {
+                throw new ErrorApi(HttpStatus.CONFLICT, "Para validar la propuesta, el presupuesto tiene que estar aprobado y tener un estudio asociado que no esté rechazado ni cancelado.");
+            }
+            // Validada la propuesta, el estudio queda aceptado (y bloqueado)
+            presupuestos.avanzarEstudio(b, "aceptado");
         }
         return decidir(p, "aprobada", nota);
     }

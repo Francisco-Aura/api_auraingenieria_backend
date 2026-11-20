@@ -401,9 +401,16 @@ public final class Calculo {
         int[] per = energia.clone();
         if ("2.0TD".equals(tarifaNorm)) for (int i = 0; i < per.length; i++) per[i] = energia[i] == 2 ? 1 : 0;
         double[] punta = curva.puntaPorPeriodo(per, n);
+        // La punta que seguiría pidiendo a la red con la instalación (año típico de sol): lo que queda por contratar
+        double[] puntaRed = new double[n];
+        for (int i = 0; i < Curva.HORAS; i++) {
+            int q = Math.min(per[i], n - 1);
+            puntaRed[q] = Math.max(puntaRed[q], base.sim().red()[i]);
+        }
         double[] contratada = seis(datos.get("potencias"));
         double[] reduce = seis(eco.get("reduccionPotencia"));
-        List<Double> hoy = new ArrayList<>(), aContratar = new ArrayList<>(), precio = new ArrayList<>(), ahorro = new ArrayList<>(), contr = new ArrayList<>();
+        List<Double> hoy = new ArrayList<>(), aContratar = new ArrayList<>(), precio = new ArrayList<>(), ahorro = new ArrayList<>(), contr = new ArrayList<>(),
+                sugerida = new ArrayList<>();
         boolean hay = false;
         for (int p = 0; p < n; p++) {
             double h = contratada[p] > 0 ? contratada[p] : punta[p];
@@ -411,6 +418,10 @@ public final class Calculo {
             double eur = regulados != null ? regulados.potencia()[p] : 0;
             hay |= h > 0;
             contr.add(contratada[p]);
+            // Solo la reducción que se debe a la instalación (lo que baja la punta con ella), y dejando un 5 % de margen sobre la punta que queda:
+            // lo que ya está sobrecontratado hoy no se atribuye al sol, y las medias horarias se quedan cortas frente a los maxímetros de 15 minutos
+            double requerida = Math.ceil(puntaRed[p] * 1.05), baja = punta[p] - puntaRed[p];
+            sugerida.add(h > 0 ? Math.max(0, Math.floor(Math.min(h - requerida, baja))) : 0.0);
             hoy.add(Math.round(h * 10) / 10.0);
             aContratar.add(Math.round(a * 10) / 10.0);
             precio.add(eur);
@@ -423,6 +434,8 @@ public final class Calculo {
         m.put("punta", redondeada(punta, 1));
         m.put("hoy", hoy);
         m.put("aContratar", aContratar);
+        m.put("puntaConInstalacion", redondeada(puntaRed, 1));
+        m.put("sugerida", sugerida);
         m.put("precio", precio);
         m.put("ahorro", ahorro);
         m.put("conPrecios", regulados != null);

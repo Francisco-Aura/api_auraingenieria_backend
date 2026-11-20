@@ -323,6 +323,35 @@ class PropuestaDocumentosContratoTest {
         assertTrue(generado.contains("\"structures\""), "los datos incrustados traen la lista");
     }
 
+    @Test
+    void laPropuestaHtmlLlevaLaDisposicionYElRepartoDePanelesDeCadaCubierta() throws Exception {
+        JsonNode e = entrada();
+        pl_Presupuesto b = presupuesto(e.get("budget"));
+        @SuppressWarnings("unchecked") Map<String, Object> encuesta = (Map<String, Object>) b.getDatos().get("survey");
+        int paneles = b.getPaneles();
+        // Presupuesto anterior (sin disposición ni reparto): no hay nada que enseñar
+        encuesta.remove("roofLayouts");
+        encuesta.remove("roofPanels");
+        encuesta.put("roofs", List.of("teja"));
+        assertFalse(PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).containsKey("roofs"));
+        // Una cubierta con disposición: sin paneles (son todos)
+        encuesta.put("roofLayouts", Map.of("teja", "coplanar"));
+        assertEquals(List.of(Map.of("name", "Teja", "layout", "Coplanar", "panels", 0)), PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).get("roofs"));
+        // Dos cubiertas con reparto completo; la minionda inclinada lleva estructura inclinada
+        encuesta.put("roofs", List.of("teja", "chapa_minionda"));
+        encuesta.put("roofLayouts", Map.of("teja", "coplanar", "chapa_minionda", "inclinada"));
+        encuesta.put("roofPanels", Map.of("teja", paneles - 4, "chapa_minionda", 4));
+        Map<String, Object> datos = PropuestaDatos.paraHtml(b, equipos(e.get("equipos")));
+        assertEquals(List.of(Map.of("name", "Teja", "layout", "Coplanar", "panels", paneles - 4),
+                Map.of("name", "Chapa minionda", "layout", "Inclinada", "panels", 4)), datos.get("roofs"));
+        assertEquals(List.of("coplanar", "inclinada", "marquesina_flotante"), datos.get("structures"));
+        // Un reparto que no suma los paneles no se enseña (la disposición sí)
+        encuesta.put("roofPanels", Map.of("teja", paneles, "chapa_minionda", 4));
+        @SuppressWarnings("unchecked") List<Map<String, Object>> sinReparto = (List<Map<String, Object>>) PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).get("roofs");
+        assertEquals(0, sinReparto.get(0).get("panels"));
+        assertTrue(html.generar(datos).contains("\"Chapa minionda\""), "los datos incrustados traen las cubiertas");
+    }
+
     // ------------------------------------------------------------------------------------ PowerPoint
 
     @Test
