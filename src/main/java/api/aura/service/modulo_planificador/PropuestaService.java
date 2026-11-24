@@ -54,6 +54,7 @@ public class PropuestaService {
         for (pl_Propuesta p : propuestas.findByPresupuestoIdOrderByVersionDesc(presupuestoId)) {
             Map<String, Object> d = dto(p);
             d.put("has_logo", logoDelPresupuesto || !p.getLogoCliente().isEmpty());
+            d.put("has_encaje", encajeDelPresupuesto || !p.getEncajeCliente().isEmpty());
             // El proyecto que se creó a partir de ella (si lo hay): la pantalla ofrece crearlo o lo enseña
             d.put("project", proyectos.findFirstByPropuestaIdAndEliminadoElIsNull(p.getId()).map(x -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -61,7 +62,6 @@ public class PropuestaService {
                 m.put("name", x.getNombre());
                 return (Object) m;
             }).orElse(null));
-            d.put("has_encaje", encajeDelPresupuesto || !p.getEncajeCliente().isEmpty());
             salida.add(d);
         }
         return salida;
