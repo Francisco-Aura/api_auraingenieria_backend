@@ -587,6 +587,12 @@ class PresupuestosContratoTest {
         mvc.perform(get(BASE + "/proposals/" + p + "/html")).andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.detail").value("Sube el logo de la empresa del cliente para descargar la propuesta: sale en la presentación."));
         ana(put(BASE + "/proposals/" + p + "/logo"), "{\"logo\":\"data:image/png;base64,iVBORw0KGgo=\"}").andExpect(status().isOk());
+        // Con el logo pero sin el encaje de los paneles tampoco: también es obligatorio
+        mvc.perform(get(BASE + "/proposals/" + p + "/html")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el encaje de los paneles en el proyecto para descargar la propuesta: sale en la presentación."));
+        assertFalse(leer(mvc.perform(get(BASE + "/budgets/" + id + "/proposals"))).get(0).get("has_encaje").asBoolean());
+        ana(put(BASE + "/proposals/" + p + "/encaje"), "{\"encaje\":\"data:image/png;base64,iVBORw0KGgo=\"}").andExpect(status().isOk());
+        assertTrue(leer(mvc.perform(get(BASE + "/budgets/" + id + "/proposals"))).get(0).get("has_encaje").asBoolean());
         mvc.perform(get(BASE + "/proposals/" + p + "/html")).andExpect(status().isOk());
     }
 

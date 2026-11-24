@@ -271,7 +271,7 @@ public final class PropuestaDatos {
         if (cif != null && !String.valueOf(cif).isBlank()) salida.put("cif", String.valueOf(cif).strip());
         String logo = logoValido(datos.get("clientLogo"));
         if (!logo.isEmpty()) salida.put("logo", logo);
-        // «Encaje»: imagen con la disposición de los paneles en el proyecto (opcional); si está, la propuesta añade su diapositiva
+        // «Encaje»: imagen con la disposición de los paneles en el proyecto (obligatorio para descargar: lo exige PropuestaService); la propuesta añade su diapositiva
         String encaje = logoValido(datos.get("encaje"));
         if (!encaje.isEmpty()) salida.put("encaje", encaje);
         // Disposición (coplanar / inclinada) y paneles de cada cubierta: solo va si hay algo que enseñar

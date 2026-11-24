@@ -33,7 +33,9 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -236,6 +238,11 @@ class PropuestaDocumentosContratoTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
         datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
+        // Con el logo pero sin el encaje de los paneles tampoco: es obligatorio para descargar la propuesta
+        mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el encaje de los paneles en el proyecto para descargar la propuesta: sale en la presentación."));
+        datosCuerpo.put("encaje", "data:image/png;base64,BBBB");
         String salida = mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/html")))
@@ -249,6 +256,7 @@ class PropuestaDocumentosContratoTest {
         assertEquals(b.get("datos").get("customer").get("name").asText(), datos.get("client").asText(), "el cliente es el de los datos del presupuesto");
         assertEquals(b.get("total").asDouble(), datos.get("total").asDouble(), 0.001);
         assertEquals("data:image/png;base64,AAAA", datos.get("logo").asText(), "el logo de los datos de partida del presupuesto");
+        assertEquals("data:image/png;base64,BBBB", datos.get("encaje").asText(), "el encaje de los datos de partida del presupuesto");
         assertTrue(datos.get("warranty").get("panel_prod_years").asDouble() > 0 && datos.get("warranty").get("install_years").asInt() == 2);
         assertEquals(0, propuestas.count(), "no crea ninguna propuesta");
         assertEquals(0, presupuestos.count(), "no guarda el presupuesto");
@@ -272,6 +280,7 @@ class PropuestaDocumentosContratoTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
         datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
+        datosCuerpo.put("encaje", "data:image/png;base64,BBBB");
         var respuesta = mvc.perform(post("/api/planificador/budget/proposal-pdf").contentType("application/json").content(json.writeValueAsString(cuerpo))).andReturn().getResponse();
         if (respuesta.getStatus() == 501) {
             return; // sin Chrome en esta máquina: el cliente imprime el HTML desde el navegador
@@ -423,8 +432,36 @@ class PropuestaDocumentosContratoTest {
         p.setVersion(2);
         p.setCreadoEl(LocalDateTime.now());
         p.setLogoCliente("data:image/png;base64,AAAA");
+        p.setEncajeCliente("data:image/png;base64,BBBB");
         propuestas.save(p);
         return p.getId();
+    }
+
+    @Test
+    void sinElEncajeDeLosPanelesLaPropuestaNoSeDescargaHastaQueSeSube() throws Exception {
+        String id = propuestaGuardada();
+        pl_Propuesta p = propuestas.findById(id).orElseThrow();
+        p.setEncajeCliente("");
+        propuestas.save(p);
+        // El presupuesto de partida no trae encaje ni la propuesta: 422 con el aviso
+        mvc.perform(get("/api/planificador/proposals/" + id + "/html")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el encaje de los paneles en el proyecto para descargar la propuesta: sale en la presentación."));
+        // La lista de propuestas lo dice para que la pantalla pida subirlo
+        mvc.perform(get("/api/planificador/budgets/presupuesto-1/proposals")).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].has_encaje").value(false));
+        // Un archivo que no es una imagen no se acepta
+        mvc.perform(put("/api/planificador/proposals/" + id + "/encaje").contentType("application/json").content("{\"encaje\":\"<script>\"}"))
+                .andExpect(status().isUnprocessableEntity());
+        // Subido el encaje, se descarga y lleva el encaje en la presentación
+        mvc.perform(put("/api/planificador/proposals/" + id + "/encaje").contentType("application/json").content("{\"encaje\":\"data:image/png;base64,CCCC\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.client_encaje").value("data:image/png;base64,CCCC"));
+        String cuerpo = mvc.perform(get("/api/planificador/proposals/" + id + "/html")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertTrue(cuerpo.contains("data:image/png;base64,CCCC"), "lleva el encaje de la propuesta");
+        mvc.perform(get("/api/planificador/budgets/presupuesto-1/proposals")).andExpect(jsonPath("$[0].has_encaje").value(true));
+        // Quitado, vuelve a faltar
+        mvc.perform(delete("/api/planificador/proposals/" + id + "/encaje")).andExpect(status().isOk());
+        mvc.perform(get("/api/planificador/proposals/" + id + "/html")).andExpect(status().isUnprocessableEntity());
     }
 
     @Test

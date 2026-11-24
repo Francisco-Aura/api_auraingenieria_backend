@@ -58,6 +58,17 @@ public class PropuestaController {
         return propuestaService.borrarLogo(id);
     }
 
+    @PutMapping("/proposals/{id}/encaje")
+    public Map<String, Object> guardarEncaje(@PathVariable String id, @RequestBody Map<String, Object> cuerpo) {
+        Object encaje = cuerpo.get("encaje");
+        return propuestaService.guardarEncaje(id, encaje == null ? null : String.valueOf(encaje));
+    }
+
+    @DeleteMapping("/proposals/{id}/encaje")
+    public Map<String, Object> borrarEncaje(@PathVariable String id) {
+        return propuestaService.borrarEncaje(id);
+    }
+
     @DeleteMapping("/proposals/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable String id) {
