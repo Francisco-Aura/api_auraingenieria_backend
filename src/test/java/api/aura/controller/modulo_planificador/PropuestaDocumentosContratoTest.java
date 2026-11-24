@@ -64,7 +64,7 @@ class PropuestaDocumentosContratoTest {
 
     @BeforeEach
     void limpiar() {
-        for (String t : new String[]{"pl_propuestas", "pl_presupuestos", "pl_historial_precios", "pl_equipos"}) {
+        for (String t : new String[]{"pl_actividad", "pl_tareas_proyecto", "pl_proyectos", "pl_propuestas", "pl_presupuestos", "pl_historial_precios", "pl_equipos"}) {
             jdbc.execute("DELETE FROM " + t);
         }
     }
@@ -459,6 +459,59 @@ class PropuestaDocumentosContratoTest {
         try (org.apache.pdfbox.pdmodel.PDDocument d = org.apache.pdfbox.Loader.loadPDF(pdf)) {
             assertTrue(new org.apache.pdfbox.text.PDFTextStripper().getText(d).contains("Firma del cliente"), "lleva la página de aceptación y firma");
         }
+    }
+
+    private void validar(String propuestaId) {
+        pl_Propuesta p = propuestas.findById(propuestaId).orElseThrow();
+        p.setEstado("aprobada");
+        propuestas.save(p);
+    }
+
+    private org.springframework.test.web.servlet.ResultActions ana(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder b, String cuerpo) throws Exception {
+        b.header("X-Aura-Usuario-Nombre", "Ana").header("X-Usuario-Id", 7).header("X-Usuario-Nivel", 3);
+        if (cuerpo != null) b.contentType("application/json").content(cuerpo);
+        return mvc.perform(b);
+    }
+
+    @Test
+    void unaPropuestaValidadaDaLosDatosParaCrearSuProyectoYUnaSinValidarNo() throws Exception {
+        String id = propuestaGuardada();
+        mvc.perform(get("/api/planificador/proposals/" + id + "/project-data")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Solo se puede crear un proyecto desde una propuesta validada."));
+        validar(id);
+        JsonNode d = json.readTree(mvc.perform(get("/api/planificador/proposals/" + id + "/project-data")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        assertEquals(id, d.get("proposal_id").asText());
+        assertTrue(d.get("name").asText().contains("BONAQUIA"), "el nombre sale del cliente: " + d.get("name"));
+        JsonNode base = d.get("baseline");
+        assertTrue(base.get("importe_total").asDouble() > 0);
+        assertTrue(base.get("paneles_uds").asInt() > 0);
+        assertTrue(base.get("inversor_modelo").asText().contains("HUAWEI SUN2000-20KTL"));
+        assertTrue(base.get("potencia_kwp").asDouble() > 0);
+        assertTrue(d.get("contract_party").get("empresa").asText().contains("BONAQUIA"));
+    }
+
+    @Test
+    void unProyectoCreadoDesdeUnaPropuestaValidadaQuedaEnlazadoYNoSePuedeCrearOtro() throws Exception {
+        String id = propuestaGuardada();
+        // Sin validar: no se crea
+        ana(post("/api/planificador/projects"), "{\"name\":\"Nave\",\"proposal_id\":\"" + id + "\"}").andExpect(status().isConflict());
+        // Una propuesta que no existe: no es válida
+        ana(post("/api/planificador/projects"), "{\"name\":\"Nave\",\"proposal_id\":\"nada\"}").andExpect(status().isUnprocessableEntity());
+        validar(id);
+        var r = ana(post("/api/planificador/projects"), "{\"name\":\"Nave Bonaquia\",\"start_date\":\"2026-02-01\",\"proposal_id\":\"" + id + "\","
+                + "\"baseline\":{\"importe_total\":\"38700\"}}").andExpect(status().isCreated()).andReturn();
+        JsonNode creado = json.readTree(r.getResponse().getContentAsString(StandardCharsets.UTF_8));
+        assertEquals(id, creado.get("proposal_id").asText());
+        // La lista de propuestas del presupuesto dice cuál es su proyecto
+        mvc.perform(get("/api/planificador/budgets/presupuesto-1/proposals")).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].project.id").value(creado.get("id").asText())).andExpect(jsonPath("$[0].project.name").value("Nave Bonaquia"));
+        // Y ya no se crea otro, ni se vuelven a pedir los datos
+        ana(post("/api/planificador/projects"), "{\"name\":\"Otro\",\"proposal_id\":\"" + id + "\"}").andExpect(status().isConflict());
+        mvc.perform(get("/api/planificador/proposals/" + id + "/project-data")).andExpect(status().isConflict());
+        // Un proyecto sin propuesta sigue creándose como siempre
+        ana(post("/api/planificador/projects"), "{\"name\":\"Sin propuesta\"}").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.proposal_id").value(""));
     }
 
     @Test

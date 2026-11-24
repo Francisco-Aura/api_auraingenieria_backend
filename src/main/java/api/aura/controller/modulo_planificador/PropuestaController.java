@@ -76,6 +76,12 @@ public class PropuestaController {
         return descarga(propuestaService.html(id), MediaType.parseMediaType("text/html; charset=utf-8"));
     }
 
+    /** Lo que ya se sabe para crear el proyecto de una propuesta validada (precarga del formulario de proyecto nuevo). No guarda nada. */
+    @GetMapping("/proposals/{id}/project-data")
+    public Map<String, Object> datosParaProyecto(@PathVariable String id) {
+        return propuestaService.datosParaProyecto(id);
+    }
+
     /** La propuesta guardada en PDF, con la página de firma; 501 si el servidor no tiene Chrome (el cliente ofrece entonces imprimir el HTML). */
     @GetMapping("/proposals/{id}/pdf")
     public ResponseEntity<byte[]> pdf(@PathVariable String id) {

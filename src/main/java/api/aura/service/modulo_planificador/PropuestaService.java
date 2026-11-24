@@ -8,6 +8,7 @@ import api.aura.entity.modulo_planificador.pl_Presupuesto;
 import api.aura.entity.modulo_planificador.pl_Propuesta;
 import api.aura.repository.modulo_planificador.pl_EquipoRepository;
 import api.aura.repository.modulo_planificador.pl_PropuestaRepository;
+import api.aura.repository.modulo_planificador.pl_ProyectoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class PropuestaService {
     static final String SIN_LOGO = "Sube el logo de la empresa del cliente para descargar la propuesta: sale en la presentación.";
 
     private final pl_PropuestaRepository propuestas;
+    private final pl_ProyectoRepository proyectos;
     private final pl_EquipoRepository equipos;
     private final PresupuestoService presupuestos;
     private final PropuestaHtml propuestaHtml;
@@ -50,6 +52,13 @@ public class PropuestaService {
         for (pl_Propuesta p : propuestas.findByPresupuestoIdOrderByVersionDesc(presupuestoId)) {
             Map<String, Object> d = dto(p);
             d.put("has_logo", logoDelPresupuesto || !p.getLogoCliente().isEmpty());
+            // El proyecto que se creó a partir de ella (si lo hay): la pantalla ofrece crearlo o lo enseña
+            d.put("project", proyectos.findFirstByPropuestaIdAndEliminadoElIsNull(p.getId()).map(x -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", x.getId());
+                m.put("name", x.getNombre());
+                return (Object) m;
+            }).orElse(null));
             salida.add(d);
         }
         return salida;
@@ -337,6 +346,60 @@ public class PropuestaService {
             throw e;
         } catch (RuntimeException e) {
             throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
+        }
+    }
+
+    private static final Map<String, String> NOMBRE_ESTRUCTURA = Map.of("coplanar", "Coplanar", "lastrada", "Lastrada", "hincada", "Hincada",
+            "marquesina", "Marquesina", "marquesina_flotante", "Marquesina flotante", "inclinada", "Inclinada");
+
+    /**
+     * Lo que ya se sabe para crear el proyecto de una propuesta validada, con las claves del formulario de proyecto nuevo: el nombre, los datos
+     * del contrato de referencia (`baseline`: importe, paneles, inversor, estructura, batería y potencia, sacados del presupuesto) y la empresa
+     * del cliente (`contract_party`). No guarda nada. Solo de una propuesta validada y que todavía no tenga proyecto.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> datosParaProyecto(String id) {
+        pl_Propuesta p = buscar(id);
+        exigirValidada(p);
+        proyectos.findFirstByPropuestaIdAndEliminadoElIsNull(p.getId()).ifPresent(x -> {
+            throw new ErrorApi(HttpStatus.CONFLICT, "Esta propuesta ya tiene su proyecto: «" + x.getNombre() + "».");
+        });
+        pl_Presupuesto b = presupuestoDe(p);
+        Map<String, Object> d = PropuestaDatos.paraHtml(b, catalogo());
+        String cliente = String.valueOf(d.getOrDefault("client", ""));
+        String referencia = String.valueOf(d.getOrDefault("project", ""));
+        Map<String, Object> contrato = new LinkedHashMap<>();
+        contrato.put("importe_total", b.getTotalPresupuesto() > 0 ? b.getTotalPresupuesto() : null);
+        contrato.put("paneles_uds", b.getPaneles() > 0 ? b.getPaneles() : null);
+        contrato.put("paneles_modelo", vacioANulo(d.get("panel")));
+        int inversores = d.get("inverter_count") instanceof Number n ? n.intValue() : 0;
+        contrato.put("inversor_uds", inversores > 0 ? inversores : null);
+        contrato.put("inversor_modelo", vacioANulo(d.get("inverter")));
+        List<?> estructuras = d.get("structures") instanceof List<?> l ? l : List.of(d.getOrDefault("structure", ""));
+        contrato.put("estructura", vacioANulo(estructuras.stream().map(String::valueOf).filter(e -> !e.isEmpty())
+                .map(e -> NOMBRE_ESTRUCTURA.getOrDefault(e, e)).distinct().collect(java.util.stream.Collectors.joining(", "))));
+        contrato.put("bateria", vacioANulo(d.get("battery")));
+        contrato.put("potencia_kwp", b.getKwp() > 0 ? b.getKwp() : null);
+        contrato.values().removeIf(Objects::isNull);
+        Map<String, Object> parte = new LinkedHashMap<>();
+        if (!cliente.isBlank()) parte.put("empresa", cliente);
+        if (d.get("cif") != null) parte.put("cif", String.valueOf(d.get("cif")));
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("proposal_id", p.getId());
+        r.put("name", referencia.isBlank() ? cliente : cliente + " · " + referencia);
+        r.put("baseline", contrato);
+        r.put("contract_party", parte);
+        return r;
+    }
+
+    private static Object vacioANulo(Object v) {
+        return v == null || String.valueOf(v).isBlank() ? null : String.valueOf(v);
+    }
+
+    /** Solo una propuesta validada (aprobada por el cliente) da un proyecto. */
+    static void exigirValidada(pl_Propuesta p) {
+        if (!"aprobada".equals(p.getEstado())) {
+            throw new ErrorApi(HttpStatus.CONFLICT, "Solo se puede crear un proyecto desde una propuesta validada.");
         }
     }
 
