@@ -5,6 +5,7 @@ import api.aura.service.modulo_planificador.ClientesIntranetPort;
 import api.aura.service.modulo_planificador.OfertaPdf;
 import api.aura.service.modulo_planificador.PresupuestoPdf;
 import api.aura.service.modulo_planificador.PresupuestoService;
+import api.aura.service.modulo_planificador.PropuestaLectura;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import api.aura.config.ErrorApi;
@@ -26,6 +27,7 @@ public class PresupuestoController {
     private final ClientesIntranetPort clientes;
     private final PresupuestoPdf presupuestoPdf;
     private final OfertaPdf ofertaPdf;
+    private final PropuestaLectura propuestaLectura;
 
     /**
      * Lee el presupuesto de la oferta (PDF; el cuerpo es el archivo) y devuelve los datos que se pueden leer. No guarda nada: el formulario los
@@ -33,6 +35,30 @@ public class PresupuestoController {
      */
     @PostMapping("/budget/extract")
     public Map<String, Object> leerOferta(@RequestBody(required = false) byte[] datos, @RequestParam(name = "name", defaultValue = "presupuesto.pdf") String nombre) {
+        validarPdf(datos, "Solo se puede subir el presupuesto en PDF.");
+        try {
+            return ofertaPdf.analizar(datos, nombre);
+        } catch (OfertaPdf.DocumentoNoSoportado e) {
+            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        }
+    }
+
+    /**
+     * Lee la propuesta de Aura (PDF; el cuerpo es el archivo) y devuelve los datos para crear el proyecto: cliente, nombre, importe, potencia,
+     * módulos, inversor, batería, estructura y forma de pago. No guarda nada: el formulario los usa para rellenar el proyecto y quien lo crea
+     * los revisa antes de aceptarlos.
+     */
+    @PostMapping("/proposal/extract")
+    public Map<String, Object> leerPropuesta(@RequestBody(required = false) byte[] datos, @RequestParam(name = "name", defaultValue = "propuesta.pdf") String nombre) {
+        validarPdf(datos, "Solo se puede subir la propuesta en PDF.");
+        try {
+            return propuestaLectura.analizar(datos, nombre);
+        } catch (OfertaPdf.DocumentoNoSoportado e) {
+            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        }
+    }
+
+    private static void validarPdf(byte[] datos, String mensajeNoPdf) {
         if (datos == null || datos.length == 0) {
             throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, "El archivo está vacío");
         }
@@ -40,12 +66,7 @@ public class PresupuestoController {
             throw new ErrorApi(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el máximo de 30 MB");
         }
         if (datos.length < 5 || datos[0] != '%' || datos[1] != 'P' || datos[2] != 'D' || datos[3] != 'F' || datos[4] != '-') {
-            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, "Solo se puede subir el presupuesto en PDF.");
-        }
-        try {
-            return ofertaPdf.analizar(datos, nombre);
-        } catch (OfertaPdf.DocumentoNoSoportado e) {
-            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, mensajeNoPdf);
         }
     }
 

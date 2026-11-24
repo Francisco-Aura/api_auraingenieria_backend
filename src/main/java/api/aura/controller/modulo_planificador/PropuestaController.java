@@ -58,6 +58,17 @@ public class PropuestaController {
         return propuestaService.borrarLogo(id);
     }
 
+    @PutMapping("/proposals/{id}/encaje")
+    public Map<String, Object> guardarEncaje(@PathVariable String id, @RequestBody Map<String, Object> cuerpo) {
+        Object encaje = cuerpo.get("encaje");
+        return propuestaService.guardarEncaje(id, encaje == null ? null : String.valueOf(encaje));
+    }
+
+    @DeleteMapping("/proposals/{id}/encaje")
+    public Map<String, Object> borrarEncaje(@PathVariable String id) {
+        return propuestaService.borrarEncaje(id);
+    }
+
     @DeleteMapping("/proposals/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable String id) {
@@ -74,6 +85,18 @@ public class PropuestaController {
     @GetMapping("/proposals/{id}/html")
     public ResponseEntity<byte[]> html(@PathVariable String id) {
         return descarga(propuestaService.html(id), MediaType.parseMediaType("text/html; charset=utf-8"));
+    }
+
+    /** Lo que ya se sabe para crear el proyecto de una propuesta validada (precarga del formulario de proyecto nuevo). No guarda nada. */
+    @GetMapping("/proposals/{id}/project-data")
+    public Map<String, Object> datosParaProyecto(@PathVariable String id) {
+        return propuestaService.datosParaProyecto(id);
+    }
+
+    /** La propuesta guardada en PDF, con la página de firma; 501 si el servidor no tiene Chrome (el cliente ofrece entonces imprimir el HTML). */
+    @GetMapping("/proposals/{id}/pdf")
+    public ResponseEntity<byte[]> pdf(@PathVariable String id) {
+        return descarga(propuestaService.pdf(id), MediaType.APPLICATION_PDF);
     }
 
     /** La presentación para el cliente del presupuesto en curso (mismo cuerpo que al guardarlo). No guarda nada. */

@@ -33,7 +33,9 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -64,7 +66,7 @@ class PropuestaDocumentosContratoTest {
 
     @BeforeEach
     void limpiar() {
-        for (String t : new String[]{"pl_propuestas", "pl_presupuestos", "pl_historial_precios", "pl_equipos"}) {
+        for (String t : new String[]{"pl_actividad", "pl_tareas_proyecto", "pl_proyectos", "pl_propuestas", "pl_presupuestos", "pl_historial_precios", "pl_equipos"}) {
             jdbc.execute("DELETE FROM " + t);
         }
     }
@@ -236,6 +238,11 @@ class PropuestaDocumentosContratoTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
         datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
+        // Con el logo pero sin el encaje de los paneles tampoco: es obligatorio para descargar la propuesta
+        mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el encaje de los paneles en el proyecto para descargar la propuesta: sale en la presentación."));
+        datosCuerpo.put("encaje", "data:image/png;base64,BBBB");
         String salida = mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/html")))
@@ -249,6 +256,7 @@ class PropuestaDocumentosContratoTest {
         assertEquals(b.get("datos").get("customer").get("name").asText(), datos.get("client").asText(), "el cliente es el de los datos del presupuesto");
         assertEquals(b.get("total").asDouble(), datos.get("total").asDouble(), 0.001);
         assertEquals("data:image/png;base64,AAAA", datos.get("logo").asText(), "el logo de los datos de partida del presupuesto");
+        assertEquals("data:image/png;base64,BBBB", datos.get("encaje").asText(), "el encaje de los datos de partida del presupuesto");
         assertTrue(datos.get("warranty").get("panel_prod_years").asDouble() > 0 && datos.get("warranty").get("install_years").asInt() == 2);
         assertEquals(0, propuestas.count(), "no crea ninguna propuesta");
         assertEquals(0, presupuestos.count(), "no guarda el presupuesto");
@@ -272,6 +280,7 @@ class PropuestaDocumentosContratoTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
         datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
+        datosCuerpo.put("encaje", "data:image/png;base64,BBBB");
         var respuesta = mvc.perform(post("/api/planificador/budget/proposal-pdf").contentType("application/json").content(json.writeValueAsString(cuerpo))).andReturn().getResponse();
         if (respuesta.getStatus() == 501) {
             return; // sin Chrome en esta máquina: el cliente imprime el HTML desde el navegador
@@ -423,8 +432,36 @@ class PropuestaDocumentosContratoTest {
         p.setVersion(2);
         p.setCreadoEl(LocalDateTime.now());
         p.setLogoCliente("data:image/png;base64,AAAA");
+        p.setEncajeCliente("data:image/png;base64,BBBB");
         propuestas.save(p);
         return p.getId();
+    }
+
+    @Test
+    void sinElEncajeDeLosPanelesLaPropuestaNoSeDescargaHastaQueSeSube() throws Exception {
+        String id = propuestaGuardada();
+        pl_Propuesta p = propuestas.findById(id).orElseThrow();
+        p.setEncajeCliente("");
+        propuestas.save(p);
+        // El presupuesto de partida no trae encaje ni la propuesta: 422 con el aviso
+        mvc.perform(get("/api/planificador/proposals/" + id + "/html")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el encaje de los paneles en el proyecto para descargar la propuesta: sale en la presentación."));
+        // La lista de propuestas lo dice para que la pantalla pida subirlo
+        mvc.perform(get("/api/planificador/budgets/presupuesto-1/proposals")).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].has_encaje").value(false));
+        // Un archivo que no es una imagen no se acepta
+        mvc.perform(put("/api/planificador/proposals/" + id + "/encaje").contentType("application/json").content("{\"encaje\":\"<script>\"}"))
+                .andExpect(status().isUnprocessableEntity());
+        // Subido el encaje, se descarga y lleva el encaje en la presentación
+        mvc.perform(put("/api/planificador/proposals/" + id + "/encaje").contentType("application/json").content("{\"encaje\":\"data:image/png;base64,CCCC\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.client_encaje").value("data:image/png;base64,CCCC"));
+        String cuerpo = mvc.perform(get("/api/planificador/proposals/" + id + "/html")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertTrue(cuerpo.contains("data:image/png;base64,CCCC"), "lleva el encaje de la propuesta");
+        mvc.perform(get("/api/planificador/budgets/presupuesto-1/proposals")).andExpect(jsonPath("$[0].has_encaje").value(true));
+        // Quitado, vuelve a faltar
+        mvc.perform(delete("/api/planificador/proposals/" + id + "/encaje")).andExpect(status().isOk());
+        mvc.perform(get("/api/planificador/proposals/" + id + "/html")).andExpect(status().isUnprocessableEntity());
     }
 
     @Test
@@ -446,7 +483,185 @@ class PropuestaDocumentosContratoTest {
     }
 
     @Test
+    void laPropuestaGuardadaSeDescargaEnPdfConLaPaginaDeFirmaOAvisaDeQueNoHayNavegador() throws Exception {
+        String id = propuestaGuardada();
+        var respuesta = mvc.perform(get("/api/planificador/proposals/" + id + "/pdf")).andReturn().getResponse();
+        if (respuesta.getStatus() == 501) {
+            return; // sin Chrome en esta máquina: el cliente imprime el HTML desde el navegador
+        }
+        assertEquals(200, respuesta.getStatus(), respuesta.getContentAsString());
+        assertEquals("attachment; filename*=UTF-8''Propuesta%20Nave%20Bonaquia%20v2.pdf", respuesta.getHeader("Content-Disposition"));
+        byte[] pdf = respuesta.getContentAsByteArray();
+        assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
+        try (org.apache.pdfbox.pdmodel.PDDocument d = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+            assertTrue(new org.apache.pdfbox.text.PDFTextStripper().getText(d).contains("Firma del cliente"), "lleva la página de aceptación y firma");
+        }
+    }
+
+    private void validar(String propuestaId) {
+        pl_Propuesta p = propuestas.findById(propuestaId).orElseThrow();
+        p.setEstado("aprobada");
+        propuestas.save(p);
+    }
+
+    private org.springframework.test.web.servlet.ResultActions ana(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder b, String cuerpo) throws Exception {
+        b.header("X-Aura-Usuario-Nombre", "Ana").header("X-Usuario-Id", 7).header("X-Usuario-Nivel", 3);
+        if (cuerpo != null) b.contentType("application/json").content(cuerpo);
+        return mvc.perform(b);
+    }
+
+    @Test
+    void unaPropuestaValidadaDaLosDatosParaCrearSuProyectoYUnaSinValidarNo() throws Exception {
+        String id = propuestaGuardada();
+        mvc.perform(get("/api/planificador/proposals/" + id + "/project-data")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Solo se puede crear un proyecto desde una propuesta validada."));
+        validar(id);
+        JsonNode d = json.readTree(mvc.perform(get("/api/planificador/proposals/" + id + "/project-data")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        assertEquals(id, d.get("proposal_id").asText());
+        assertTrue(d.get("name").asText().contains("BONAQUIA"), "el nombre sale del cliente: " + d.get("name"));
+        JsonNode base = d.get("baseline");
+        assertTrue(base.get("importe_total").asDouble() > 0);
+        assertTrue(base.get("paneles_uds").asInt() > 0);
+        assertTrue(base.get("inversor_modelo").asText().contains("HUAWEI SUN2000-20KTL"));
+        assertTrue(base.get("potencia_kwp").asDouble() > 0);
+        assertTrue(d.get("contract_party").get("empresa").asText().contains("BONAQUIA"));
+    }
+
+    @Test
+    void unProyectoCreadoDesdeUnaPropuestaValidadaQuedaEnlazadoYNoSePuedeCrearOtro() throws Exception {
+        String id = propuestaGuardada();
+        // Sin validar: no se crea
+        ana(post("/api/planificador/projects"), "{\"name\":\"Nave\",\"proposal_id\":\"" + id + "\"}").andExpect(status().isConflict());
+        // Una propuesta que no existe: no es válida
+        ana(post("/api/planificador/projects"), "{\"name\":\"Nave\",\"proposal_id\":\"nada\"}").andExpect(status().isUnprocessableEntity());
+        validar(id);
+        var r = ana(post("/api/planificador/projects"), "{\"name\":\"Nave Bonaquia\",\"start_date\":\"2026-02-01\",\"proposal_id\":\"" + id + "\","
+                + "\"baseline\":{\"importe_total\":\"38700\"}}").andExpect(status().isCreated()).andReturn();
+        JsonNode creado = json.readTree(r.getResponse().getContentAsString(StandardCharsets.UTF_8));
+        assertEquals(id, creado.get("proposal_id").asText());
+        // La lista de propuestas del presupuesto dice cuál es su proyecto
+        mvc.perform(get("/api/planificador/budgets/presupuesto-1/proposals")).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].project.id").value(creado.get("id").asText())).andExpect(jsonPath("$[0].project.name").value("Nave Bonaquia"));
+        // Y ya no se crea otro, ni se vuelven a pedir los datos
+        ana(post("/api/planificador/projects"), "{\"name\":\"Otro\",\"proposal_id\":\"" + id + "\"}").andExpect(status().isConflict());
+        mvc.perform(get("/api/planificador/proposals/" + id + "/project-data")).andExpect(status().isConflict());
+        // Un proyecto sin propuesta sigue creándose como siempre
+        ana(post("/api/planificador/projects"), "{\"name\":\"Sin propuesta\"}").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.proposal_id").value(""));
+    }
+
+    @Autowired
+    private api.aura.service.modulo_planificador.PropuestaLectura lectura;
+
+    /** La propuesta guardada (con todos sus equipos) como PDF hecho con Chrome; null si la máquina no tiene Chrome. */
+    private byte[] pdfDeLaPropuestaGuardada() throws Exception {
+        String id = propuestaGuardada();
+        var r = mvc.perform(get("/api/planificador/proposals/" + id + "/pdf")).andReturn().getResponse();
+        if (r.getStatus() == 501) return null;
+        assertEquals(200, r.getStatus(), r.getContentAsString());
+        return r.getContentAsByteArray();
+    }
+
+    @Test
+    void laPropuestaEnPdfSeLeeDeVueltaConTodosSusDatos() throws Exception {
+        byte[] pdf = pdfDeLaPropuestaGuardada();
+        org.junit.jupiter.api.Assumptions.assumeTrue(pdf != null, "sin Chrome en esta máquina no se puede generar el PDF");
+        JsonNode r = json.valueToTree(lectura.analizar(pdf, "Propuesta Nave Bonaquia v2.pdf"));
+        JsonNode f = r.get("fields");
+        assertEquals("proposal", r.get("kind").asText());
+        assertEquals("22.5", f.get("potencia_kwp").get("value").asText());
+        assertEquals("40", f.get("paneles_uds").get("value").asText());
+        assertEquals("JA Solar 550 Wp", f.get("paneles_modelo").get("value").asText());
+        assertEquals("HUAWEI SUN2000-20KTL + Huawei 5K", f.get("inversor_modelo").get("value").asText());
+        assertEquals("3", f.get("inversor_uds").get("value").asText());
+        assertEquals("BYD Battery Box × 2", f.get("bateria").get("value").asText());
+        assertEquals("Marquesina flotante", f.get("estructura").get("value").asText());
+        assertEquals("13640", f.get("importe_total").get("value").asText());
+        assertEquals("BONAQUIA, S.L. · NAVE-12", r.get("project").get("name").get("value").asText());
+        assertEquals("BONAQUIA", r.get("project").get("company").get("value").asText());
+        assertEquals("BONAQUIA, S.L.", r.get("client").get("name").asText());
+        assertEquals(0, r.get("missing").size(), "con todos los equipos no falta nada: " + r.get("missing"));
+        assertEquals("standard", r.get("payment_plan").get("mode").asText());
+        assertEquals(4, r.get("payment_plan").get("stages").size());
+        assertEquals("12", r.get("extras").get("garantia_producto").asText());
+        assertEquals("30", r.get("extras").get("garantia_produccion").asText());
+        assertEquals("87,4", r.get("extras").get("garantia_potencia").asText());
+    }
+
+    @Test
+    void unaPropuestaSinEquiposSeLeeSinInventarNadaYDiceLoQueFalta() throws Exception {
+        String id = propuestaGuardada();
+        equiposRepo.deleteAll();
+        var r = mvc.perform(get("/api/planificador/proposals/" + id + "/pdf")).andReturn().getResponse();
+        org.junit.jupiter.api.Assumptions.assumeTrue(r.getStatus() != 501, "sin Chrome en esta máquina no se puede generar el PDF");
+        assertEquals(200, r.getStatus(), r.getContentAsString());
+        JsonNode d = json.valueToTree(lectura.analizar(r.getContentAsByteArray(), "p.pdf"));
+        assertEquals("22.5", d.get("fields").get("potencia_kwp").get("value").asText());
+        assertEquals("40", d.get("fields").get("paneles_uds").get("value").asText());
+        assertFalse(d.get("fields").has("paneles_modelo"));
+        assertFalse(d.get("fields").has("inversor_modelo"));
+        assertFalse(d.get("fields").has("inversor_uds"));
+        assertTrue(d.get("missing").toString().contains("paneles_modelo") && d.get("missing").toString().contains("inversor_modelo"));
+    }
+
+    /** Una propuesta real (Logística Segura · Autoconsumo Alcantarilla, v1) reducida a las páginas con datos; el presupuesto no tenía módulo ni inversor. */
+    @Test
+    void unaPropuestaRealSeLeeConTodoLoQueLleva() throws Exception {
+        byte[] pdf;
+        try (var in = getClass().getResourceAsStream("/propuesta-lectura/logistica-segura.pdf")) {
+            assertNotNull(in);
+            pdf = in.readAllBytes();
+        }
+        JsonNode r = json.valueToTree(lectura.analizar(pdf, "Propuesta Logística Segura, S.L. · Autoconsumo Alcantarilla v1.pdf"));
+        JsonNode f = r.get("fields");
+        assertEquals("proposal", r.get("kind").asText());
+        assertEquals("150", f.get("potencia_kwp").get("value").asText());
+        assertEquals("240", f.get("paneles_uds").get("value").asText());
+        assertEquals("Lastrada sin perforación", f.get("estructura").get("value").asText());
+        assertEquals("112400", f.get("importe_total").get("value").asText());
+        assertEquals("alta", f.get("importe_total").get("confidence").asText());
+        assertEquals(4, f.size(), "potencia, paneles, estructura e importe: sin módulo ni inversor ni batería que leer");
+        assertEquals("Logística Segura, S.L. · Autoconsumo Alcantarilla", r.get("project").get("name").get("value").asText());
+        assertEquals("Logística Segura", r.get("project").get("company").get("value").asText());
+        assertEquals("Logística Segura, S.L.", r.get("client").get("name").asText());
+        assertEquals("[\"paneles_modelo\",\"inversor_uds\",\"inversor_modelo\"]", r.get("missing").toString());
+        assertTrue(r.get("notes").toString().contains("solo 625 Wp por módulo"));
+        assertTrue(r.get("notes").toString().contains("no lleva baterías"));
+        assertTrue(r.get("notes").toString().contains("sin IVA"));
+        assertEquals("standard", r.get("payment_plan").get("mode").asText());
+        assertEquals("A la firma del contrato", r.get("payment_plan").get("stages").get(0).get("label").asText());
+        assertEquals(30.0, r.get("payment_plan").get("stages").get(0).get("percent").asDouble());
+        assertEquals(10.0, r.get("payment_plan").get("stages").get(3).get("percent").asDouble());
+        assertEquals(0, r.get("extras").size(), "esta propuesta no trae las garantías del módulo");
+    }
+
+    @Test
+    void unPdfQueNoEsUnaPropuestaDeAuraSeRechazaConUnMensajeClaro() throws Exception {
+        var oferta = getClass().getResourceAsStream("/oferta-dorada/completo.pdf");
+        assertNotNull(oferta);
+        byte[] datos = oferta.readAllBytes();
+        mvc.perform(post("/api/planificador/proposal/extract?name=oferta.pdf").contentType("application/octet-stream").content(datos))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("no parece una propuesta de Aura")));
+        mvc.perform(post("/api/planificador/proposal/extract").contentType("application/octet-stream").content(new byte[0])).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("El archivo está vacío"));
+        mvc.perform(post("/api/planificador/proposal/extract").contentType("application/octet-stream").content("no es un pdf".getBytes()))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.detail").value("Solo se puede subir la propuesta en PDF."));
+    }
+
+    @Test
+    void unaPropuestaEnPdfEsUnaPropuestaYElEndpointLaLee() throws Exception {
+        byte[] pdf = pdfDeLaPropuestaGuardada();
+        org.junit.jupiter.api.Assumptions.assumeTrue(pdf != null, "sin Chrome en esta máquina no se puede generar el PDF");
+        mvc.perform(post("/api/planificador/proposal/extract?name=p.pdf").contentType("application/octet-stream").content(pdf))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.kind").value("proposal")).andExpect(jsonPath("$.fields.importe_total.value").value("13640"))
+                .andExpect(jsonPath("$.payment_plan.mode").value("standard"));
+    }
+
+    @Test
     void unaPropuestaOUnPresupuestoQueNoExistenSonUn404() throws Exception {
+        mvc.perform(get("/api/planificador/proposals/nada/pdf")).andExpect(status().isNotFound());
         mvc.perform(get("/api/planificador/proposals/nada/pptx")).andExpect(status().isNotFound());
         mvc.perform(get("/api/planificador/proposals/nada/html")).andExpect(status().isNotFound());
         pl_Propuesta p = new pl_Propuesta();

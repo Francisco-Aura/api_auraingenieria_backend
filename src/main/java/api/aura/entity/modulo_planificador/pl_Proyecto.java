@@ -70,6 +70,11 @@ public class pl_Proyecto {
     @Column(name = "plan_pagos", nullable = false)
     private Map<String, Object> planPagos = new LinkedHashMap<>();
 
+    /** Propuesta validada de la que se creó el proyecto; vacío si no vino de una (cada propuesta da como mucho un proyecto activo). */
+    @org.hibernate.annotations.ColumnDefault("''")
+    @Column(name = "propuesta_id", nullable = false, length = 64)
+    private String propuestaId = "";
+
     @Column(name = "creado_el", nullable = false)
     private LocalDateTime creadoEl;
 

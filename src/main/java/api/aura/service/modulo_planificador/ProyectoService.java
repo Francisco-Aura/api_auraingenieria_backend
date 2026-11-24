@@ -2,6 +2,7 @@ package api.aura.service.modulo_planificador;
 
 import api.aura.config.ErrorApi;
 import api.aura.config.UsuarioPlanificadorHolder;
+import api.aura.entity.modulo_planificador.pl_Propuesta;
 import api.aura.entity.modulo_planificador.pl_Proyecto;
 import api.aura.entity.modulo_planificador.pl_TareaProyecto;
 import api.aura.repository.modulo_planificador.*;
@@ -30,6 +31,7 @@ public class ProyectoService {
     private static final String SIN_IDENTIFICAR = "Sin identificar";
 
     private final pl_ProyectoRepository proyectos;
+    private final pl_PropuestaRepository propuestas;
     private final pl_TareaProyectoRepository tareas;
     private final pl_BorradorRepository borradores;
     private final pl_ActividadRepository actividades;
@@ -99,6 +101,7 @@ public class ProyectoService {
         p.setPlanPagos(contrato.normalizarPlanPagos(mapa(cuerpo.get("payment_plan"))));
         p.setPartesContrato(ContratoDocumentoService.limpiarPartes(mapa(cuerpo.get("contract_party"))));
         p.setCreadoEl(ahora());
+        p.setPropuestaId(propuestaDelProyecto(cuerpo.get("proposal_id")));
         String actor = actor();
 
         // Crear desde un borrador lo consume: si otra persona ya lo convirtió en proyecto (o lo descartó), no se vuelve a crear
@@ -134,6 +137,23 @@ public class ProyectoService {
             contratoDocumento.generarAlCrear(p);
         }
         return Mapas.proyecto(p);
+    }
+
+    /**
+     * La propuesta de la que viene el proyecto (`proposal_id`, opcional): tiene que existir, estar validada y no tener ya otro proyecto
+     * activo. Devuelve su id, o vacío si el proyecto no viene de una propuesta.
+     */
+    private String propuestaDelProyecto(Object valor) {
+        String id = texto(valor);
+        if (id == null || id.isBlank()) {
+            return "";
+        }
+        pl_Propuesta propuesta = propuestas.findById(id.strip()).orElseThrow(() -> invalido("La propuesta ya no existe: puede que la hayan eliminado"));
+        PropuestaService.exigirValidada(propuesta);
+        proyectos.findFirstByPropuestaIdAndEliminadoElIsNull(propuesta.getId()).ifPresent(otro -> {
+            throw new ErrorApi(HttpStatus.CONFLICT, "Esta propuesta ya tiene su proyecto: «" + otro.getNombre() + "». Míralo en la lista de proyectos antes de crearlo otra vez.");
+        });
+        return propuesta.getId();
     }
 
     /** Carga los pasos de una plantilla en un proyecto que todavía no tiene tareas. */

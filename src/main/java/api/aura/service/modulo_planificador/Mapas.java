@@ -35,6 +35,7 @@ public final class Mapas {
         m.put("payment_plan", p.getPlanPagos());
         m.put("created_at", hora(p.getCreadoEl()));
         m.put("dropbox_path", p.getRutaDropbox());
+        m.put("proposal_id", p.getPropuestaId());
         m.put("deleted_at", hora(p.getEliminadoEl()));
         return m;
     }
