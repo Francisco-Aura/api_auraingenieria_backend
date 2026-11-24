@@ -514,6 +514,114 @@ class PropuestaDocumentosContratoTest {
                 .andExpect(jsonPath("$.proposal_id").value(""));
     }
 
+    @Autowired
+    private api.aura.service.modulo_planificador.PropuestaLectura lectura;
+
+    /** La propuesta guardada (con todos sus equipos) como PDF hecho con Chrome; null si la máquina no tiene Chrome. */
+    private byte[] pdfDeLaPropuestaGuardada() throws Exception {
+        String id = propuestaGuardada();
+        var r = mvc.perform(get("/api/planificador/proposals/" + id + "/pdf")).andReturn().getResponse();
+        if (r.getStatus() == 501) return null;
+        assertEquals(200, r.getStatus(), r.getContentAsString());
+        return r.getContentAsByteArray();
+    }
+
+    @Test
+    void laPropuestaEnPdfSeLeeDeVueltaConTodosSusDatos() throws Exception {
+        byte[] pdf = pdfDeLaPropuestaGuardada();
+        org.junit.jupiter.api.Assumptions.assumeTrue(pdf != null, "sin Chrome en esta máquina no se puede generar el PDF");
+        JsonNode r = json.valueToTree(lectura.analizar(pdf, "Propuesta Nave Bonaquia v2.pdf"));
+        JsonNode f = r.get("fields");
+        assertEquals("proposal", r.get("kind").asText());
+        assertEquals("22.5", f.get("potencia_kwp").get("value").asText());
+        assertEquals("40", f.get("paneles_uds").get("value").asText());
+        assertEquals("JA Solar 550 Wp", f.get("paneles_modelo").get("value").asText());
+        assertEquals("HUAWEI SUN2000-20KTL + Huawei 5K", f.get("inversor_modelo").get("value").asText());
+        assertEquals("3", f.get("inversor_uds").get("value").asText());
+        assertEquals("BYD Battery Box × 2", f.get("bateria").get("value").asText());
+        assertEquals("Marquesina flotante", f.get("estructura").get("value").asText());
+        assertEquals("13640", f.get("importe_total").get("value").asText());
+        assertEquals("BONAQUIA, S.L. · NAVE-12", r.get("project").get("name").get("value").asText());
+        assertEquals("BONAQUIA", r.get("project").get("company").get("value").asText());
+        assertEquals("BONAQUIA, S.L.", r.get("client").get("name").asText());
+        assertEquals(0, r.get("missing").size(), "con todos los equipos no falta nada: " + r.get("missing"));
+        assertEquals("standard", r.get("payment_plan").get("mode").asText());
+        assertEquals(4, r.get("payment_plan").get("stages").size());
+        assertEquals("12", r.get("extras").get("garantia_producto").asText());
+        assertEquals("30", r.get("extras").get("garantia_produccion").asText());
+        assertEquals("87,4", r.get("extras").get("garantia_potencia").asText());
+    }
+
+    @Test
+    void unaPropuestaSinEquiposSeLeeSinInventarNadaYDiceLoQueFalta() throws Exception {
+        String id = propuestaGuardada();
+        equiposRepo.deleteAll();
+        var r = mvc.perform(get("/api/planificador/proposals/" + id + "/pdf")).andReturn().getResponse();
+        org.junit.jupiter.api.Assumptions.assumeTrue(r.getStatus() != 501, "sin Chrome en esta máquina no se puede generar el PDF");
+        assertEquals(200, r.getStatus(), r.getContentAsString());
+        JsonNode d = json.valueToTree(lectura.analizar(r.getContentAsByteArray(), "p.pdf"));
+        assertEquals("22.5", d.get("fields").get("potencia_kwp").get("value").asText());
+        assertEquals("40", d.get("fields").get("paneles_uds").get("value").asText());
+        assertFalse(d.get("fields").has("paneles_modelo"));
+        assertFalse(d.get("fields").has("inversor_modelo"));
+        assertFalse(d.get("fields").has("inversor_uds"));
+        assertTrue(d.get("missing").toString().contains("paneles_modelo") && d.get("missing").toString().contains("inversor_modelo"));
+    }
+
+    /** Una propuesta real (Logística Segura · Autoconsumo Alcantarilla, v1) reducida a las páginas con datos; el presupuesto no tenía módulo ni inversor. */
+    @Test
+    void unaPropuestaRealSeLeeConTodoLoQueLleva() throws Exception {
+        byte[] pdf;
+        try (var in = getClass().getResourceAsStream("/propuesta-lectura/logistica-segura.pdf")) {
+            assertNotNull(in);
+            pdf = in.readAllBytes();
+        }
+        JsonNode r = json.valueToTree(lectura.analizar(pdf, "Propuesta Logística Segura, S.L. · Autoconsumo Alcantarilla v1.pdf"));
+        JsonNode f = r.get("fields");
+        assertEquals("proposal", r.get("kind").asText());
+        assertEquals("150", f.get("potencia_kwp").get("value").asText());
+        assertEquals("240", f.get("paneles_uds").get("value").asText());
+        assertEquals("Lastrada sin perforación", f.get("estructura").get("value").asText());
+        assertEquals("112400", f.get("importe_total").get("value").asText());
+        assertEquals("alta", f.get("importe_total").get("confidence").asText());
+        assertEquals(4, f.size(), "potencia, paneles, estructura e importe: sin módulo ni inversor ni batería que leer");
+        assertEquals("Logística Segura, S.L. · Autoconsumo Alcantarilla", r.get("project").get("name").get("value").asText());
+        assertEquals("Logística Segura", r.get("project").get("company").get("value").asText());
+        assertEquals("Logística Segura, S.L.", r.get("client").get("name").asText());
+        assertEquals("[\"paneles_modelo\",\"inversor_uds\",\"inversor_modelo\"]", r.get("missing").toString());
+        assertTrue(r.get("notes").toString().contains("solo 625 Wp por módulo"));
+        assertTrue(r.get("notes").toString().contains("no lleva baterías"));
+        assertTrue(r.get("notes").toString().contains("sin IVA"));
+        assertEquals("standard", r.get("payment_plan").get("mode").asText());
+        assertEquals("A la firma del contrato", r.get("payment_plan").get("stages").get(0).get("label").asText());
+        assertEquals(30.0, r.get("payment_plan").get("stages").get(0).get("percent").asDouble());
+        assertEquals(10.0, r.get("payment_plan").get("stages").get(3).get("percent").asDouble());
+        assertEquals(0, r.get("extras").size(), "esta propuesta no trae las garantías del módulo");
+    }
+
+    @Test
+    void unPdfQueNoEsUnaPropuestaDeAuraSeRechazaConUnMensajeClaro() throws Exception {
+        var oferta = getClass().getResourceAsStream("/oferta-dorada/completo.pdf");
+        assertNotNull(oferta);
+        byte[] datos = oferta.readAllBytes();
+        mvc.perform(post("/api/planificador/proposal/extract?name=oferta.pdf").contentType("application/octet-stream").content(datos))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("no parece una propuesta de Aura")));
+        mvc.perform(post("/api/planificador/proposal/extract").contentType("application/octet-stream").content(new byte[0])).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("El archivo está vacío"));
+        mvc.perform(post("/api/planificador/proposal/extract").contentType("application/octet-stream").content("no es un pdf".getBytes()))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.detail").value("Solo se puede subir la propuesta en PDF."));
+    }
+
+    @Test
+    void unaPropuestaEnPdfEsUnaPropuestaYElEndpointLaLee() throws Exception {
+        byte[] pdf = pdfDeLaPropuestaGuardada();
+        org.junit.jupiter.api.Assumptions.assumeTrue(pdf != null, "sin Chrome en esta máquina no se puede generar el PDF");
+        mvc.perform(post("/api/planificador/proposal/extract?name=p.pdf").contentType("application/octet-stream").content(pdf))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.kind").value("proposal")).andExpect(jsonPath("$.fields.importe_total.value").value("13640"))
+                .andExpect(jsonPath("$.payment_plan.mode").value("standard"));
+    }
+
     @Test
     void unaPropuestaOUnPresupuestoQueNoExistenSonUn404() throws Exception {
         mvc.perform(get("/api/planificador/proposals/nada/pdf")).andExpect(status().isNotFound());
