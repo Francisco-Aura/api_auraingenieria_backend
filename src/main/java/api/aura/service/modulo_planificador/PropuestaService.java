@@ -340,6 +340,20 @@ public class PropuestaService {
         }
     }
 
+    /** La propuesta guardada en PDF (la presentación impresa con Chrome, con la página de «Aceptación y firma»). Sin navegador en el servidor: 501 y el cliente cae al cuadro de impresión. */
+    @Transactional(readOnly = true)
+    public Documento pdf(String id) {
+        Documento html = html(id);
+        try {
+            byte[] pdf = propuestaPdf.generar(new String(html.contenido(), java.nio.charset.StandardCharsets.UTF_8));
+            return new Documento(pdf, html.nombre().replaceFirst("\\.html$", ".pdf"));
+        } catch (PropuestaPdf.SinNavegador e) {
+            throw new ErrorApi(HttpStatus.NOT_IMPLEMENTED, e.getMessage());
+        } catch (RuntimeException e) {
+            throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar el PDF: " + e.getMessage());
+        }
+    }
+
     /** El presupuesto se puede crear sin logo del cliente, pero la propuesta no se descarga sin él: sale en la presentación. */
     private static void exigirLogo(Map<String, Object> datos) {
         Object logo = datos.get("logo");

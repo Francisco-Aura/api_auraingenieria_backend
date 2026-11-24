@@ -76,6 +76,12 @@ public class PropuestaController {
         return descarga(propuestaService.html(id), MediaType.parseMediaType("text/html; charset=utf-8"));
     }
 
+    /** La propuesta guardada en PDF, con la página de firma; 501 si el servidor no tiene Chrome (el cliente ofrece entonces imprimir el HTML). */
+    @GetMapping("/proposals/{id}/pdf")
+    public ResponseEntity<byte[]> pdf(@PathVariable String id) {
+        return descarga(propuestaService.pdf(id), MediaType.APPLICATION_PDF);
+    }
+
     /** La presentación para el cliente del presupuesto en curso (mismo cuerpo que al guardarlo). No guarda nada. */
     @PostMapping("/budget/proposal-html")
     public ResponseEntity<byte[]> htmlDelBorrador(@Valid @RequestBody PresupuestoGuardarRequest cuerpo) {

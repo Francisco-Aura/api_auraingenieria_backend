@@ -446,7 +446,24 @@ class PropuestaDocumentosContratoTest {
     }
 
     @Test
+    void laPropuestaGuardadaSeDescargaEnPdfConLaPaginaDeFirmaOAvisaDeQueNoHayNavegador() throws Exception {
+        String id = propuestaGuardada();
+        var respuesta = mvc.perform(get("/api/planificador/proposals/" + id + "/pdf")).andReturn().getResponse();
+        if (respuesta.getStatus() == 501) {
+            return; // sin Chrome en esta máquina: el cliente imprime el HTML desde el navegador
+        }
+        assertEquals(200, respuesta.getStatus(), respuesta.getContentAsString());
+        assertEquals("attachment; filename*=UTF-8''Propuesta%20Nave%20Bonaquia%20v2.pdf", respuesta.getHeader("Content-Disposition"));
+        byte[] pdf = respuesta.getContentAsByteArray();
+        assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
+        try (org.apache.pdfbox.pdmodel.PDDocument d = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+            assertTrue(new org.apache.pdfbox.text.PDFTextStripper().getText(d).contains("Firma del cliente"), "lleva la página de aceptación y firma");
+        }
+    }
+
+    @Test
     void unaPropuestaOUnPresupuestoQueNoExistenSonUn404() throws Exception {
+        mvc.perform(get("/api/planificador/proposals/nada/pdf")).andExpect(status().isNotFound());
         mvc.perform(get("/api/planificador/proposals/nada/pptx")).andExpect(status().isNotFound());
         mvc.perform(get("/api/planificador/proposals/nada/html")).andExpect(status().isNotFound());
         pl_Propuesta p = new pl_Propuesta();
