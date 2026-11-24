@@ -48,6 +48,16 @@ public class pl_Presupuesto {
     @Column(name = "cliente_tipo", nullable = false, length = 20)
     private String clienteTipo = "";
 
+    /** Estudio al que está asociado (mismo cliente y mismo proyecto); vacío si no lo está. */
+    @org.hibernate.annotations.ColumnDefault("''")
+    @Column(name = "estudio_id", nullable = false, length = 64)
+    private String estudioId = "";
+
+    /** Propuesta (pl_proyectos_comerciales) a la que pertenece; vacío si el nombre no tiene proyecto. */
+    @org.hibernate.annotations.ColumnDefault("''")
+    @Column(name = "proyecto_id", nullable = false, length = 64)
+    private String proyectoId = "";
+
     @Column(name = "nombre_variante", nullable = false, length = 60)
     private String nombreVariante = "";
 

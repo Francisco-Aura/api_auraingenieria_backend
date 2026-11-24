@@ -1,5 +1,6 @@
 package api.aura.controller.modulo_tareas;
 
+import api.aura.controller.SesionActual;
 import api.aura.entity.modulo_tareas.mt_Categoria;
 import api.aura.entity.modulo_tareas.mt_SubCategoria;
 import api.aura.repository.modulo_tareas.mt_CategoriaRepository;
@@ -45,6 +46,7 @@ public class TareaSubcategoriaController {
     @PostMapping
     @Transactional
     public ResponseEntity<Map<String, Object>> crear(@RequestBody Map<String, Object> datos) {
+        SesionActual.exigirAdmin();
         mt_SubCategoria subcategoria = mt_SubCategoria.builder()
                 .nombre((String) datos.get("nombre"))
                 .codigo((String) datos.get("codigo"))
@@ -66,6 +68,7 @@ public class TareaSubcategoriaController {
     @Transactional
     public ResponseEntity<Map<String, Object>> actualizar(@PathVariable Long id,
             @RequestBody Map<String, Object> datos) {
+        SesionActual.exigirAdmin();
         return subcategoriaRepository.findById(id)
                 .map(subcategoria -> {
                     if (datos.containsKey("nombre")) {
@@ -99,6 +102,7 @@ public class TareaSubcategoriaController {
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        SesionActual.exigirAdmin();
         return subcategoriaRepository.findById(id)
                 .map(subcategoria -> {
                     // Primero quitar de todas las categorías

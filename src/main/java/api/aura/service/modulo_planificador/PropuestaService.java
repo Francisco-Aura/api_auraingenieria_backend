@@ -2,6 +2,7 @@ package api.aura.service.modulo_planificador;
 
 import api.aura.config.ErrorApi;
 import api.aura.config.UsuarioPlanificadorHolder;
+import api.aura.dto.modulo_planificador.PresupuestoGuardarRequest;
 import api.aura.entity.modulo_planificador.pl_Equipo;
 import api.aura.entity.modulo_planificador.pl_Presupuesto;
 import api.aura.entity.modulo_planificador.pl_Propuesta;
@@ -29,20 +30,27 @@ public class PropuestaService {
     private static final Pattern PATRON_LOGO =
             Pattern.compile("^data:(image/(?:png|jpeg|webp|svg\\+xml));base64,([A-Za-z0-9+/=]+)$");
     private static final int LOGO_CLIENTE_MAX_BYTES = 1_500_000;
+    static final String SIN_LOGO = "Sube el logo de la empresa del cliente para descargar la propuesta: sale en la presentación.";
 
     private final pl_PropuestaRepository propuestas;
     private final pl_EquipoRepository equipos;
     private final PresupuestoService presupuestos;
     private final PropuestaHtml propuestaHtml;
     private final PropuestaPptx propuestaPptx;
+    private final PropuestaPdf propuestaPdf;
 
     /** Las propuestas de un presupuesto, de la más reciente a la más antigua. */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> listar(String presupuestoId) {
         presupuestos.buscar(presupuestoId);
         List<Map<String, Object>> salida = new ArrayList<>();
+        // Con el logo ya puesto (en la propuesta o en los parámetros del presupuesto) no hace falta pedirlo para descargar la presentación
+        Map<String, Object> datosPresupuesto = presupuestos.buscar(presupuestoId).getDatos();
+        boolean logoDelPresupuesto = !PropuestaDatos.logoValido(datosPresupuesto == null ? null : datosPresupuesto.get("clientLogo")).isEmpty();
         for (pl_Propuesta p : propuestas.findByPresupuestoIdOrderByVersionDesc(presupuestoId)) {
-            salida.add(dto(p));
+            Map<String, Object> d = dto(p);
+            d.put("has_logo", logoDelPresupuesto || !p.getLogoCliente().isEmpty());
+            salida.add(d);
         }
         return salida;
     }
@@ -56,7 +64,7 @@ public class PropuestaService {
         }
         List<pl_Propuesta> existentes = propuestas.findByPresupuestoId(b.getId());
         if (existentes.stream().anyMatch(p -> "aprobada".equals(p.getEstado()))) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "El cliente ya aprobó una propuesta de este presupuesto.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "Este presupuesto ya tiene una propuesta validada.");
         }
         if (existentes.stream().anyMatch(p -> EN_CURSO.contains(p.getEstado()))) {
             throw new ErrorApi(HttpStatus.CONFLICT, "Ya hay una propuesta en curso: termínala antes de crear otra.");
@@ -85,17 +93,31 @@ public class PropuestaService {
         p.setEnviadoEl(PresupuestoService.ahora());
         p.setEnviadoPor(nombreActor());
         propuestas.save(p);
+        // Entregada la propuesta, el estudio queda a la espera de la respuesta del cliente
+        presupuestos.avanzarEstudio(presupuestos.buscarOpcional(p.getPresupuestoId()), "pte_cliente");
         return dto(p);
     }
 
+    /** Valida la propuesta entregada. Solo quien valida los presupuestos, y con el presupuesto aprobado y su estudio aceptado. */
     @Transactional
     public Map<String, Object> aprobar(String id, String nota) {
-        return decidir(buscar(id), "aprobada", nota);
+        presupuestos.exigirValidador();
+        pl_Propuesta p = buscar(id);
+        if ("enviada".equals(p.getEstado())) {
+            pl_Presupuesto b = presupuestos.buscar(p.getPresupuestoId());
+            if (!presupuestos.listoParaValidar(b)) {
+                throw new ErrorApi(HttpStatus.CONFLICT, "Para validar la propuesta, el presupuesto tiene que estar aprobado y tener un estudio asociado que no esté rechazado ni cancelado.");
+            }
+            // Validada la propuesta, el estudio queda aceptado (y bloqueado)
+            presupuestos.avanzarEstudio(b, "aceptado");
+        }
+        return decidir(p, "aprobada", nota);
     }
 
-    /** Anota que el cliente rechazó la propuesta (con el motivo, si se sabe): se podrá crear otra versión. */
+    /** Anula la propuesta entregada (con el motivo, si se sabe): se podrá crear otra versión. Solo quien valida los presupuestos. */
     @Transactional
     public Map<String, Object> rechazar(String id, String nota) {
+        presupuestos.exigirValidador();
         return decidir(buscar(id), "rechazada", nota);
     }
 
@@ -180,7 +202,7 @@ public class PropuestaService {
 
     private Map<String, Object> decidir(pl_Propuesta p, String estado, String nota) {
         if (!"enviada".equals(p.getEstado())) {
-            throw new ErrorApi(HttpStatus.CONFLICT, "Solo contesta el cliente a una propuesta enviada.");
+            throw new ErrorApi(HttpStatus.CONFLICT, "Solo se valida o se anula una propuesta entregada.");
         }
         p.setEstado(estado);
         p.setDecididoEl(PresupuestoService.ahora());
@@ -262,16 +284,67 @@ public class PropuestaService {
      * La presentación de la propuesta (HTML animado, imprimible a PDF), con todo lo que se puede tomar del presupuesto validado y con las
      * imágenes incrustadas: un solo archivo que se descarga y se puede mandar. Lo que el presupuesto no tiene va en blanco.
      */
+    /**
+     * La misma presentación, pero del presupuesto en curso tal como está en pantalla (cliente, datos, kWp, paneles y total, como al guardarlo):
+     * es el documento para el cliente que se saca al terminar de confeccionar el presupuesto, sin esperar a validarlo ni a crear la propuesta.
+     * No guarda nada. El logo es el de los parámetros del presupuesto: se puede crear el presupuesto sin él, pero no descargar la propuesta.
+     */
+    @Transactional(readOnly = true)
+    public Documento htmlDeBorrador(PresupuestoGuardarRequest cuerpo) {
+        pl_Presupuesto b = new pl_Presupuesto();
+        b.setNombre(cuerpo.getNombre() == null ? "" : cuerpo.getNombre());
+        b.setDatos(cuerpo.getDatos());
+        b.setKwp(cuerpo.getKwp());
+        b.setPaneles(cuerpo.getPaneles());
+        b.setTotalPresupuesto(cuerpo.getTotalPresupuesto());
+        try {
+            Map<String, Object> datos = PropuestaDatos.paraHtml(b, catalogo());
+            exigirLogo(datos); // el de los parámetros del presupuesto
+            String nombre = b.getNombre().isEmpty() ? "presupuesto" : b.getNombre();
+            return new Documento(propuestaHtml.generar(datos).getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    ("Propuesta " + nombre).replaceAll("[\\\\/:*?\"<>|]+", " ").strip() + ".html");
+        } catch (ErrorApi e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
+        }
+    }
+
+    /** La propuesta del presupuesto en curso en PDF (la presentación impresa con Chrome). Sin navegador en el servidor: 501 y el cliente cae al cuadro de impresión. */
+    public Documento pdfDeBorrador(PresupuestoGuardarRequest cuerpo) {
+        Documento html = htmlDeBorrador(cuerpo);
+        try {
+            byte[] pdf = propuestaPdf.generar(new String(html.contenido(), java.nio.charset.StandardCharsets.UTF_8));
+            return new Documento(pdf, html.nombre().replaceFirst("\\.html$", ".pdf"));
+        } catch (PropuestaPdf.SinNavegador e) {
+            throw new ErrorApi(HttpStatus.NOT_IMPLEMENTED, e.getMessage());
+        } catch (RuntimeException e) {
+            throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar el PDF: " + e.getMessage());
+        }
+    }
+
     @Transactional(readOnly = true)
     public Documento html(String id) {
         pl_Propuesta p = buscar(id);
         pl_Presupuesto b = presupuestoDe(p);
         try {
             Map<String, Object> datos = PropuestaDatos.paraHtml(b, catalogo());
-            datos.put("logo", p.getLogoCliente());
+            // El logo subido en la propuesta manda; si no hay, el de los parámetros del presupuesto (ya está en los datos)
+            if (p.getLogoCliente() != null && !p.getLogoCliente().isEmpty()) datos.put("logo", p.getLogoCliente());
+            exigirLogo(datos);
             return new Documento(propuestaHtml.generar(datos).getBytes(java.nio.charset.StandardCharsets.UTF_8), nombreDeArchivo(b, p) + ".html");
+        } catch (ErrorApi e) {
+            throw e;
         } catch (RuntimeException e) {
             throw new ErrorApi(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo generar la presentación: " + e.getMessage());
+        }
+    }
+
+    /** El presupuesto se puede crear sin logo del cliente, pero la propuesta no se descarga sin él: sale en la presentación. */
+    private static void exigirLogo(Map<String, Object> datos) {
+        Object logo = datos.get("logo");
+        if (logo == null || String.valueOf(logo).isEmpty()) {
+            throw new ErrorApi(HttpStatus.UNPROCESSABLE_ENTITY, SIN_LOGO);
         }
     }
 }

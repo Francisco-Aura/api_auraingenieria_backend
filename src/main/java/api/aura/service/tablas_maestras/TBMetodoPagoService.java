@@ -39,7 +39,7 @@ public class TBMetodoPagoService {
                     metodoPago.setNombre(metodoPagoActualizado.getNombre());
                     return metodoPagoRepository.save(metodoPago);
                 })
-                .orElseThrow(() -> new RuntimeException("Método de pago no encontrado con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Método de pago no encontrado con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'metodos-pago'")

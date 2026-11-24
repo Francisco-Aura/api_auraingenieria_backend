@@ -1,5 +1,8 @@
 package api.aura.controller.modulo_tareas;
 
+import api.aura.config.AuraUserHolder;
+import api.aura.controller.DescargaSegura;
+import api.aura.controller.SesionActual;
 import api.aura.dto.modulo_tareas.ClienteActividadDTO;
 import api.aura.dto.modulo_tareas.ClienteNotaDTO;
 import api.aura.dto.modulo_tareas.ActualizarNotaClienteRequest;
@@ -10,7 +13,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +33,10 @@ public class ClienteTimelineController {
     public ResponseEntity<?> obtenerActividad(@PathVariable Integer clienteId,
             @RequestParam(required = false) Integer nivelAcceso) {
         try {
-            List<ClienteActividadDTO> actividad = clienteTimelineService.obtenerActividad(clienteId, nivelAcceso);
+            // Los eventos solo visibles para nivel 1 dependen del nivel real de la
+            // sesión; el parámetro nivelAcceso se mantiene por compatibilidad pero se ignora
+            List<ClienteActividadDTO> actividad = clienteTimelineService.obtenerActividad(clienteId,
+                    AuraUserHolder.getNivelAcceso());
             return ResponseEntity.ok(actividad);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -51,6 +56,8 @@ public class ClienteTimelineController {
     @PostMapping(value = "/notas", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> crearNotaJson(@PathVariable Integer clienteId,
             @RequestBody @Valid CrearNotaClienteRequest request) {
+        // El autor de la nota es el usuario de la sesión, no el usuarioId del cuerpo
+        request.setUsuarioId(SesionActual.idRequerido());
         try {
             return ResponseEntity.ok(clienteTimelineService.crearNotaFijada(clienteId, request));
         } catch (IllegalArgumentException e) {
@@ -63,6 +70,7 @@ public class ClienteTimelineController {
             @RequestPart(value = "datos") @Valid CrearNotaClienteRequest request,
             @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
             @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
+        request.setUsuarioId(SesionActual.idRequerido());
         try {
             List<MultipartFile> todos = combinarArchivos(archivos, archivo);
             if (!todos.isEmpty()) {
@@ -125,10 +133,8 @@ public class ClienteTimelineController {
             ClienteTimelineService.ClienteNotaAdjuntoInfo info =
                     clienteTimelineService.obtenerAdjuntoParaDescargaInfo(clienteId, notaId, adjuntoId);
             Resource resource = new PathResource(info.ruta());
-            String contentDisposition = "attachment; filename=\"" +
-                    (info.nombreArchivo() != null ? info.nombreArchivo().replace("\"", "").replaceAll("[\\r\\n]", "") : "archivo") + "\"";
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .headers(DescargaSegura.cabeceras(info.nombreArchivo(), "archivo"))
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
         } catch (IllegalArgumentException e) {
@@ -176,10 +182,8 @@ public class ClienteTimelineController {
             Path ruta = clienteTimelineService.obtenerRutaArchivoNota(clienteId, notaId);
             String nombreOriginal = clienteTimelineService.obtenerNombreArchivoNota(clienteId, notaId);
             Resource resource = new PathResource(ruta);
-            String contentDisposition = "attachment; filename=\"" +
-                    (nombreOriginal != null ? nombreOriginal.replace("\"", "").replaceAll("[\\r\\n]", "") : "archivo") + "\"";
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .headers(DescargaSegura.cabeceras(nombreOriginal, "archivo"))
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
         } catch (IllegalArgumentException e) {

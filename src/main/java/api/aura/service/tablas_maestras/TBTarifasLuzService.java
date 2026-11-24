@@ -39,7 +39,7 @@ public class TBTarifasLuzService {
                     tarifaLuz.setDescripcion(tarifaLuzActualizada.getDescripcion());
                     return tarifasLuzRepository.save(tarifaLuz);
                 })
-                .orElseThrow(() -> new RuntimeException("Tarifa de Luz no encontrada con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Tarifa de Luz no encontrada con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'tarifas-luz'")

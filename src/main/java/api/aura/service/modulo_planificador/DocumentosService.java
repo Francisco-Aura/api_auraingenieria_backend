@@ -33,6 +33,8 @@ public class DocumentosService {
     private boolean presupuestador;
     @Value("${planificador.funciones.inventario:false}")
     private boolean inventario;
+    @Value("${planificador.funciones.estudios:false}")
+    private boolean estudios;
 
     /** Funciones que se pueden encender o apagar en cada servidor (apagadas por defecto). */
     public Map<String, Object> funciones() {
@@ -40,6 +42,8 @@ public class DocumentosService {
         m.put("budgeter", presupuestador);
         // Los precios del presupuestador se editan en el inventario: con el presupuestador encendido, el inventario también
         m.put("inventory", inventario || presupuestador);
+        // Estudios fotovoltaicos: se encienden solos donde está el presupuestador (así no hace falta tocar la configuración de cada servidor)
+        m.put("studies", estudios || presupuestador);
         // Solo para pruebas en local en el Planificador actual: aquí el servidor nunca guarda archivos de proyectos
         m.put("local_files", false);
         return m;

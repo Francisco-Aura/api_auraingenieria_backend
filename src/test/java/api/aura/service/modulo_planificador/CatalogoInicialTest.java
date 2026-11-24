@@ -30,7 +30,7 @@ class CatalogoInicialTest {
 
     @Test
     void unaInstalacionNuevaArrancaConElCatalogoDeEjemplo() throws Exception {
-        assertEquals(149, equipos.count(), "productos del catálogo");
+        assertEquals(150, equipos.count(), "productos del catálogo");
         var aiko = equipos.findById("mod-aiko-615").orElseThrow();
         assertEquals("AIKO 615", aiko.getModelo());
         assertEquals("módulo", aiko.getUnidad());

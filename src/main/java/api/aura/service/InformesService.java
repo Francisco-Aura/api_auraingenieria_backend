@@ -2,7 +2,6 @@ package api.aura.service;
 
 import org.springframework.stereotype.Service;
 import api.aura.dto.informes.*;
-import api.aura.entity.Cliente;
 import api.aura.repository.InformesRepository;
 import api.aura.repository.ClienteRepository;
 import api.aura.repository.ContratoRepository;
@@ -27,6 +26,9 @@ public class InformesService {
     private final TBSectoresRepository sectoresRepository;
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    /** Para guardar los cambios del informe de renovaciones como el formulario del contrato (MCAS incluido). */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ContratoService contratoService;
 
     public InformesService(InformesRepository repository, ContratoRepository contratoRepository,
             PuntoSuministroRepository puntoSuministroRepository, ClienteRepository clienteRepository,
@@ -131,7 +133,8 @@ public class InformesService {
             contrato.setIdComercializadoraAnterior(dto.getIdComercializadoraAnterior());
         if (dto.getObservaciones() != null)
             contrato.setObservaciones(dto.getObservaciones());
-        contratoRepository.save(contrato);
+        if (contratoService != null) contratoService.guardarCambiosDeOtraPantalla(contrato);
+        else contratoRepository.save(contrato);
         return dto;
     }
 
@@ -231,41 +234,10 @@ public class InformesService {
         dto.setEstadoPago((String) row[22]);
         dto.setNumeroCuotas(toInt(row[23]));
 
-        // Calcular dinámicamente el siguiente pago pendiente si no viene en la consulta
-        if (dto.getSiguientePagoNumero() == null) {
-            dto.setSiguientePagoNumero(calcularSiguientePagoVencido(dto.getIdServicio()));
-        }
-
+        // siguientePagoNumero ya lo calcula la consulta con el mismo CASE que se
+        // usaba como respaldo fila a fila: repetirlo era una consulta extra (N+1)
+        // por cada servicio sin cuota vencida que devolvía siempre NULL.
         return dto;
-    }
-
-    private Integer calcularSiguientePagoVencido(Long idServicio) {
-        String sql = """
-                SELECT
-                    CASE
-                        WHEN COALESCE(sp.primer_pago_pagado, 0) = 0 AND sp.primer_pago_fecha <= CURDATE() AND COALESCE(sp.primer_pago_importe, 0) > 0 THEN 1
-                        WHEN COALESCE(sp.segundo_pago_pagado, 0) = 0 AND sp.segundo_pago_fecha <= CURDATE() AND COALESCE(sp.segundo_pago_importe, 0) > 0 THEN 2
-                        WHEN COALESCE(sp.tercer_pago_pagado, 0) = 0 AND sp.tercer_pago_fecha <= CURDATE() AND COALESCE(sp.tercer_pago_importe, 0) > 0 THEN 3
-                        WHEN COALESCE(sp.cuarto_pago_pagado, 0) = 0 AND sp.cuarto_pago_fecha <= CURDATE() AND COALESCE(sp.cuarto_pago_importe, 0) > 0 THEN 4
-                        WHEN COALESCE(sp.quinto_pago_pagado, 0) = 0 AND sp.quinto_pago_fecha <= CURDATE() AND COALESCE(sp.quinto_pago_importe, 0) > 0 THEN 5
-                        WHEN COALESCE(sp.sexto_pago_pagado, 0) = 0 AND sp.sexto_pago_fecha <= CURDATE() AND COALESCE(sp.sexto_pago_importe, 0) > 0 THEN 6
-                        WHEN COALESCE(sp.septimo_pago_pagado, 0) = 0 AND sp.septimo_pago_fecha <= CURDATE() AND COALESCE(sp.septimo_pago_importe, 0) > 0 THEN 7
-                        WHEN COALESCE(sp.octavo_pago_pagado, 0) = 0 AND sp.octavo_pago_fecha <= CURDATE() AND COALESCE(sp.octavo_pago_importe, 0) > 0 THEN 8
-                        WHEN COALESCE(sp.noveno_pago_pagado, 0) = 0 AND sp.noveno_pago_fecha <= CURDATE() AND COALESCE(sp.noveno_pago_importe, 0) > 0 THEN 9
-                        WHEN COALESCE(sp.decimo_pago_pagado, 0) = 0 AND sp.decimo_pago_fecha <= CURDATE() AND COALESCE(sp.decimo_pago_importe, 0) > 0 THEN 10
-                        WHEN COALESCE(sp.decimoprimer_pago_pagado, 0) = 0 AND sp.decimoprimer_pago_fecha <= CURDATE() AND COALESCE(sp.decimoprimer_pago_importe, 0) > 0 THEN 11
-                        WHEN COALESCE(sp.decimosegundo_pago_pagado, 0) = 0 AND sp.decimosegundo_pago_fecha <= CURDATE() AND COALESCE(sp.decimosegundo_pago_importe, 0) > 0 THEN 12
-                        ELSE NULL
-                    END AS siguientePagoNumero
-                FROM servicios_pagos sp
-                WHERE sp.id_servicio = ?
-                """;
-
-        try {
-            return jdbcTemplate.queryForObject(sql, Integer.class, idServicio);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     public void actualizarPagoParcial(Long idServicio, int numeroPago, boolean pagado) {
@@ -285,7 +257,17 @@ public class InformesService {
             default -> throw new IllegalArgumentException("Número de pago inválido: " + numeroPago);
         };
         String sql = "UPDATE servicios_pagos SET " + campo + " = ? WHERE id_servicio = ?";
-        jdbcTemplate.update(sql, pagado ? 1 : 0, idServicio);
+        if (jdbcTemplate.update(sql, pagado ? 1 : 0, idServicio) == 0 && !tienePlanDePagos(idServicio)) {
+            // Antes salía «pago marcado» aunque no se hubiera tocado nada (p. ej. si el plan se
+            // borró desde otra pestaña). Solo se mira cuando no cambió ninguna fila.
+            throw new IllegalArgumentException("Este servicio ya no tiene plan de pagos. Recargue el informe.");
+        }
+    }
+
+    private boolean tienePlanDePagos(Long idServicio) {
+        Integer planes = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM servicios_pagos WHERE id_servicio = ?", Integer.class, idServicio);
+        return planes != null && planes > 0;
     }
 
     public void marcarSiguientePagoPendiente(Long idServicio) {
@@ -305,25 +287,31 @@ public class InformesService {
                     UNION ALL SELECT 12, COALESCE(sp.decimosegundo_pago_pagado, 0), sp.decimosegundo_pago_fecha, COALESCE(sp.decimosegundo_pago_importe, 0) FROM servicios_pagos sp WHERE sp.id_servicio = ?
                 ) AS pagos
                 WHERE pagado = 0 AND fecha <= CURDATE() AND importe > 0
+                    -- Solo las cuotas del plan, como en el informe y en la pantalla del servicio
+                    AND numero <= (SELECT COALESCE(MAX(pp.numero_cuotas), 12) FROM servicios_pagos sp
+                                   JOIN tbpago_plazos pp ON pp.id = sp.id_pago_plazos WHERE sp.id_servicio = ?)
                 ORDER BY numero
                 LIMIT 1
                 """;
 
+        Integer siguientePago;
         try {
-            Integer siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio, idServicio, idServicio,
+            siguientePago = jdbcTemplate.queryForObject(sql, Integer.class, idServicio, idServicio, idServicio,
                     idServicio, idServicio, idServicio, idServicio, idServicio, idServicio, idServicio, idServicio,
-                    idServicio);
-
-            if (siguientePago != null) {
-                actualizarPagoParcial(idServicio, siguientePago, true);
-            } else {
-                throw new IllegalArgumentException("No hay pagos pendientes para este servicio");
-            }
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("No se pudo marcar el pago. Por favor, int\u00e9ntelo de nuevo.", e);
+                    idServicio, idServicio);
+        } catch (org.springframework.dao.EmptyResultDataAccessException sinFilas) {
+            // Sin cuotas vencidas la consulta no devuelve ninguna fila: no es un fallo
+            // tecnico, es que no hay nada que marcar. Antes lo atrapaba el catch general
+            // y el usuario veia siempre «No se pudo marcar el pago».
+            siguientePago = null;
+        } catch (RuntimeException e) {
+            throw new RuntimeException("No se pudo marcar el pago. Por favor, inténtelo de nuevo.", e);
         }
+
+        if (siguientePago == null) {
+            throw new IllegalArgumentException("No hay pagos pendientes para este servicio");
+        }
+        actualizarPagoParcial(idServicio, siguientePago, true);
     }
 
     public List<ContratoVigenteDTO> obtenerContratosVigentes() {
@@ -430,15 +418,18 @@ public class InformesService {
     }
 
     public List<ContactoClienteDTO> obtenerContactosClientes() {
-        List<Cliente> clientes = clienteRepository.findAll();
+        // Solo las columnas del informe: cargar cada Cliente entero (notas, IBAN,
+        // usuario asignado...) era leer de la BD remota mucho más de lo que se usa.
+        List<ClienteRepository.DatosContacto> clientes = clienteRepository.findAllByOrderByIdAsc();
         List<ContactoClienteDTO> resultado = new ArrayList<>();
 
         // Cargar sectores en un mapa para resolución eficiente
         Map<Integer, String> sectorMap = new HashMap<>();
         sectoresRepository.findAll().forEach(s -> sectorMap.put(s.getId(), s.getNombre()));
 
-        for (Cliente c : clientes) {
+        for (ClienteRepository.DatosContacto c : clientes) {
             String nombreCliente = c.getNombre() != null ? c.getNombre() : "";
+            // Igual que la pantalla de Clientes: cualquier fecha de baja cuenta (también 1900)
             String estadoBaja = c.getFechaBaja() != null ? "SI" : "NO";
             String sector = c.getCodigoSector() != null ? sectorMap.getOrDefault(c.getCodigoSector(), "") : "";
 

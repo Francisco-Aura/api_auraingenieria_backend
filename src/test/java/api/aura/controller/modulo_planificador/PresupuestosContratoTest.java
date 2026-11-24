@@ -47,6 +47,7 @@ class PresupuestosContratoTest {
     void limpiar() {
         jdbc.execute("DELETE FROM pl_propuestas");
         jdbc.execute("DELETE FROM pl_presupuestos");
+        jdbc.execute("DELETE FROM pl_estudios");
         jdbc.execute("DELETE FROM pl_historial_precios");
         jdbc.execute("DELETE FROM pl_equipos");
         jdbc.execute("DELETE FROM pl_proveedores");
@@ -230,20 +231,93 @@ class PresupuestosContratoTest {
                 .andExpect(jsonPath("$.variant_name").value("x".repeat(60)));
     }
 
+    private String estudio(int clienteId, String proyecto) throws Exception {
+        String cuerpo = "{\"customer\":{\"kind\":\"existente\",\"id\":" + clienteId + ",\"name\":\"Pepe\"},\"proyecto\":\"" + proyecto + "\"}";
+        return leer(mvc.perform(post(BASE + "/studies").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isCreated())).get("id").asText();
+    }
+
     @Test
-    void soloQuienValidaPuedeValidarYSeDescartaElRestoDeLaOferta() throws Exception {
+    void soloSeAsocianPresupuestoYEstudioDelMismoClienteYProyecto() throws Exception {
+        String id = crear("Pepe · Nave 2");
+        assertEquals("", leer(mvc.perform(get(BASE + "/budgets/" + id))).get("study_id").asText(), "nace sin estudio");
+        String igual = estudio(5, "nave  2");
+        String otroProyecto = estudio(5, "Cubierta");
+        String otroCliente = estudio(6, "Nave 2");
+
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"" + otroProyecto + "\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("otro proyecto")));
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"" + otroCliente + "\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("otro cliente")));
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"no-existe\"}").andExpect(status().isNotFound());
+
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"" + igual + "\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.study_id").value(igual));
+        // Las variantes nuevas heredan el estudio
+        assertEquals(igual, leer(ana(post(BASE + "/budgets/" + id + "/variant"), null).andExpect(status().isCreated())).get("study_id").asText());
+
+        // Asociado, no se cambia el proyecto sin quitar antes la asociación
+        JsonNode actual = leer(mvc.perform(get(BASE + "/budgets/" + id)));
+        ana(put(BASE + "/budgets/" + id), presupuesto("Pepe · Otra cosa", "existente", "").replace("{\"name\"",
+                "{\"version\":" + actual.get("version").asInt() + ",\"name\"")).andExpect(status().isConflict());
+
+        // Quitar la asociación (id vacío) y, si se borra el estudio, los presupuestos se quedan sin él
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"\"}").andExpect(status().isOk()).andExpect(jsonPath("$.study_id").value(""));
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"" + igual + "\"}").andExpect(status().isOk());
+        mvc.perform(delete(BASE + "/studies/" + igual)).andExpect(status().isNoContent());
+        assertEquals("", leer(mvc.perform(get(BASE + "/budgets/" + id))).get("study_id").asText());
+    }
+
+    @Test
+    void unPresupuestoNuevoPuedeNacerAsociadoAUnEstudioDeSuMismoClienteYProyecto() throws Exception {
+        String estudio = estudio(5, "Nave 2");
+        String cuerpo = presupuesto("Pepe · Nave 2", "existente", "");
+        ana(post(BASE + "/budgets"), cuerpo.replace("{\"name\"", "{\"study_id\":\"" + estudio + "\",\"name\""))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.study_id").value(estudio));
+        // De otro proyecto, o de un estudio que no existe, no se crea
+        ana(post(BASE + "/budgets"), presupuesto("Pepe · Otra", "existente", "").replace("{\"name\"", "{\"study_id\":\"" + estudio + "\",\"name\""))
+                .andExpect(status().isConflict());
+        ana(post(BASE + "/budgets"), cuerpo.replace("{\"name\"", "{\"study_id\":\"no-existe\",\"name\"")).andExpect(status().isNotFound());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM pl_presupuestos", Integer.class));
+    }
+
+    @Test
+    void losPresupuestosDelMismoClienteYProyectoSonDeLaMismaOfertaSinCrearVariantes() throws Exception {
+        String a = crear("Pepe · Nave 2");
+        assertEquals("", leer(mvc.perform(get(BASE + "/budgets/" + a))).get("offer_id").asText(), "solo no tiene oferta");
+        // Mismo cliente y mismo proyecto (sin mirar mayúsculas, tildes, espacios ni «v2»): entra en su oferta y se la da al primero
+        JsonNode b = leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · nave  2 v2", "existente", "")).andExpect(status().isCreated()));
+        String oferta = b.get("offer_id").asText();
+        assertFalse(oferta.isEmpty());
+        assertEquals(oferta, leer(mvc.perform(get(BASE + "/budgets/" + a))).get("offer_id").asText());
+        // Otro proyecto del mismo cliente, o el mismo proyecto de otro cliente, o sin proyecto: cada uno por su lado
+        assertEquals("", leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · Nave 3", "existente", "")).andExpect(status().isCreated())).get("offer_id").asText());
+        assertEquals("", leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · Nave 2", "potencial", "")).andExpect(status().isCreated())).get("offer_id").asText());
+        String sinProyecto = crear("Pepe");
+        crear("Pepe");
+        assertEquals("", leer(mvc.perform(get(BASE + "/budgets/" + sinProyecto))).get("offer_id").asText());
+        // Guardar con otro proyecto lo saca de la oferta; guardarlo con el de otra oferta lo mete en ella
+        String c = leer(ana(post(BASE + "/budgets"), presupuesto("Pepe · Nave 2 ", "existente", "")).andExpect(status().isCreated())).get("id").asText();
+        String cuerpo = presupuesto("Pepe · Nave 9", "existente", "").replace("}}", "},\"version\":1}");
+        assertEquals("", leer(ana(put(BASE + "/budgets/" + c), cuerpo).andExpect(status().isOk())).get("offer_id").asText());
+        assertEquals(oferta, leer(mvc.perform(get(BASE + "/budgets/" + a))).get("offer_id").asText(), "los demás siguen juntos");
+        String d = crear("Pepe · Nave 9b");
+        String volver = presupuesto("Pepe · Nave 2", "existente", "").replace("}}", "},\"version\":1}");
+        assertEquals(oferta, leer(ana(put(BASE + "/budgets/" + d), volver).andExpect(status().isOk())).get("offer_id").asText());
+    }
+
+    @Test
+    void cualquieraApruebaElPresupuestoYSeDescartaElRestoDeLaOferta() throws Exception {
         String a = enviado("A");
         String b = leer(ana(post(BASE + "/budgets/" + a + "/variant"), null).andExpect(status().isCreated())).get("id").asText();
         String c = leer(ana(post(BASE + "/budgets/" + a + "/variant"), null).andExpect(status().isCreated())).get("id").asText();
         ana(post(BASE + "/budgets/" + b + "/send"), null).andExpect(status().isOk());
         // c sigue en borrador
-        ana(post(BASE + "/budgets/" + a + "/validate"), null).andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.detail").value("Solo quien valida los presupuestos puede hacerlo."));
-        jefe(post(BASE + "/budgets/" + a + "/validate"), null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("validado"));
+        ana(post(BASE + "/budgets/" + a + "/validate"), null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("validado"));
         assertEquals("descartado", leer(mvc.perform(get(BASE + "/budgets/" + b))).get("status").asText());
         assertEquals("descartado", leer(mvc.perform(get(BASE + "/budgets/" + c))).get("status").asText());
         // Otra validación en la misma oferta ya no cabe, y un descartado no se duplica
-        jefe(post(BASE + "/budgets/" + b + "/validate"), null).andExpect(status().isConflict());
+        ana(post(BASE + "/budgets/" + b + "/validate"), null).andExpect(status().isConflict());
         ana(post(BASE + "/budgets/" + b + "/variant"), null).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Un presupuesto descartado no se duplica: duplica el validado o uno enviado."));
     }
@@ -252,7 +326,7 @@ class PresupuestosContratoTest {
     void soloSeValidaUnPresupuestoEnviado() throws Exception {
         String id = crear("A");
         jefe(post(BASE + "/budgets/" + id + "/validate"), null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("Solo se valida un presupuesto enviado al cliente."));
+                .andExpect(jsonPath("$.detail").value("Solo se aprueba un presupuesto enviado al cliente."));
     }
 
     @Test
@@ -278,7 +352,7 @@ class PresupuestosContratoTest {
         ana(post(BASE + "/budgets/" + b + "/send"), null).andExpect(status().isOk());
         ana(post(BASE + "/budgets/" + a + "/unvalidate"), null).andExpect(status().isForbidden());
         jefe(post(BASE + "/budgets/" + a + "/unvalidate"), null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("El presupuesto no está validado."));
+                .andExpect(jsonPath("$.detail").value("El presupuesto no está aprobado."));
         jefe(post(BASE + "/budgets/" + a + "/validate"), null).andExpect(status().isOk());
         // Un borrador de propuesta se borra al quitar la validación
         ana(post(BASE + "/budgets/" + a + "/proposals"), null).andExpect(status().isCreated());
@@ -291,26 +365,57 @@ class PresupuestosContratoTest {
         String p = leer(ana(post(BASE + "/budgets/" + a + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
         ana(post(BASE + "/proposals/" + p + "/send"), null).andExpect(status().isOk());
         jefe(post(BASE + "/budgets/" + a + "/unvalidate"), null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("Este presupuesto tiene una propuesta enviada o aprobada por el cliente: no se puede quitar su validación."));
+                .andExpect(jsonPath("$.detail").value("Este presupuesto tiene una propuesta entregada o validada: no se puede quitar su aprobación."));
     }
 
     @Test
-    void pendientesDeValidarCuentaOfertasYPropuestasEnviadasYSoloAQuienValida() throws Exception {
-        String a = enviado("A");
-        ana(post(BASE + "/budgets/" + a + "/variant"), null).andExpect(status().isCreated());
-        String b = leer(ana(post(BASE + "/budgets/" + a + "/variant"), null)).get("id").asText();
-        ana(post(BASE + "/budgets/" + b + "/send"), null).andExpect(status().isOk());
+    void pendientesDeValidarCuentaSoloLasPropuestasEntregadasListasParaValidar() throws Exception {
         String c = enviado("C");
         ana(get(BASE + "/budgets/pending-validation"), null).andExpect(status().isOk())
                 .andExpect(content().json("{\"validator\":false,\"count\":0,\"to_validate\":0,\"proposals_sent\":0}", true));
-        // a y b son una oferta (cuenta una vez) y c otra
-        jefe(get(BASE + "/budgets/pending-validation"), null)
-                .andExpect(content().json("{\"validator\":true,\"count\":2,\"to_validate\":2,\"proposals_sent\":0}", true));
-        jefe(post(BASE + "/budgets/" + c + "/validate"), null).andExpect(status().isOk());
+        ana(post(BASE + "/budgets/" + c + "/validate"), null).andExpect(status().isOk());
         String p = leer(ana(post(BASE + "/budgets/" + c + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
         ana(post(BASE + "/proposals/" + p + "/send"), null).andExpect(status().isOk());
+        // Entregada, pero sin estudio aceptado: todavía no se puede validar
         jefe(get(BASE + "/budgets/pending-validation"), null)
-                .andExpect(content().json("{\"validator\":true,\"count\":2,\"to_validate\":1,\"proposals_sent\":1}", true));
+                .andExpect(content().json("{\"validator\":true,\"count\":0,\"to_validate\":0,\"proposals_sent\":0}", true));
+        aceptarEstudioDe(c);
+        jefe(get(BASE + "/budgets/pending-validation"), null)
+                .andExpect(content().json("{\"validator\":true,\"count\":1,\"to_validate\":1,\"proposals_sent\":1}", true));
+    }
+
+    @Test
+    void alEntregarLaPropuestaElEstudioPasaAPteClienteYUnoAceptadoNoSeToca() throws Exception {
+        String c = enviado("C");
+        String estudio = estudio(5, "");
+        ana(post(BASE + "/budgets/" + c + "/study"), "{\"study_id\":\"" + estudio + "\"}").andExpect(status().isOk());
+        ana(post(BASE + "/budgets/" + c + "/validate"), null).andExpect(status().isOk());
+        String p = leer(ana(post(BASE + "/budgets/" + c + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
+        assertEquals("en_estudio", leer(mvc.perform(get(BASE + "/studies/" + estudio))).get("estado").asText());
+        int version = leer(mvc.perform(get(BASE + "/studies/" + estudio))).get("version").asInt();
+        ana(post(BASE + "/proposals/" + p + "/send"), null).andExpect(status().isOk());
+        JsonNode despues = leer(mvc.perform(get(BASE + "/studies/" + estudio)));
+        assertEquals("pte_cliente", despues.get("estado").asText());
+        assertEquals(version + 1, despues.get("version").asInt());
+
+        // Un estudio ya aceptado (lo decide una persona) se queda como está
+        String d = enviado("D");
+        String aceptado = aceptarEstudioDe(d);
+        ana(post(BASE + "/budgets/" + d + "/validate"), null).andExpect(status().isOk());
+        String q = leer(ana(post(BASE + "/budgets/" + d + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
+        ana(post(BASE + "/proposals/" + q + "/send"), null).andExpect(status().isOk());
+        assertEquals("aceptado", leer(mvc.perform(get(BASE + "/studies/" + aceptado))).get("estado").asText());
+
+        // Uno rechazado por el cliente no se acepta solo: la validación se bloquea hasta que una persona lo reabra
+        String e2 = enviado("E");
+        String rechazado = estudio(5, "");
+        ana(post(BASE + "/budgets/" + e2 + "/study"), "{\"study_id\":\"" + rechazado + "\"}").andExpect(status().isOk());
+        ana(post(BASE + "/budgets/" + e2 + "/validate"), null).andExpect(status().isOk());
+        String r = leer(ana(post(BASE + "/budgets/" + e2 + "/proposals"), null).andExpect(status().isCreated())).get("id").asText();
+        ana(post(BASE + "/proposals/" + r + "/send"), null).andExpect(status().isOk());
+        ana(put(BASE + "/studies/" + rechazado), "{\"estado\":\"rechazado\"}").andExpect(status().isOk());
+        jefe(post(BASE + "/proposals/" + r + "/approve"), null).andExpect(status().isConflict());
+        assertEquals("rechazado", leer(mvc.perform(get(BASE + "/studies/" + rechazado))).get("estado").asText());
     }
 
     // -------------------------------------------------------------------- borrado
@@ -345,9 +450,17 @@ class PresupuestosContratoTest {
 
     // ----------------------------------------------------------------- propuestas
 
+    /** Crea un estudio del mismo cliente y proyecto que el presupuesto, lo asocia y lo marca como aceptado. */
+    private String aceptarEstudioDe(String presupuestoId) throws Exception {
+        String estudio = estudio(5, "");
+        ana(post(BASE + "/budgets/" + presupuestoId + "/study"), "{\"study_id\":\"" + estudio + "\"}").andExpect(status().isOk());
+        ana(put(BASE + "/studies/" + estudio), "{\"estado\":\"aceptado\"}").andExpect(status().isOk());
+        return estudio;
+    }
+
     private String validado(String nombre) throws Exception {
         String id = enviado(nombre);
-        jefe(post(BASE + "/budgets/" + id + "/validate"), null).andExpect(status().isOk());
+        ana(post(BASE + "/budgets/" + id + "/validate"), null).andExpect(status().isOk());
         return id;
     }
 
@@ -357,7 +470,7 @@ class PresupuestosContratoTest {
         ana(post(BASE + "/budgets/" + id + "/proposals"), null).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("Solo se hace la propuesta al cliente de un presupuesto validado."));
         ana(post(BASE + "/budgets/" + id + "/send"), null);
-        jefe(post(BASE + "/budgets/" + id + "/validate"), null).andExpect(status().isOk());
+        ana(post(BASE + "/budgets/" + id + "/validate"), null).andExpect(status().isOk());
         JsonNode p = leer(ana(post(BASE + "/budgets/" + id + "/proposals"), null).andExpect(status().isCreated()));
         assertEquals(1, p.get("version").asInt());
         assertEquals("borrador", p.get("status").asText());
@@ -371,15 +484,18 @@ class PresupuestosContratoTest {
     void cicloDeLaPropuestaEnviarRechazarCrearOtraYAprobar() throws Exception {
         String id = validado("A");
         String p1 = leer(ana(post(BASE + "/budgets/" + id + "/proposals"), null)).get("id").asText();
-        ana(post(BASE + "/proposals/" + p1 + "/approve"), null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("Solo contesta el cliente a una propuesta enviada."));
+        // Validar o anular es cosa de quien valida
+        ana(post(BASE + "/proposals/" + p1 + "/approve"), null).andExpect(status().isForbidden());
+        jefe(post(BASE + "/proposals/" + p1 + "/approve"), null).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Solo se valida o se anula una propuesta entregada."));
         ana(post(BASE + "/proposals/" + p1 + "/send"), null).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("enviada")).andExpect(jsonPath("$.sent_by").value("Ana"));
         ana(post(BASE + "/proposals/" + p1 + "/send"), null).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("La propuesta ya está enviada."));
-        ana(post(BASE + "/proposals/" + p1 + "/reject"), "{\"note\":\"  Muy cara  \"}").andExpect(status().isOk())
+        ana(post(BASE + "/proposals/" + p1 + "/reject"), "{\"note\":\"  Muy cara  \"}").andExpect(status().isForbidden());
+        jefe(post(BASE + "/proposals/" + p1 + "/reject"), "{\"note\":\"  Muy cara  \"}").andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("rechazada")).andExpect(jsonPath("$.note").value("Muy cara"))
-                .andExpect(jsonPath("$.decided_by").value("Ana"));
+                .andExpect(jsonPath("$.decided_by").value("Jefe"));
         // La rechazada no bloquea: se crea la versión 2, que parte del logo de la anterior
         String logo = "data:image/png;base64,iVBORw0KGgo=";
         ana(put(BASE + "/proposals/" + p1 + "/logo"), "{\"logo\":\"" + logo + "\"}").andExpect(status().isOk()).andExpect(jsonPath("$.client_logo").value(logo));
@@ -387,17 +503,44 @@ class PresupuestosContratoTest {
         assertEquals(2, p2.get("version").asInt());
         assertEquals(logo, p2.get("client_logo").asText());
         ana(post(BASE + "/proposals/" + p2.get("id").asText() + "/send"), null).andExpect(status().isOk());
-        ana(post(BASE + "/proposals/" + p2.get("id").asText() + "/approve"), null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("aprobada"));
+        // Hace falta un estudio asociado
+        jefe(post(BASE + "/proposals/" + p2.get("id").asText() + "/approve"), null).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Para validar la propuesta, el presupuesto tiene que estar aprobado y tener un estudio asociado que no esté rechazado ni cancelado."));
+        // Con estudio (sin aceptar), al validar la propuesta el estudio queda aceptado solo
+        String estudioDelPresupuesto = estudio(5, "");
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"" + estudioDelPresupuesto + "\"}").andExpect(status().isOk());
+        jefe(post(BASE + "/proposals/" + p2.get("id").asText() + "/approve"), null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("aprobada"));
+        assertEquals("aceptado", leer(mvc.perform(get(BASE + "/studies/" + estudioDelPresupuesto))).get("estado").asText());
         ana(post(BASE + "/budgets/" + id + "/proposals"), null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("El cliente ya aprobó una propuesta de este presupuesto."));
+                .andExpect(jsonPath("$.detail").value("Este presupuesto ya tiene una propuesta validada."));
         // El listado va de la más reciente a la más antigua y el presupuesto enseña el estado de la última
         JsonNode lista = leer(mvc.perform(get(BASE + "/budgets/" + id + "/proposals")).andExpect(status().isOk()));
         assertEquals(2, lista.get(0).get("version").asInt());
         assertEquals(1, lista.get(1).get("version").asInt());
         assertFalse(lista.get(0).has("missing_warranties"));
+        assertTrue(lista.get(0).get("has_logo").asBoolean()); // la versión 2 parte del logo de la anterior
         JsonNode b = leer(mvc.perform(get(BASE + "/budgets/" + id)));
         assertEquals("aprobada", b.get("proposal_status").asText());
         assertEquals(2, b.get("proposal_version").asInt());
+    }
+
+    @Test
+    void unEstudioAceptadoQuedaBloqueadoYSoloSeReabreSinPropuestaEntregada() throws Exception {
+        String id = validado("A");
+        String estudio = aceptarEstudioDe(id);
+        ana(put(BASE + "/studies/" + estudio), "{\"observaciones\":\"x\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Un estudio aceptado está bloqueado: cambia su estado para poder modificarlo."));
+        ana(delete(BASE + "/studies/" + estudio), null).andExpect(status().isConflict());
+        // El presupuesto aprobado tampoco cambia de estudio
+        ana(post(BASE + "/budgets/" + id + "/study"), "{\"study_id\":\"\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Un presupuesto aprobado está bloqueado: no se cambia su estudio."));
+        // Con una propuesta entregada no se reabre; sin ella, sí
+        String p = leer(ana(post(BASE + "/budgets/" + id + "/proposals"), null)).get("id").asText();
+        ana(post(BASE + "/proposals/" + p + "/send"), null).andExpect(status().isOk());
+        ana(put(BASE + "/studies/" + estudio), "{\"estado\":\"pte_cliente\"}").andExpect(status().isConflict());
+        jefe(post(BASE + "/proposals/" + p + "/reject"), null).andExpect(status().isOk());
+        ana(put(BASE + "/studies/" + estudio), "{\"estado\":\"pte_cliente\"}").andExpect(status().isOk());
+        ana(put(BASE + "/studies/" + estudio), "{\"observaciones\":\"x\"}").andExpect(status().isOk());
     }
 
     @Test
@@ -439,7 +582,12 @@ class PresupuestosContratoTest {
         // La regla de garantías está desactivada: la lista no avisa de nada y la presentación se descarga igualmente
         JsonNode primera = leer(mvc.perform(get(BASE + "/budgets/" + id + "/proposals"))).get(0);
         assertFalse(primera.has("missing_warranties"));
-        mvc.perform(get(BASE + "/proposals/" + primera.get("id").asText() + "/html")).andExpect(status().isOk());
+        String p = primera.get("id").asText();
+        // Sin logo del cliente (ni en la propuesta ni en el presupuesto) no se descarga
+        mvc.perform(get(BASE + "/proposals/" + p + "/html")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el logo de la empresa del cliente para descargar la propuesta: sale en la presentación."));
+        ana(put(BASE + "/proposals/" + p + "/logo"), "{\"logo\":\"data:image/png;base64,iVBORw0KGgo=\"}").andExpect(status().isOk());
+        mvc.perform(get(BASE + "/proposals/" + p + "/html")).andExpect(status().isOk());
     }
 
     // -------------------------------------------------------------------- clientes

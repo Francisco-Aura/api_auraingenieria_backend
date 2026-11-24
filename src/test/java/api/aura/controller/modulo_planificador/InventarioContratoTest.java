@@ -76,6 +76,12 @@ class InventarioContratoTest {
     // ------------------------------------------------------------------ marcas
 
     @Test
+    void lasRespuestasPermitenIncrustarseSoloDesdeLaPropiaIntranetParaVerLosPdfEnPantalla() throws Exception {
+        // Con el valor por defecto de Spring (DENY) el navegador no deja ver la ficha técnica dentro de la ventana del producto
+        mvc.perform(get(BASE + "/brands")).andExpect(status().isOk()).andExpect(header().string("X-Frame-Options", "SAMEORIGIN"));
+    }
+
+    @Test
     void marcaSeCreaEnMayusculasSinEspaciosDeMasYNoSePuedeRepetir() throws Exception {
         peticionPost("/brands", "{\"name\":\"  ja   solar \"}")
                 .andExpect(status().isCreated())
@@ -199,6 +205,17 @@ class InventarioContratoTest {
                 .andExpect(jsonPath("$.detail").value("Partida desconocida: nada"));
         peticionPost("/equipment", "{\"category\":\"baterias\",\"group\":\"proyecto\"}").andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.detail").value("La categoría «baterias» no puede estar en la partida «proyecto»"));
+    }
+
+    @Test
+    void laCubiertaDeUnaEstructuraEsUnaListaCerradaConLosTiposNuevos() throws Exception {
+        for (String tipo : new String[]{"Todas", "Teja", "Chapa", "Chapa minionda", "Chapa grecada", "Plana", "Suelo", "Parking", "Flotante", "Pérgola", "Panel sándwich"}) {
+            peticionPost("/equipment", "{\"category\":\"estructura\",\"group\":\"modulos\",\"attrs\":{\"cubierta\":\"" + tipo + "\"}}").andExpect(status().isCreated());
+        }
+        // Sin importar mayúsculas ni acentos se guarda el nombre de la lista
+        JsonNode e = leer(peticionPost("/equipment", "{\"category\":\"estructura\",\"group\":\"modulos\",\"attrs\":{\"cubierta\":\"panel sandwich\"}}").andExpect(status().isCreated()));
+        assertEquals("Panel sándwich", e.get("attrs").get("cubierta").asText());
+        peticionPost("/equipment", "{\"category\":\"estructura\",\"group\":\"modulos\",\"attrs\":{\"cubierta\":\"Volcán\"}}").andExpect(status().isUnprocessableEntity());
     }
 
     @Test

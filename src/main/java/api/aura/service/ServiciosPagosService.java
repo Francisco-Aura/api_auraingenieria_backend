@@ -1,13 +1,17 @@
 package api.aura.service;
 
 import api.aura.dto.CuotaServicioDTO;
+import api.aura.entity.Servicio;
 import api.aura.entity.ServiciosPagos;
 import api.aura.entity.tablas_maestras.TBPagoPlazos;
 import api.aura.repository.ServiciosPagosRepository;
 import api.aura.repository.tablas_maestras.TBPagoPlazosRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -16,6 +20,16 @@ import java.util.*;
 
 @Service
 public class ServiciosPagosService {
+
+    private static final Logger log = LoggerFactory.getLogger(ServiciosPagosService.class);
+
+    /**
+     * Prefijo del campo de cada cuota en {@code ServiciosPagos} (primerPagoFecha,
+     * segundoPagoImporte...). Estaba copiado en cuatro métodos: basta con que una
+     * copia se quede corta o cambie de orden para perder cuotas sin ningún aviso.
+     */
+    private static final String[] PREFIJOS_CUOTA = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
+            "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
     @Autowired
     private ServiciosPagosRepository serviciosPagosRepository;
@@ -26,6 +40,13 @@ public class ServiciosPagosService {
     public ServiciosPagos obtenerPagosPorServicio(Integer idServicio) {
         return serviciosPagosRepository.findByServicioId(idServicio)
                 .orElse(new ServiciosPagos());
+    }
+
+    /** Planes de pagos de varios servicios de una vez (los que no tienen plan no salen). */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<ServiciosPagos> obtenerPagosPorServicios(List<Integer> idsServicio) {
+        if (idsServicio == null || idsServicio.isEmpty()) return List.of();
+        return serviciosPagosRepository.findByServicioIdIn(idsServicio);
     }
 
     public List<CuotaServicioDTO> obtenerCuotasPorServicio(Integer idServicio) {
@@ -44,12 +65,10 @@ public class ServiciosPagosService {
         }
 
         // Crear cuotas solo hasta el número definido en la modalidad
-        String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
-        for (int i = 0; i < numeroCuotas && i < prefijos.length; i++) {
+        for (int i = 0; i < numeroCuotas && i < PREFIJOS_CUOTA.length; i++) {
             try {
-                String prefijo = prefijos[i];
+                String prefijo = PREFIJOS_CUOTA[i];
                 Field fechaField = ServiciosPagos.class.getDeclaredField(prefijo + "PagoFecha");
                 Field importeField = ServiciosPagos.class.getDeclaredField(prefijo + "PagoImporte");
                 Field pagadoField = ServiciosPagos.class.getDeclaredField(prefijo + "PagoPagado");
@@ -74,13 +93,15 @@ public class ServiciosPagosService {
                     cuotas.add(cuota);
                 }
             } catch (Exception e) {
-                // Skip invalid installment field and continue
+                // Solo pasaría si cambia un nombre de campo de ServiciosPagos: que se vea
+                log.error("Plan de pagos: no se pudo leer o escribir la cuota {}", i, e);
             }
         }
 
         return cuotas;
     }
 
+    @Transactional
     public ServiciosPagos actualizarPagosServicio(Integer idServicio, ServiciosPagos pagos) {
         Optional<ServiciosPagos> existente = serviciosPagosRepository.findByServicioId(idServicio);
 
@@ -89,10 +110,18 @@ public class ServiciosPagosService {
             actualizarCampos(pagosExistente, pagos);
             return serviciosPagosRepository.save(pagosExistente);
         } else {
+            // Alta: siempre ligada al servicio de la ruta. Antes se guardaba el cuerpo tal
+            // cual: sin servicio quedaba un registro de pagos huérfano y con el id de otro
+            // registro se sobrescribían los pagos de otro servicio.
+            pagos.setId(null);
+            if (pagos.getServicio() == null || !idServicio.equals(pagos.getServicio().getId())) {
+                pagos.setServicio(Servicio.builder().id(idServicio).build());
+            }
             return serviciosPagosRepository.save(pagos);
         }
     }
 
+    @Transactional
     public CuotaServicioDTO actualizarCuota(Integer idCuota, CuotaServicioDTO cuotaActualizada) {
         Optional<ServiciosPagos> pagosOpt = serviciosPagosRepository.findByServicioId(cuotaActualizada.getIdServicio());
 
@@ -101,6 +130,9 @@ public class ServiciosPagosService {
         }
 
         ServiciosPagos pagos = pagosOpt.get();
+        if (cuotaActualizada.getNumeroPago() == null) {
+            throw new IllegalArgumentException("El número de pago de la cuota es obligatorio");
+        }
         String prefijo = obtenerSufijoCuota(cuotaActualizada.getNumeroPago());
 
         try {
@@ -133,6 +165,7 @@ public class ServiciosPagosService {
         }
     }
 
+    @Transactional
     public ServiciosPagos guardar(ServiciosPagos serviciosPagos) {
         // Validate required fields
         if (serviciosPagos.getServicio() == null || serviciosPagos.getServicio().getId() == null) {
@@ -146,6 +179,7 @@ public class ServiciosPagosService {
         if (existente.isPresent()) {
             // Update existing record
             ServiciosPagos pagosExistente = existente.get();
+            Integer modalidadAnterior = idModalidad(pagosExistente.getPagoPlazos());
 
             // Update payment plan and method if provided
             if (serviciosPagos.getPagoPlazos() != null) {
@@ -168,14 +202,20 @@ public class ServiciosPagosService {
 
             // Update all payment installments
             actualizarCuotas(pagosExistente, serviciosPagos);
+            if (cambiaDeModalidad(modalidadAnterior, serviciosPagos.getPagoPlazos())) {
+                cerrarCuotasFueraDelPlan(pagosExistente);
+            }
 
             return serviciosPagosRepository.save(pagosExistente);
         } else {
-            // Create new record
+            // Create new record. Siempre como fila nueva: un id en el cuerpo convertía el
+            // alta en una sobrescritura de los pagos de otro servicio
+            serviciosPagos.setId(null);
             return serviciosPagosRepository.save(serviciosPagos);
         }
     }
 
+    @Transactional
     public ServiciosPagos generarCuotasSegunModalidad(ServiciosPagos serviciosPagos, Integer idPagoPlazos,
             Double importeTotal) {
         if (idPagoPlazos == null || importeTotal == null) {
@@ -195,6 +235,13 @@ public class ServiciosPagosService {
             return serviciosPagos;
         }
 
+        // Fecha de la primera cuota: la de inicio del servicio que envía el formulario
+        // (llega en primerPagoFecha), o hoy si no viene. Se lee ANTES de vaciar las
+        // cuotas: antes se leía después, ya borrada, y el plan empezaba siempre hoy.
+        Date fechaInicio = serviciosPagos.getPrimerPagoFecha() != null
+                ? serviciosPagos.getPrimerPagoFecha()
+                : new Date();
+
         // Reset existing installments
         resetearCuotas(serviciosPagos);
 
@@ -207,16 +254,7 @@ public class ServiciosPagosService {
         long importeUltimaCuotaCentimos = importeTotalCentimos
                 - importeBaseCentimos * (numeroCuotasUsadas - 1L);
 
-        // Set start date (default to current date if not provided)
-        Date fechaInicio = new Date();
-        if (serviciosPagos.getPrimerPagoFecha() != null) {
-            fechaInicio = serviciosPagos.getPrimerPagoFecha();
-        }
-
         // Generate installment schedule
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(fechaInicio);
-
         for (int i = 1; i <= numeroCuotasUsadas; i++) {
             String sufijo = obtenerSufijoCuota(i);
 
@@ -224,7 +262,7 @@ public class ServiciosPagosService {
                 // Set date
                 Field fechaField = ServiciosPagos.class.getDeclaredField(sufijo + "PagoFecha");
                 fechaField.setAccessible(true);
-                fechaField.set(serviciosPagos, calendar.getTime());
+                fechaField.set(serviciosPagos, fechaCuota(fechaInicio, i));
 
                 // Set amount
                 Field importeField = ServiciosPagos.class.getDeclaredField(sufijo + "PagoImporte");
@@ -238,11 +276,9 @@ public class ServiciosPagosService {
                 Field pagadoField = ServiciosPagos.class.getDeclaredField(sufijo + "PagoPagado");
                 pagadoField.setAccessible(true);
                 pagadoField.set(serviciosPagos, false);
-
-                // Move to next month
-                calendar.add(Calendar.MONTH, 1);
             } catch (Exception e) {
-                // Skip invalid installment field and continue
+                // Solo pasaría si cambia un nombre de campo de ServiciosPagos: que se vea
+                log.error("Plan de pagos: no se pudo leer o escribir la cuota {}", i, e);
             }
         }
 
@@ -252,13 +288,25 @@ public class ServiciosPagosService {
         return serviciosPagos;
     }
 
+    /**
+     * Fecha de la cuota {@code numero} (1 a 12): la de inicio más {@code numero - 1}
+     * meses, igual que el calendario MCAS ({@code plusMonths} desde la primera).
+     * Antes se sumaba un mes a la cuota anterior y el recorte de fin de mes se
+     * arrastraba: un plan que empezaba el 31/01 seguía 28/02, 28/03, 28/04... en vez
+     * de 28/02, 31/03, 30/04.
+     */
+    static Date fechaCuota(Date inicio, int numero) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(inicio);
+        calendar.add(Calendar.MONTH, numero - 1);
+        return calendar.getTime();
+    }
+
     // Helper method to update payment installments
     private void actualizarCuotas(ServiciosPagos destino, ServiciosPagos origen) {
         // Update all 12 possible installments
-        String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
-        for (String prefijo : prefijos) {
+        for (String prefijo : PREFIJOS_CUOTA) {
             actualizarCamposSiNoSonNulos(destino, origen, prefijo + "PagoFecha", prefijo + "PagoImporte",
                     prefijo + "PagoPagado");
         }
@@ -274,12 +322,13 @@ public class ServiciosPagosService {
                     field.set(destino, valor);
                 }
             } catch (Exception e) {
-                // Skip field if not accessible via reflection
+                log.error("Plan de pagos: no se pudo copiar el campo {}", campo, e);
             }
         }
     }
 
     private void actualizarCampos(ServiciosPagos destino, ServiciosPagos origen) {
+        Integer modalidadAnterior = idModalidad(destino.getPagoPlazos());
         if (origen.getPagoPlazos() != null)
             destino.setPagoPlazos(origen.getPagoPlazos());
         if (origen.getMetodoPago() != null)
@@ -293,6 +342,58 @@ public class ServiciosPagosService {
 
         // Actualizar todas las cuotas
         actualizarCuotas(destino, origen);
+        if (cambiaDeModalidad(modalidadAnterior, origen.getPagoPlazos())) {
+            cerrarCuotasFueraDelPlan(destino);
+        }
+    }
+
+    private static Integer idModalidad(TBPagoPlazos plan) {
+        return plan == null ? null : plan.getId();
+    }
+
+    /**
+     * Solo al cambiar de modalidad se cierran las cuotas que sobran. Guardar con la misma
+     * no toca nada: si alguien cambia después el número de cuotas de una modalidad en
+     * Administración, editar un servicio no borra las cuotas de su plan.
+     */
+    private static boolean cambiaDeModalidad(Integer modalidadAnterior, TBPagoPlazos nueva) {
+        return nueva != null && !java.util.Objects.equals(modalidadAnterior, nueva.getId());
+    }
+
+    /**
+     * Al pasar a una modalidad con menos cuotas, las que sobran se quedaban en la fila
+     * con su importe y sin pagar (el formulario las envía vacías y aquí no se copian los
+     * nulos): «Servicios pendientes de pago» las seguía reclamando y no había forma de
+     * quitarlas. Las que sobran y no estaban pagadas quedan como las no usadas de un plan
+     * nuevo (sin fecha ni importe, marcadas como pagadas); las ya pagadas no se tocan.
+     */
+    private void cerrarCuotasFueraDelPlan(ServiciosPagos pagos) {
+        Integer numeroCuotas = numeroCuotasDelPlan(pagos.getPagoPlazos());
+        if (numeroCuotas == null || numeroCuotas <= 0) return;
+        for (int i = numeroCuotas; i < PREFIJOS_CUOTA.length; i++) {
+            String prefijo = PREFIJOS_CUOTA[i];
+            try {
+                Field pagado = ServiciosPagos.class.getDeclaredField(prefijo + "PagoPagado");
+                pagado.setAccessible(true);
+                if (Boolean.TRUE.equals(pagado.get(pagos))) continue;
+                Field fecha = ServiciosPagos.class.getDeclaredField(prefijo + "PagoFecha");
+                Field importe = ServiciosPagos.class.getDeclaredField(prefijo + "PagoImporte");
+                fecha.setAccessible(true);
+                importe.setAccessible(true);
+                fecha.set(pagos, null);
+                importe.set(pagos, null);
+                pagado.set(pagos, true);
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Campo de cuota no encontrado: " + prefijo, e);
+            }
+        }
+    }
+
+    private Integer numeroCuotasDelPlan(TBPagoPlazos plan) {
+        if (plan == null) return null;
+        if (plan.getNumeroCuotas() != null) return plan.getNumeroCuotas();
+        if (plan.getId() == null) return null;
+        return pagoPlazosRepository.findById(plan.getId()).map(TBPagoPlazos::getNumeroCuotas).orElse(null);
     }
 
     private void resetearCuotas(ServiciosPagos serviciosPagos) {
@@ -311,17 +412,15 @@ public class ServiciosPagosService {
                 importeField.set(serviciosPagos, null);
                 pagadoField.set(serviciosPagos, false);
             } catch (Exception e) {
-                // Continue to next installment
+                log.error("Plan de pagos: no se pudo vaciar la cuota {}", i, e);
             }
         }
     }
 
     private String obtenerSufijoCuota(int numero) {
-        String[] sufijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
 
         if (numero >= 1 && numero <= 12) {
-            return sufijos[numero - 1];
+            return PREFIJOS_CUOTA[numero - 1];
         }
 
         throw new IllegalArgumentException("Número de cuota inválido: " + numero);
@@ -329,19 +428,18 @@ public class ServiciosPagosService {
 
     // Helper para inicializar cuotas no usadas como pagadas
     private void inicializarCuotasNoUsadasComoPagadas(ServiciosPagos serviciosPagos, int numeroCuotas) {
-        String[] prefijos = { "primer", "segundo", "tercer", "cuarto", "quinto", "sexto",
-                "septimo", "octavo", "noveno", "decimo", "decimoprimer", "decimosegundo" };
         for (int i = numeroCuotas; i < 12; i++) {
             try {
-                Field pagadoField = ServiciosPagos.class.getDeclaredField(prefijos[i] + "PagoPagado");
+                Field pagadoField = ServiciosPagos.class.getDeclaredField(PREFIJOS_CUOTA[i] + "PagoPagado");
                 pagadoField.setAccessible(true);
                 pagadoField.set(serviciosPagos, true); // Marcar como pagado
             } catch (Exception e) {
-                // Ignorar errores
+                log.error("Plan de pagos: no se pudo cerrar la cuota {} fuera del plan", i + 1, e);
             }
         }
     }
 
+    @Transactional
     public void eliminarPagosPorServicio(Integer idServicio) {
         Optional<ServiciosPagos> pagosOpt = serviciosPagosRepository.findByServicioId(idServicio);
         if (pagosOpt.isPresent()) {

@@ -9,15 +9,4 @@ import java.util.List;
 
 public interface mt_ComentarioRepository extends JpaRepository<mt_Comentario, Long> {
     List<mt_Comentario> findByTarea_IdOrderByFechaCreacionAsc(Long tareaId);
-
-    @Query("""
-            SELECT c
-            FROM mt_Comentario c
-            JOIN FETCH c.tarea t
-            JOIN FETCH c.usuarioAutor u
-            WHERE t.clienteRelacionado.id = :clienteId
-                AND c.fijado = true
-            ORDER BY c.fechaCreacion DESC
-            """)
-    List<mt_Comentario> findFijadosByClienteId(@Param("clienteId") Integer clienteId);
 }

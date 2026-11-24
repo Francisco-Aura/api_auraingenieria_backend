@@ -39,7 +39,7 @@ public class TBComercializadorasService {
                     comercializadora.setDescripcion(comercializadoraActualizada.getDescripcion());
                     return comercializadorasRepository.save(comercializadora);
                 })
-                .orElseThrow(() -> new RuntimeException("Comercializadora no encontrada con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Comercializadora no encontrada con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'comercializadoras'")

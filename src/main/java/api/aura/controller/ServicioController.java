@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.TransientDataAccessException;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +42,7 @@ public class ServicioController {
             @RequestParam(value = "servicio", required = false) String servicioJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo,
             @RequestBody(required = false) JsonNode servicioBody) {
+        SesionActual.exigirAdmin();
 
         try {
             Servicio servicio = null;
@@ -58,7 +60,7 @@ public class ServicioController {
 
                 // Aquí se procesaría el archivo PDF si estuviera implementado
                 if (archivo != null && !archivo.isEmpty()) {
-                    logger.info("Se recibió un archivo adjunto: {}", archivo.getOriginalFilename());
+                    logger.info("Se recibió un archivo adjunto: {}", api.aura.util.NombresArchivo.sinControl(archivo.getOriginalFilename()));
                     // Implementar el guardado del archivo PDF
                 }
             }
@@ -70,11 +72,11 @@ public class ServicioController {
 
             Servicio guardado = servicioService.guardarServicio(servicio);
             return ResponseEntity.ok(guardado);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("Error al procesar el servicio", e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al procesar el servicio"));
+            return ResponseEntity.badRequest().body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al procesar el servicio")));
         }
     }
 
@@ -84,17 +86,18 @@ public class ServicioController {
      */
     @PostMapping(path = "/guardar-con-pagos", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> guardarConPagos(@RequestBody GuardarServicioConPagosRequest request) {
+        SesionActual.exigirAdmin();
         try {
             if (request == null || request.servicio() == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Los datos del servicio son obligatorios"));
             }
             return ResponseEntity.ok(servicioConPagosService.guardar(request.servicio(), request.pagos()));
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("Error al guardar servicio y pagos", e);
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", e.getMessage() != null ? e.getMessage() : "Error al guardar el servicio y sus pagos"));
+                    "error", SesionActual.mensajeSeguro(e, "Error al guardar el servicio y sus pagos")));
         }
     }
 
@@ -129,6 +132,7 @@ public class ServicioController {
             @RequestParam(value = "servicio", required = false) String servicioJson,
             @RequestParam(value = "archivo", required = false) MultipartFile archivo,
             @RequestBody(required = false) JsonNode servicioBody) {
+        SesionActual.exigirAdmin();
 
         try {
             Servicio servicio = null;
@@ -146,7 +150,7 @@ public class ServicioController {
 
                 // Aquí se procesaría el archivo PDF si estuviera implementado
                 if (archivo != null && !archivo.isEmpty()) {
-                    logger.info("Se recibió un archivo adjunto para actualizar: {}", archivo.getOriginalFilename());
+                    logger.info("Se recibió un archivo adjunto para actualizar: {}", api.aura.util.NombresArchivo.sinControl(archivo.getOriginalFilename()));
                     // Implementar el guardado del archivo PDF
                 }
             }
@@ -159,17 +163,18 @@ public class ServicioController {
             servicio.setId(id);
             Servicio actualizado = servicioService.guardarServicio(servicio);
             return ResponseEntity.ok(actualizado);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException | TransientDataAccessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("Error al procesar la actualización del servicio", e);
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error al actualizar el servicio"));
+            return ResponseEntity.badRequest().body(Map.of("error", SesionActual.mensajeSeguro(e, "Error al actualizar el servicio")));
         }
     }
 
     // Renovar un servicio (clona y ajusta fechas)
     @PostMapping("/{id}/renovar")
     public ResponseEntity<Servicio> renovarServicio(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         Servicio renovado = servicioService.renovarServicio(id);
         if (renovado != null)
             return ResponseEntity.ok(renovado);
@@ -184,14 +189,19 @@ public class ServicioController {
         return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_IMPLEMENTED).build();
     }
 
+    // Los servicios (importes y pagos) solo los gestionan y consultan los administradores:
+    // en la pantalla, la gestión de servicios y sus informes solo se les muestran a ellos.
+    // Para el resto quedan los dos resúmenes del final (ids de puntos y total de activos).
     @GetMapping
     public ResponseEntity<List<ServicioDTO>> obtenerTodos() {
+        SesionActual.exigirAdmin();
         List<ServicioDTO> servicios = servicioService.obtenerTodos();
         return ResponseEntity.ok(servicios);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ServicioDTO> obtenerPorId(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         return servicioService.obtenerPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -199,18 +209,21 @@ public class ServicioController {
 
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<List<ServicioDTO>> obtenerPorClienteId(@PathVariable Integer clienteId) {
+        SesionActual.exigirAdmin();
         List<ServicioDTO> servicios = servicioService.obtenerPorClienteId(clienteId);
         return ResponseEntity.ok(servicios);
     }
 
     @GetMapping("/punto-suministro/{puntoSuministroId}")
     public ResponseEntity<List<ServicioDTO>> obtenerPorPuntoSuministroId(@PathVariable Integer puntoSuministroId) {
+        SesionActual.exigirAdmin();
         List<ServicioDTO> servicios = servicioService.obtenerPorPuntoSuministroId(puntoSuministroId);
         return ResponseEntity.ok(servicios);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarPorId(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         servicioService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
     }

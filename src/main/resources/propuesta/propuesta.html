@@ -79,6 +79,8 @@ h2 .hl { display: inline-block; background: var(--y); color: #fff; padding: 0 12
     #7d7e82; }
 .road .cap { position: absolute; top: 12px; width: 64px; height: 64px; border-radius: 50%; background: var(--y); color: #fff; display: grid; place-items: center; font-size: 32px; font-weight: 700; box-shadow: 0 0 0 4px #fff; }
 .road .cap.l { left: 12px; } .road .cap.r { right: 12px; }
+/* «+» y «→» dibujados (no son letras de la fuente, que no quedan centradas en el círculo) */
+.road .cap svg { display: block; }
 .tl { position: absolute; width: 200px; border: 2px solid var(--y); border-radius: 14px; background: #fff; padding: 12px 10px 14px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,.07); }
 .tl b.n { display: block; color: #e8b800; font-size: 34px; font-weight: 700; line-height: 1.1; }
 .tl b.t { display: block; font-size: 17px; line-height: 1.2; margin-top: 2px; }
@@ -286,6 +288,14 @@ h2 .hl { display: inline-block; background: var(--y); color: #fff; padding: 0 12
 
 /* Instalaciones de referencia */
 .refgrid { margin-top: 56px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+/* Dos diapositivas de instalaciones: la de las menores (4 en una fila) y la de las mayores (3), con tarjetas más anchas y foto más alta */
+.refgrid.n4 { grid-template-columns: repeat(4, 1fr); }
+.refgrid.n3 { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.refgrid.n2 { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.refgrid.n2 .rf img { height: 300px; }
+.refgrid.n3 .rf img { height: 300px; }
+.refgrid.n3 .rf b { font-size: 18px; }
+.refgrid.n3 .rf span { font-size: 16px; }
 .rf { background: #fff; border: 1px solid #e3e4e6; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 22px rgba(0,0,0,.06); }
 .rf img { width: 100%; height: 250px; object-fit: cover; display: block; }
 .rf div { padding: 12px 14px 16px; }
@@ -301,6 +311,13 @@ h2 .hl { display: inline-block; background: var(--y); color: #fff; padding: 0 12
 .gal.g5 { grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(2, 1fr); }
 .gal.g5 img { grid-column: span 2; }
 .gal.g5 img:nth-child(n+4) { grid-column: span 3; }
+
+/* Encaje: disposición de los paneles en el proyecto, justo debajo del logo del cliente (que va primero, arriba) y dentro de un marco con el amarillo
+   de la marca que se ajusta a la imagen, sin márgenes en blanco (se amplía al pulsarlo). Con encaje el logo sube a top 150; sin él se queda en 392. */
+.logo-slot.con-encaje { top: 150px; }
+.encaje-wrap { position: absolute; right: 96px; top: 392px; width: 380px; display: flex; justify-content: center; }
+.encaje { margin: 0; max-width: 100%; padding: 8px; background: #fff; border: 3px solid var(--y); border-radius: 18px; cursor: zoom-in; line-height: 0; }
+.encaje img { display: block; width: auto; height: auto; max-width: 100%; max-height: 230px; border-radius: 10px; }
 .gal img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; box-shadow: 0 8px 22px rgba(0,0,0,.12); display: block; min-height: 0; }
 
 /* Cierre con los datos de contacto */
@@ -400,6 +417,8 @@ const suns = `<svg class="suns" viewBox="0 0 1123 794" aria-hidden="true">
 const deco = `<div class="deco">${suns}<img class="mark" src="marca.png" alt=""></div>`
 const title = (gray, hl, sub, kick) => `${kick ? `<div class="kick in" style="--i:0">${kick}</div>` : ''}<h2 class="in" style="--i:1">${gray} <span class="hl">${hl}</span></h2>${sub ? `<div class="sub in" style="--i:2">${sub}</div>` : ''}`
 
+const CUBIERTAS = Array.isArray(D.roofs) ? D.roofs : [] // cada cubierta con su disposición (coplanar/inclinada) y sus paneles, si se sabe
+const ELEGIDAS =Array.isArray(D.structures) ? D.structures : [D.structure] // una por cubierta si el presupuesto tiene varias
 const STRUCT = [['coplanar', 'Coplanar a cubierta'], ['inclinada', 'Estructura inclinada'], ['lastrada', 'Lastrada sin perforación'], ['hincada', 'Postes hincados en terreno'], ['marquesina', 'Marquesina'], ['marquesina_flotante', 'Marquesina flotante']]
 // Las garantías salen del inventario (módulo, inversor y batería del presupuesto); la tarjeta que no tiene dato no se enseña
 const W = D.warranty || {}
@@ -489,20 +508,23 @@ const ART = `<svg class="art" viewBox="0 0 320 200" aria-hidden="true">
   <g class="in fade" style="--i:5"><rect x="188" y="152" width="7" height="44" rx="2" fill="#9d9ea1"/></g></g>
   <g class="in fade" style="--i:7"><ellipse class="glow" style="animation-delay:0.0s" cx="228.7" cy="95.6" rx="15" ry="6" transform="rotate(-18 228.7 95.6)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-0.7s" cx="207.6" cy="102.4" rx="15" ry="6" transform="rotate(-18 207.6 102.4)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-1.4s" cx="186.5" cy="109.3" rx="15" ry="6" transform="rotate(-18 186.5 109.3)" fill="url(#gg)"/><ellipse class="glow" style="animation-delay:-2.1s" cx="165.4" cy="116.2" rx="15" ry="6" transform="rotate(-18 165.4 116.2)" fill="url(#gg)"/></g></svg>`
 const GALERIAS = {
-  equipos: ['eq1', 'eq2', 'eq3', 'eq4', 'eq5'],
-  fijacion: ['fx1', 'fx2', 'fx3', 'fx4', 'fx5', 'fx6', 'fx7', 'fx8'],
+  equipos: ['eq1', 'eq2', 'eq3', 'eq4', 'eq5', 'eq6'],
+  // Orden original con la 2.ª y la 4.ª intercambiadas (fx4 en segundo lugar y fx2 en cuarto)
+  fijacion: ['fx1', 'fx4', 'fx3', 'fx2', 'fx5', 'fx6', 'fx7', 'fx8'],
   almacenamiento: ['alm1', 'alm2', 'alm3', 'alm4'],
 }
 const galeria = (fotos, base) => `<div class="gal g${fotos.length}">${fotos.map((n, i) => `<img class="in pop" style="--i:${base + i}" src="proyectos/${n}.jpg" alt="">`).join('')}</div>`
 const PROVEEDORES = ['sigenergy', 'fronius', 'aiko', 'jinko', 'longi', 'huawei']
 const CLIENTES = ['jisap', 'jimbofresh', 'jcano', 'primalum', 'peymapiel', 'lario', 'isabelalonso', 'laciezana']
-const SECTORES = ['Sector agrícola', 'Sector ganadero', 'Industria alimentaria', 'Sector industrial', 'Grandes consumidores de energía']
+const SECTORES = ['Sector agrícola', 'Sector ganadero', 'Industria alimentaria', 'Sector industrial', 'Transporte y logística', 'Grandes consumidores de energía']
 const REFS = [
+  // De más a menos potencia: las más grandes salen primero (las tres primeras en la primera diapositiva y las otras tres en la segunda)
+  ['primalum', 'Primalum', '1,3 MW', '', '2025'],
+  ['lacadosocana', 'Lacados Ocaña', '800 kW', '', '2022'],
   ['aledo', 'Comunidad de Regantes de Aledo', '525 kWp', '', '2024'],
-  ['arenas', 'Arenas del Valle', '240 kWp', '', '2023'],
-  ['levante', 'Levante Sur', '255 kWp de paneles', '430 kWh de baterías', '2025'],
-  ['ciezana', 'La Ciezana (Venta del Olivo)', '255 kWp', 'con almacenamiento', '2025'],
   ['lorca2', 'Lorca (Murcia)', '300 kWn', 'Autoconsumo', '2020'],
+  ['levante', 'Levante Sur', '255 kWp de paneles', '430 kWh de baterías', '2025'],
+  ['arenas', 'Arenas del Valle', '240 kWp', '', '2023'],
 ]
 const ICON = {
   box: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M12 11v5M9.5 13.5h5"/>',
@@ -518,11 +540,11 @@ const slides = [
     <div class="ckick in" style="--i:3">Propuesta técnica - instalación fotovoltaica</div>
     <h1 class="ctitle in" style="--i:4">Presupuesto de<br><span>autoconsumo</span></h1>
     <div class="csub in" style="--i:5">Solución energética personalizada</div>
-    <div class="who in fade" style="--i:6"><b>Nombre de la empresa: ${esc(D.client)}${D.project ? ' · ' + esc(D.project) : ''}</b>${D.address ? `<span>Dirección: ${esc(D.address)}</span>` : ''}</div>
+    <div class="who in fade" style="--i:6"><b>Nombre de la empresa: ${esc(D.client)}${D.project ? ' · ' + esc(D.project) : ''}</b>${D.cif ? `<span>CIF: ${esc(D.cif)}</span>` : ''}${D.address ? `<span>Dirección: ${esc(D.address)}</span>` : ''}</div>
     <div class="cweb in pop" style="--i:7"><img src="marca-gris.png" alt="">auraingenieria.es</div></section>`,
 
   `<section class="slide">${deco}<div class="lead in" style="--i:0">Te lo ponemos <em>fácil</em> para que no te preocupes de nada durante el proceso.</div>
-    <div class="turn in" style="--i:2"><b>Proyecto llave en mano</b>Producir tu propia energía es una buena decisión, y nosotros hacemos que también sea fácil. Nos ocupamos de todo de principio a fin.</div><div class="logo-slot in pop" style="--i:4" id="logoSlot"></div>${ART}</section>`,
+    <div class="turn in" style="--i:2"><b>Proyecto llave en mano</b>Producir tu propia energía es una buena decisión, y nosotros hacemos que también sea fácil. Nos ocupamos de todo de principio a fin.</div><div class="logo-slot in pop${D.encaje ? ' con-encaje' : ''}" style="--i:3" id="logoSlot"></div>${D.encaje ? `<div class="encaje-wrap"><figure class="encaje in pop" style="--i:4"><img src="${D.encaje}" alt="Disposición de los paneles solares en tu instalación"></figure></div>` : ''}${ART}</section>`,
 
   `<section class="slide steps">${deco}<div class="cols"><div class="cwrap">${[
       ['search', 'Análisis y solución global', '#fdc500', 210], ['file', 'Ingeniería y diseño a medida', '#fee07a', 120], ['bolt', 'Instalación con equipo propio', '#c9c9cb', 104],
@@ -531,7 +553,7 @@ const slides = [
     <div class="dtitle in fade" style="--i:7"><div class="t1">Tu transición energética</div><div class="t2"><span class="hl">paso a paso</span></div></div></section>`,
 
   `<section class="slide">${deco}${title('Proceso de trabajo de', 'Aura ingeniería energética')}
-    <div class="tlwrap"><div class="road in grow" style="--i:2"><div class="cap l">+</div><div class="cap r">→</div></div>
+    <div class="tlwrap"><div class="road in grow" style="--i:2"><div class="cap l"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5v15M4.5 12h15"/></svg></div><div class="cap r"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h15M13.5 5.5l6.5 6.5-6.5 6.5"/></svg></div></div>
     ${[['01', 'Proyecto técnico', 'de la instalación'], ['02', 'Dirección de obra', 'Supervisión técnica'], ['03', 'Trámites y legalización', 'Ayto · Industria · Eléctricas'], ['04', 'Certificado final de obra', 'Acreditación oficial'], ['05', 'Gestión de ayudas', 'Subvenciones y bonificaciones']].map((s, i) => `<div class="tl ${i % 2 ? 'down' : 'up'} in pop" style="--i:${i + 3};left:${(963 * (i + 0.5)) / 5 - 100}px"><b class="n">${s[0]}</b><b class="t">${s[1]}</b><span>${s[2]}</span><i class="stem"></i><i class="dot"></i></div>`).join('')}</div></section>`,
 
   `<section class="slide">${deco}${title('Propuesta', 'técnica', 'Especificaciones técnicas de tu proyecto')}
@@ -542,15 +564,15 @@ const slides = [
       ['plug', 'Inversores', (D.inverter_count > 0 ? `<b data-count="${D.inverter_count}"></b>` : '<b></b>'), ''],
     ].map((k, i) => `<div class="kpi ${k[3]} in" style="--i:${i + 3}"><span class="cicon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[k[0]]}</svg></span>${k[2]}<i>${k[1]}</i></div>`).join('')}</div>
     <div class="specs">${[
-      ['sun', 'Tipo de instalación', esc([D.kind || 'Autoconsumo', D.supply].filter(Boolean).join(' · '))],
+      ['sun', 'Tipo de instalación', esc(D.kind || 'Autoconsumo')],
       ['panel', 'Módulo', esc(D.panel || ''), esc(D.strings || '')],
       ['plug', 'Inversor', D.inverter ? `${esc(D.inverter)} · ${D.inverter_count || 1} ${(D.inverter_count || 1) === 1 ? 'unidad' : 'unidades'}` : ''],
       ['batt', 'Baterías', esc(D.battery || 'No incluidas')],
-      ['roof', 'Estructura', esc((STRUCT.find((s) => s[0] === D.structure) || [0, ''])[1])],
+      ['roof', 'Estructura', esc(STRUCT.filter((s) => ELEGIDAS.includes(s[0])).map((s) => s[1]).join(' · ')), CUBIERTAS.map((c) => esc([c.name, (c.layout || '').toLowerCase(), c.panels > 0 ? `${c.panels} paneles` : ''].filter(Boolean).join(' · '))).join('<br>')],
     ].map((s, i) => `<div class="spec in" style="--i:${i + 7}"><span class="cicon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[s[0]]}</svg></span><div><i>${s[1]}</i><b>${s[2]}</b>${s[3] ? `<em>${s[3]}</em>` : ''}</div></div>`).join('')}</div></section>`,
 
   `<section class="slide">${deco}${title('Estructura de', 'fijación', '', 'Estructura y soportación')}
-    <div class="opts2">${STRUCT.map((s, i) => `<div class="opt2 in pop ${s[0] === D.structure ? 'on' : ''}" style="--i:${i + 3}">${DRAW[s[0]]}<b>${s[1]}</b>${s[0] === D.structure ? '<small>✓ Incluida en tu propuesta</small>' : ''}</div>`).join('')}</div></section>`,
+    <div class="opts2">${STRUCT.map((s, i) => `<div class="opt2 in pop ${ELEGIDAS.includes(s[0]) ? 'on' : ''}" style="--i:${i + 3}">${DRAW[s[0]]}<b>${s[1]}</b>${ELEGIDAS.includes(s[0]) ? '<small>✓ Incluida en tu propuesta</small>' : ''}</div>`).join('')}</div></section>`,
 
   `<section class="slide">${deco}<div class="kick in" style="--i:0">Propuesta técnica - instalación fotovoltaica</div><h2 class="in" style="--i:1">Garantías de la <span class="hl">instalación</span></h2>
     <div class="wcards">${WAR.map((w, n) => `<div class="wc w${w[0] + 1} in" style="--i:${n + 3}"><span class="wicon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[['box', 'doc', 'shield', 'battery'][w[0]]]}</svg></span><div class="wbody"><div class="big" data-count="${w[1]}"></div><div class="yr">${w[1] === 1 ? 'año' : 'años'}</div><b>${w[2]}</b><p>${w[3]}</p></div><div class="wfoot">✓ ${w[4]}</div></div>`).join('')}</div></section>`,
@@ -582,8 +604,8 @@ const slides = [
     <div class="sign in" style="--i:3"><div class="signl"><span class="cicon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC.deal}</svg></span><div><b>Por parte del cliente</b><span class="who2">${esc(D.client)}</span><p>Firma de la empresa en señal de la aceptación de todas las condiciones técnicas, económicas y de garantía recogidas en esta propuesta.</p></div></div>
       <div class="signr"><b>Firma del cliente</b><div class="box"></div></div></div></section>`,
 
-  `<section class="slide">${deco}${title('Instalaciones de', 'referencia', '', 'Proyectos realizados')}
-    <div class="refgrid">${REFS.map((r, i) => `<div class="rf in" style="--i:${i + 3}"><img src="proyectos/${r[0]}.jpg" alt="${r[1]}"><div><b>${r[1]}</b><span>${[r[2], r[3]].filter(Boolean).join(' · ')}</span>${r[4] ? `<em>${r[4]}</em>` : ''}</div></div>`).join('')}</div></section>`,
+  ...[REFS.slice(0, Math.ceil(REFS.length / 2)), REFS.slice(Math.ceil(REFS.length / 2))].filter((g) => g.length > 0).map((grupo) => `<section class="slide">${deco}${title('Instalaciones de', 'referencia', '', 'Proyectos realizados')}
+    <div class="refgrid n${grupo.length}">${grupo.map((r, i) => `<div class="rf in" style="--i:${i + 3}"><img src="proyectos/${r[0]}.jpg" alt="${r[1]}"><div><b>${r[1]}</b><span>${[r[2], r[3]].filter(Boolean).join(' · ')}</span>${r[4] ? `<em>${r[4]}</em>` : ''}</div></div>`).join('')}</div></section>`),
 
   `<section class="slide">${deco}${title('Equipos de', 'referencia', '', 'Proyectos realizados')}${galeria(GALERIAS.equipos, 3)}</section>`,
 
@@ -603,7 +625,7 @@ function renderLogo() {
   const slot = document.getElementById('logoSlot')
   if (!slot) return
   slot.innerHTML = D.logo
-    ? `<div class="logo-box"><img alt="Logo de ${esc(D.client)}" src="${D.logo}"></div><div class="logo-tools"><button type="button" data-a="change">Cambiar logo</button><button type="button" data-a="remove">Quitar</button></div>`
+    ? `<div class="logo-box"><img alt="Logo de ${esc(D.client)}" src="${D.logo}"></div>`
     : `<div class="logo-box add" role="button" tabindex="0" data-a="change">+ Añadir el logo de la empresa</div>`
 }
 function setLogo(uri) {
@@ -637,7 +659,7 @@ const lb = document.createElement('div')
 lb.id = 'lb'
 lb.innerHTML = '<button class="lbx" aria-label="Cerrar">×</button><button class="lbp" aria-label="Anterior">‹</button><img alt=""><button class="lbn" aria-label="Siguiente">›</button><div class="lbc"></div>'
 document.body.appendChild(lb)
-const PHOTOS = '.gal img, .rf img'
+const PHOTOS = '.gal img, .rf img, .encaje img'
 let lbList = [], lbI = 0
 function lbShow(i) {
   lbI = (i + lbList.length) % lbList.length

@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ public class TBMetodoPagoController {
 
     @PostMapping
     public ResponseEntity<TBMetodoPago> crearMetodoPago(@RequestBody TBMetodoPago metodoPago) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(metodoPagoService.crearMetodoPago(metodoPago));
     }
 
@@ -34,11 +36,13 @@ public class TBMetodoPagoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<TBMetodoPago> actualizarMetodoPago(@PathVariable Integer id, @RequestBody TBMetodoPago metodoPagoActualizado) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(metodoPagoService.actualizarMetodoPago(id, metodoPagoActualizado));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarMetodoPago(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         metodoPagoService.eliminarMetodoPago(id);
         return ResponseEntity.noContent().build();
     }

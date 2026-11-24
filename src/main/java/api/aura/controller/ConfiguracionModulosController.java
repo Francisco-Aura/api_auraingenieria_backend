@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/configuracion-modulos")
@@ -15,6 +16,11 @@ public class ConfiguracionModulosController {
 
     private final ModuloConfiguracionService moduloConfiguracionService;
 
+    @GetMapping("/mcas")
+    public ResponseEntity<List<ModuloConfiguracion>> listarMcas() {
+        return ResponseEntity.ok(moduloConfiguracionService.listarPorPrefijo("MCAS_"));
+    }
+
     @GetMapping("/{codigo}/activo")
     public ResponseEntity<Map<String, Boolean>> estaActivo(@PathVariable String codigo) {
         return ResponseEntity.ok(Map.of("activo", moduloConfiguracionService.estaActivo(codigo)));
@@ -22,11 +28,17 @@ public class ConfiguracionModulosController {
 
     @PostMapping("/{codigo}/activar")
     public ResponseEntity<ModuloConfiguracion> activar(@PathVariable String codigo) {
+        // Activar/desactivar módulos afecta a todos los usuarios: solo administradores
+        // (los indicadores MCAS los filtra además McasAccessInterceptor)
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(moduloConfiguracionService.activar(codigo));
     }
 
     @PostMapping("/{codigo}/desactivar")
     public ResponseEntity<ModuloConfiguracion> desactivar(@PathVariable String codigo) {
+        // Activar/desactivar módulos afecta a todos los usuarios: solo administradores
+        // (los indicadores MCAS los filtra además McasAccessInterceptor)
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(moduloConfiguracionService.desactivar(codigo));
     }
 }

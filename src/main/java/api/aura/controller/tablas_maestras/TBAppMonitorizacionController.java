@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import api.aura.entity.tablas_maestras.TBAppMonitorizacion;
 import api.aura.repository.tablas_maestras.TBAppMonitorizacionRepository;
 
@@ -31,17 +32,16 @@ public class TBAppMonitorizacionController {
 
     @PostMapping
     public ResponseEntity<TBAppMonitorizacion> crear(@RequestBody TBAppMonitorizacion appMonitorizacion) {
-        try {
-            TBAppMonitorizacion nueva = appMonitorizacionRepository.save(appMonitorizacion);
-            return new ResponseEntity<>(nueva, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        SesionActual.exigirAdmin();
+        // Sin try/catch: un dato que no cabe o repetido lo explica GlobalExceptionHandler (409)
+        TBAppMonitorizacion nueva = appMonitorizacionRepository.save(appMonitorizacion);
+        return new ResponseEntity<>(nueva, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TBAppMonitorizacion> actualizar(@PathVariable Long id,
             @RequestBody TBAppMonitorizacion appMonitorizacion) {
+        SesionActual.exigirAdmin();
         Optional<TBAppMonitorizacion> datos = appMonitorizacionRepository.findById(id);
         if (datos.isPresent()) {
             TBAppMonitorizacion existente = datos.get();
@@ -55,11 +55,9 @@ public class TBAppMonitorizacionController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<HttpStatus> eliminar(@PathVariable Long id) {
-        try {
-            appMonitorizacionRepository.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        SesionActual.exigirAdmin();
+        // Si algún punto de suministro lo usa, GlobalExceptionHandler responde 409 explicándolo
+        appMonitorizacionRepository.deleteById(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

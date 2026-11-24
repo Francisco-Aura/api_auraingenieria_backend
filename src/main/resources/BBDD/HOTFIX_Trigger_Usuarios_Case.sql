@@ -1,3 +1,9 @@
+-- ============================================================================
+-- AVISO: este trigger lo sustituye V20261013_1_Trigger_Clientes_Autor.sql, que es
+-- el mismo y además guarda quién hizo el cambio. No volver a lanzar este script
+-- después de aquel: el histórico del cliente volvería a quedarse sin autor.
+-- ============================================================================
+
 DELIMITER $$
 
 DROP TRIGGER IF EXISTS trg_clientes_actividad_clientes_au $$

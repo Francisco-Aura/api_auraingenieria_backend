@@ -29,6 +29,15 @@ public class EquipoController {
         return equipoService.catalogo();
     }
 
+    /** El inventario completo en Excel. */
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportar() {
+        Map.Entry<String, byte[]> excel = equipoService.exportarExcel();
+        String nombre = java.net.URLEncoder.encode(excel.getKey(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header("Content-Disposition", "attachment; filename*=UTF-8''" + nombre).body(excel.getValue());
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public EquipoDTO crear(@RequestBody @Valid EquipoCrearRequest cuerpo) {

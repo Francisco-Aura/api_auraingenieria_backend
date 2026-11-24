@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import api.aura.entity.tablas_maestras.TBIntegracionSistemasFV;
 import api.aura.repository.tablas_maestras.TBIntegracionSistemasFVRepository;
 
@@ -31,17 +32,16 @@ public class TBIntegracionSistemasFVController {
 
     @PostMapping
     public ResponseEntity<TBIntegracionSistemasFV> crear(@RequestBody TBIntegracionSistemasFV integracion) {
-        try {
-            TBIntegracionSistemasFV nueva = TBIntegracionSistemasFVRepository.save(integracion);
-            return new ResponseEntity<>(nueva, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        SesionActual.exigirAdmin();
+        // Sin try/catch: un dato que no cabe o repetido lo explica GlobalExceptionHandler (409)
+        TBIntegracionSistemasFV nueva = TBIntegracionSistemasFVRepository.save(integracion);
+        return new ResponseEntity<>(nueva, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TBIntegracionSistemasFV> actualizar(@PathVariable Long id,
             @RequestBody TBIntegracionSistemasFV integracion) {
+        SesionActual.exigirAdmin();
         Optional<TBIntegracionSistemasFV> datos = TBIntegracionSistemasFVRepository.findById(id);
         if (datos.isPresent()) {
             TBIntegracionSistemasFV existente = datos.get();
@@ -55,11 +55,9 @@ public class TBIntegracionSistemasFVController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<HttpStatus> eliminar(@PathVariable Long id) {
-        try {
-            TBIntegracionSistemasFVRepository.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        SesionActual.exigirAdmin();
+        // Si algún punto de suministro lo usa, GlobalExceptionHandler responde 409 explicándolo
+        TBIntegracionSistemasFVRepository.deleteById(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

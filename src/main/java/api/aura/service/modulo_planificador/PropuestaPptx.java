@@ -13,9 +13,11 @@ import java.awt.Dimension;
 import java.awt.geom.Rectangle2D;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * PowerPoint de la propuesta al cliente de un presupuesto validado (A4 apaisado, con la imagen de Aura; equivale a proposal_pptx.py).
@@ -197,10 +199,13 @@ public class PropuestaPptx {
             // 4 · Estructura
             s = enBlanco(ppt, "fondo.png");
             titulo(s, "Tipo de", "estructura", "La solución prevista para tus paneles", 0.65, 1.0);
-            String elegida = t(datos.get("structure"), "");
+            // Una estructura por cubierta si el presupuesto tiene varias («structures»); si no, la única («structure»)
+            Set<String> elegidas = new HashSet<>();
+            if (datos.get("structures") instanceof List<?> varias) varias.forEach(e -> elegidas.add(String.valueOf(e)));
+            else elegidas.add(t(datos.get("structure"), ""));
             for (int i = 0; i < ESTRUCTURAS.size(); i++) {
                 double x = 0.7 + i * 2.15;
-                boolean on = ESTRUCTURAS.get(i)[0].equals(elegida);
+                boolean on = elegidas.contains(ESTRUCTURAS.get(i)[0]);
                 forma(s, ShapeType.ROUND_RECT, x, 3.2, 1.95, 2.4, on ? AMARILLO : null, on ? AMARILLO : GRIS);
                 texto(s, x + 0.15, 3.35, 1.65, 1.6, ESTRUCTURAS.get(i)[1], 15, true, on ? TINTA : ETIQUETA, TextParagraph.TextAlign.CENTER, VerticalAlignment.MIDDLE);
                 if (on) {
