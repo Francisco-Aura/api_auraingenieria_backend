@@ -1074,14 +1074,14 @@
     "datasheet": ""
   },
   {
-    "id": "pro-memoria",
+    "id": "pro-proyecto-tecnico",
     "category": "proyecto",
     "group": "proyecto",
     "brand": "",
-    "model": "Proyecto / memoria",
+    "model": "Proyecto técnico",
     "supplier": "",
     "unit": "ud",
-    "unit_price": 500.0,
+    "unit_price": 1500.0,
     "per_module": false,
     "default_qty": 1.0,
     "attrs": {
@@ -1094,14 +1094,34 @@
     "datasheet": ""
   },
   {
-    "id": "pro-direccion",
+    "id": "pro-memoria-tecnica",
+    "category": "proyecto",
+    "group": "proyecto",
+    "brand": "",
+    "model": "Memoria técnica",
+    "supplier": "",
+    "unit": "ud",
+    "unit_price": 600.0,
+    "per_module": false,
+    "default_qty": 1.0,
+    "attrs": {
+      "tramite": "Memoria técnica"
+    },
+    "notes": "",
+    "sample": false,
+    "stock": 0,
+    "stock_min": 0,
+    "datasheet": ""
+  },
+  {
+    "id": "pro-direccion-obra",
     "category": "proyecto",
     "group": "proyecto",
     "brand": "",
     "model": "Dirección de obra",
     "supplier": "",
     "unit": "ud",
-    "unit_price": 500.0,
+    "unit_price": 600.0,
     "per_module": false,
     "default_qty": 1.0,
     "attrs": {
@@ -1141,7 +1161,7 @@
     "model": "Plan de seguridad",
     "supplier": "",
     "unit": "ud",
-    "unit_price": 0.0,
+    "unit_price": 500.0,
     "per_module": false,
     "default_qty": 1.0,
     "attrs": {
@@ -2073,10 +2093,10 @@
     "category": "proyecto",
     "group": "proyecto",
     "brand": "",
-    "model": "Licencia o comunicación previa (ayuntamiento)",
+    "model": "Licencia o comunicación previa (ayuntamiento) y tasas",
     "supplier": "",
     "unit": "ud",
-    "unit_price": 200.0,
+    "unit_price": 80.0,
     "per_module": false,
     "default_qty": 1.0,
     "attrs": {
@@ -2100,7 +2120,7 @@
     "per_module": false,
     "default_qty": 1.0,
     "attrs": {
-      "tramite": "Licencia municipal"
+      "tramite": "ICIO"
     },
     "notes": "Depende del ayuntamiento; pueden existir bonificaciones en IBI e ICIO.",
     "sample": true,
@@ -3053,6 +3073,7 @@
       "mppt_max_v": 1000,
       "vmax_v": 1100,
       "imax_mppt_a": 30,
+      "imax_mppt_1string_a": 20,
       "n_mppt": 4,
       "prot_cc": "Sí",
       "bateria_tension": "—",
@@ -3065,7 +3086,6 @@
       "x:Dimensiones (mm)": "640 × 530 × 270",
       "x:Ficha técnica": "SUN2000-50kTL-M3-Datasheet.pdf",
       "x:Entradas": 8,
-      "x:Corriente máx. por string (A)": 20,
       "x:Refrigeración": "Ventilación forzada inteligente"
     },
     "notes": "Precio por definir: producto dado de alta desde su ficha técnica.",
@@ -3173,6 +3193,7 @@
       "mppt_max_v": 1000,
       "vmax_v": 1100,
       "imax_mppt_a": 30,
+      "imax_mppt_1string_a": 20,
       "n_mppt": 10,
       "prot_cc": "Sí",
       "bateria_tension": "—",
@@ -3184,7 +3205,6 @@
       "x:Peso (kg)": 93,
       "x:Dimensiones (mm)": "1035 × 700 × 365",
       "x:Ficha técnica": "SUN2000-100KTL-M2.pdf",
-      "x:Corriente máx. por string (A)": 20,
       "x:Entradas por MPPT": 2,
       "x:Protección": "AFCI y desconexión a nivel de string"
     },

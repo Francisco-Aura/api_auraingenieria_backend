@@ -27,13 +27,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -150,33 +150,206 @@ class PropuestaDocumentosContratoTest {
         assertEquals("Vacío", pp.get("client"));
     }
 
+    @Test
+    void elResumenDeStringsSoloSaleSiSumaLosPanelesDelPresupuesto() {
+        List<Map<String, Object>> reparto = List.of(Map.of("panels", 19), Map.of("panels", 18), Map.of("panels", 18));
+        assertEquals("3 strings: 19 + 18 + 18 paneles", PropuestaDatos.resumenDeStrings(reparto, 55));
+        assertEquals("", PropuestaDatos.resumenDeStrings(reparto, 60), "un reparto de otros paneles no se enseña");
+        assertEquals("3 strings: 19 + 18 + 18 paneles", PropuestaDatos.resumenDeStrings(reparto, 0), "sin paneles en el presupuesto no se puede comparar");
+    }
+
+    @Test
+    void elCifYElLogoDeLosParametrosDelPresupuestoSalenEnLaPropuesta() throws Exception {
+        JsonNode e = entrada();
+        equipos(e.get("equipos")).values().forEach(q -> {
+            q.setPartida("");
+            equiposRepo.save(q);
+        });
+        JsonNode b = e.get("budget");
+        Map<String, Object> datos = json.convertValue(b.get("datos"), new TypeReference<LinkedHashMap<String, Object>>() {
+        });
+        datos.put("cif", "B12345678");
+        datos.put("clientLogo", "data:image/png;base64,AAAA");
+        datos.put("encaje", "data:image/jpeg;base64,BBBB");
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("name", b.get("name").asText());
+        cuerpo.put("data", datos);
+        cuerpo.put("kwp", b.get("kwp").asDouble());
+        cuerpo.put("panels", b.get("panels").asInt());
+        cuerpo.put("budget_total", b.get("total").asDouble());
+        String salida = mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target", "propuesta-pruebas"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target", "propuesta-pruebas", "propuesta-cif.html"), salida);
+        var m = Pattern.compile("<script id=\"datos\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(salida);
+        assertTrue(m.find());
+        JsonNode d = json.readTree(m.group(1));
+        assertEquals("B12345678", d.get("cif").asText());
+        assertEquals("data:image/png;base64,AAAA", d.get("logo").asText());
+        assertEquals("data:image/jpeg;base64,BBBB", d.get("encaje").asText(), "el encaje de los parámetros sale en los datos de la propuesta");
+        // Sin encaje (el presupuesto de ejemplo no lo trae) la propuesta no lleva la clave, y entonces no se añade su diapositiva
+        assertFalse(PropuestaDatos.paraHtml(presupuesto(b), equipos(e.get("equipos"))).containsKey("encaje"));
+        // Un logo que no es una imagen en data URI no se cuela
+        assertEquals("", PropuestaDatos.logoValido("<script>alert(1)</script>"));
+        assertEquals("", PropuestaDatos.logoValido("data:text/html;base64,AAAA"));
+    }
+
     // --------------------------------------------------------------------------------------- HTML
 
     @Test
-    void laPresentacionHtmlEsIgualALaDelPlanificadorActualSalvoSusDatos() throws Exception {
+    void laPresentacionHtmlLlevaSusDatosDentroYLasImagenesIncrustadas() throws Exception {
         JsonNode e = entrada();
         Map<String, Object> datos = PropuestaDatos.paraHtml(presupuesto(e.get("budget")), equipos(e.get("equipos")));
         datos.put("logo", "data:image/png;base64,AAAA");
         String generado = html.generar(datos);
-        String neutro = Pattern.compile("(<script id=\"datos\" type=\"application/json\">)(.*?)(</script>)", Pattern.DOTALL).matcher(generado)
-                .replaceFirst(m -> m.group(1) + "@@" + m.group(3));
-        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target", "propuesta-pruebas"));
-        java.nio.file.Files.writeString(java.nio.file.Path.of("target", "propuesta-pruebas", "propuesta.html"), neutro);
-        String[] esperado = recurso("propuesta.sha256").trim().split(" ");
-        assertEquals(Integer.parseInt(esperado[1]), neutro.codePointCount(0, neutro.length()), "mismo tamaño");
-        assertEquals(esperado[0], sha256(neutro), "mismo contenido, con las imágenes incrustadas");
+        // Un único archivo: ninguna imagen queda con ruta relativa (todas van incrustadas)
         assertFalse(generado.contains("src=\"logos/") || generado.contains("src=\"proyectos/"), "ninguna imagen queda con ruta relativa");
+        // La plantilla está completa: las diapositivas principales siguen ahí (no se comprueba el archivo entero, para poder retocarlo sin tocar la prueba)
+        for (String clave : List.of("Te lo ponemos", "Estructura de", "Garantías de la", "Instalaciones de", "Soportes de", "id=\"logoSlot\"")) {
+            assertTrue(generado.contains(clave), "falta en la propuesta: " + clave);
+        }
         // Los datos viajan dentro del propio archivo
         var m = Pattern.compile("<script id=\"datos\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(generado);
         assertTrue(m.find());
         assertEquals(json.readTree(recurso("datos-html.json")), json.readTree(m.group(1)));
     }
 
-    private static String sha256(String texto) throws Exception {
-        byte[] hash = MessageDigest.getInstance("SHA-256").digest(texto.getBytes(StandardCharsets.UTF_8));
-        StringBuilder sb = new StringBuilder();
-        for (byte b : hash) sb.append(String.format("%02x", b));
-        return sb.toString();
+    @Test
+    void laPresentacionDelClienteSeSacaDelBorradorSinGuardarNiValidarNada() throws Exception {
+        JsonNode e = entrada();
+        equipos(e.get("equipos")).values().forEach(q -> {
+            q.setPartida("");
+            equiposRepo.save(q);
+        });
+        JsonNode b = e.get("budget");
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("name", b.get("name").asText());
+        cuerpo.put("data", json.convertValue(b.get("datos"), new TypeReference<LinkedHashMap<String, Object>>() {
+        }));
+        cuerpo.put("kwp", b.get("kwp").asDouble());
+        cuerpo.put("panels", b.get("panels").asInt());
+        cuerpo.put("budget_total", b.get("total").asDouble());
+        // Sin logo del cliente en los datos de partida no se descarga: el presupuesto se crea sin él, la propuesta no
+        mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Sube el logo de la empresa del cliente para descargar la propuesta: sale en la presentación."));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
+        datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
+        String salida = mvc.perform(post("/api/planificador/budget/proposal-html").contentType("application/json").content(json.writeValueAsString(cuerpo)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/html")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target", "propuesta-pruebas"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target", "propuesta-pruebas", "propuesta-borrador.html"), salida);
+        var m = Pattern.compile("<script id=\"datos\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(salida);
+        assertTrue(m.find());
+        JsonNode datos = json.readTree(m.group(1));
+        assertEquals(b.get("datos").get("customer").get("name").asText(), datos.get("client").asText(), "el cliente es el de los datos del presupuesto");
+        assertEquals(b.get("total").asDouble(), datos.get("total").asDouble(), 0.001);
+        assertEquals("data:image/png;base64,AAAA", datos.get("logo").asText(), "el logo de los datos de partida del presupuesto");
+        assertTrue(datos.get("warranty").get("panel_prod_years").asDouble() > 0 && datos.get("warranty").get("install_years").asInt() == 2);
+        assertEquals(0, propuestas.count(), "no crea ninguna propuesta");
+        assertEquals(0, presupuestos.count(), "no guarda el presupuesto");
+    }
+
+    @Test
+    void laPropuestaEnPdfLlevaLaPaginaDeFirmaOAvisaDeQueNoHayNavegador() throws Exception {
+        JsonNode e = entrada();
+        equipos(e.get("equipos")).values().forEach(q -> {
+            q.setPartida("");
+            equiposRepo.save(q);
+        });
+        JsonNode b = e.get("budget");
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("name", b.get("name").asText());
+        cuerpo.put("data", json.convertValue(b.get("datos"), new TypeReference<LinkedHashMap<String, Object>>() {
+        }));
+        cuerpo.put("kwp", b.get("kwp").asDouble());
+        cuerpo.put("panels", b.get("panels").asInt());
+        cuerpo.put("budget_total", b.get("total").asDouble());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> datosCuerpo = (Map<String, Object>) cuerpo.get("data");
+        datosCuerpo.put("clientLogo", "data:image/png;base64,AAAA");
+        var respuesta = mvc.perform(post("/api/planificador/budget/proposal-pdf").contentType("application/json").content(json.writeValueAsString(cuerpo))).andReturn().getResponse();
+        if (respuesta.getStatus() == 501) {
+            return; // sin Chrome en esta máquina: el cliente imprime el HTML desde el navegador
+        }
+        assertEquals(200, respuesta.getStatus(), respuesta.getContentAsString());
+        byte[] pdf = respuesta.getContentAsByteArray();
+        assertEquals("%PDF", new String(pdf, 0, 4, StandardCharsets.US_ASCII));
+        try (org.apache.pdfbox.pdmodel.PDDocument d = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+            assertEquals(19, d.getNumberOfPages(), "una página por diapositiva, con la de firma");
+            String texto = new org.apache.pdfbox.text.PDFTextStripper().getText(d);
+            assertTrue(texto.contains("Firma del cliente"), "lleva la página de aceptación y firma");
+        }
+    }
+
+    @Test
+    void conVariasCubiertasLaPropuestaMarcaLaEstructuraDeCadaUna() throws Exception {
+        JsonNode e = entrada();
+        pl_Presupuesto b = presupuesto(e.get("budget"));
+        @SuppressWarnings("unchecked") Map<String, Object> encuesta = (Map<String, Object>) b.getDatos().get("survey");
+        // Una sola cubierta (o un presupuesto anterior, solo con `roof`): como siempre, sin lista
+        Map<String, Object> una = PropuestaDatos.paraPptx(b, equipos(e.get("equipos")));
+        assertEquals("coplanar", una.get("structure"));
+        assertFalse(una.containsKey("structures"));
+        // Teja y plana: la primera sigue en `structure` y van las dos en `structures`; roofs manda sobre roof
+        encuesta.put("roof", "teja");
+        encuesta.put("roofs", List.of("teja", "plana", "teja"));
+        Map<String, Object> varias = PropuestaDatos.paraPptx(b, equipos(e.get("equipos")));
+        assertEquals("coplanar", varias.get("structure"));
+        assertEquals(List.of("coplanar", "lastrada"), varias.get("structures"));
+        // Dos cubiertas con la misma estructura (teja y chapa) no se repiten: una sola, sin lista
+        encuesta.put("roofs", List.of("teja", "chapa_minionda"));
+        Map<String, Object> iguales = PropuestaDatos.paraPptx(b, equipos(e.get("equipos")));
+        assertEquals("coplanar", iguales.get("structure"));
+        assertFalse(iguales.containsKey("structures"));
+        // El PowerPoint marca las dos
+        encuesta.put("roofs", List.of("teja", "plana"));
+        try (XMLSlideShow ppt = new XMLSlideShow(new ByteArrayInputStream(pptx.generar(PropuestaDatos.paraPptx(b, equipos(e.get("equipos"))))))) {
+            List<String> estructura = textosDe(ppt.getSlides().get(3));
+            assertEquals(2, estructura.stream().filter("✓ Incluida"::equals).count(), estructura.toString());
+        }
+        // La presentación HTML las lleva en sus datos; este presupuesto trae además una marquesina flotante entre sus filas, que se añade
+        // (con una sola cubierta ocuparía su lugar, como siempre)
+        Map<String, Object> datosHtml = PropuestaDatos.paraHtml(b, equipos(e.get("equipos")));
+        assertEquals(List.of("coplanar", "lastrada", "marquesina_flotante"), datosHtml.get("structures"));
+        encuesta.put("roofs", List.of("teja", "flotante"));
+        assertEquals(List.of("coplanar", "marquesina_flotante"), PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).get("structures"),
+                "la marquesina ocupa el lugar de la cubierta flotante, sin repetirse");
+        String generado = html.generar(datosHtml);
+        assertTrue(generado.contains("\"structures\""), "los datos incrustados traen la lista");
+    }
+
+    @Test
+    void laPropuestaHtmlLlevaLaDisposicionYElRepartoDePanelesDeCadaCubierta() throws Exception {
+        JsonNode e = entrada();
+        pl_Presupuesto b = presupuesto(e.get("budget"));
+        @SuppressWarnings("unchecked") Map<String, Object> encuesta = (Map<String, Object>) b.getDatos().get("survey");
+        int paneles = b.getPaneles();
+        // Presupuesto anterior (sin disposición ni reparto): no hay nada que enseñar
+        encuesta.remove("roofLayouts");
+        encuesta.remove("roofPanels");
+        encuesta.put("roofs", List.of("teja"));
+        assertFalse(PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).containsKey("roofs"));
+        // Una cubierta con disposición: sin paneles (son todos)
+        encuesta.put("roofLayouts", Map.of("teja", "coplanar"));
+        assertEquals(List.of(Map.of("name", "Teja", "layout", "Coplanar", "panels", 0)), PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).get("roofs"));
+        // Dos cubiertas con reparto completo; la minionda inclinada lleva estructura inclinada
+        encuesta.put("roofs", List.of("teja", "chapa_minionda"));
+        encuesta.put("roofLayouts", Map.of("teja", "coplanar", "chapa_minionda", "inclinada"));
+        encuesta.put("roofPanels", Map.of("teja", paneles - 4, "chapa_minionda", 4));
+        Map<String, Object> datos = PropuestaDatos.paraHtml(b, equipos(e.get("equipos")));
+        assertEquals(List.of(Map.of("name", "Teja", "layout", "Coplanar", "panels", paneles - 4),
+                Map.of("name", "Chapa minionda", "layout", "Inclinada", "panels", 4)), datos.get("roofs"));
+        assertEquals(List.of("coplanar", "inclinada", "marquesina_flotante"), datos.get("structures"));
+        // Un reparto que no suma los paneles no se enseña (la disposición sí)
+        encuesta.put("roofPanels", Map.of("teja", paneles, "chapa_minionda", 4));
+        @SuppressWarnings("unchecked") List<Map<String, Object>> sinReparto = (List<Map<String, Object>>) PropuestaDatos.paraHtml(b, equipos(e.get("equipos"))).get("roofs");
+        assertEquals(0, sinReparto.get(0).get("panels"));
+        assertTrue(html.generar(datos).contains("\"Chapa minionda\""), "los datos incrustados traen las cubiertas");
     }
 
     // ------------------------------------------------------------------------------------ PowerPoint

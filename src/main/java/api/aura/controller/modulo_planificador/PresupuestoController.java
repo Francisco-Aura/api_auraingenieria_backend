@@ -107,6 +107,11 @@ public class PresupuestoController {
         return presupuestoService.renombrarVariante(id, texto(cuerpo, "name"));
     }
 
+    @PostMapping("/budgets/{id}/study")
+    public Map<String, Object> asociarEstudio(@PathVariable String id, @RequestBody(required = false) Map<String, Object> cuerpo) {
+        return presupuestoService.asociarEstudio(id, texto(cuerpo, "study_id"));
+    }
+
     @PostMapping("/budgets/{id}/variant")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Object> duplicar(@PathVariable String id, @RequestBody(required = false) Map<String, Object> cuerpo) {

@@ -1,5 +1,6 @@
 package api.aura.controller.tablas_maestras;
 
+import api.aura.controller.SesionActual;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ public class TBComercializadorasController {
     @PostMapping
     public ResponseEntity<TBComercializadoras> crearComercializadora(
             @RequestBody TBComercializadoras comercializadora) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(comercializadorasService.crearComercializadora(comercializadora));
     }
 
@@ -36,11 +38,13 @@ public class TBComercializadorasController {
     @PutMapping("/{id}")
     public ResponseEntity<TBComercializadoras> actualizarComercializadora(@PathVariable Integer id,
             @RequestBody TBComercializadoras comercializadoraActualizada) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(comercializadorasService.actualizarComercializadora(id, comercializadoraActualizada));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarComercializadora(@PathVariable Integer id) {
+        SesionActual.exigirAdmin();
         comercializadorasService.eliminarComercializadora(id);
         return ResponseEntity.noContent().build();
     }

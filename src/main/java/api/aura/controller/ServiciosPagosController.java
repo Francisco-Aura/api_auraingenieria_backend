@@ -23,30 +23,52 @@ public class ServiciosPagosController {
     @Autowired
     private ServiciosPagosService serviciosPagosService;
 
+    // Pagos de los servicios: solo administradores, como su gestión y el informe de pagos
+    // (la pantalla solo se los muestra a ellos)
     @GetMapping("/servicio/{idServicio}")
     public ResponseEntity<ServiciosPagos> obtenerPagosPorServicio(@PathVariable Integer idServicio) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(serviciosPagosService.obtenerPagosPorServicio(idServicio));
     }
 
+    /**
+     * Los planes de pagos de varios servicios en una sola petición (la ventana de servicios
+     * de un punto pedía uno por servicio). Mismo contenido que /servicio/{id}.
+     */
+    @GetMapping("/servicios")
+    public ResponseEntity<List<ServiciosPagos>> obtenerPagosPorServicios(@RequestParam("ids") List<Integer> ids) {
+        SesionActual.exigirAdmin();
+        if (ids.size() > MAXIMO_SERVICIOS_POR_PETICION) {
+            throw new IllegalArgumentException("Demasiados servicios en una sola petición");
+        }
+        return ResponseEntity.ok(serviciosPagosService.obtenerPagosPorServicios(ids));
+    }
+
+    private static final int MAXIMO_SERVICIOS_POR_PETICION = 500;
+
     @GetMapping("/servicio/{idServicio}/cuotas")
     public ResponseEntity<List<CuotaServicioDTO>> obtenerCuotasPorServicio(@PathVariable Integer idServicio) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(serviciosPagosService.obtenerCuotasPorServicio(idServicio));
     }
 
     @PutMapping("/servicio/{idServicio}")
     public ResponseEntity<ServiciosPagos> actualizarPagosServicio(@PathVariable Integer idServicio,
             @RequestBody ServiciosPagos pagos) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(serviciosPagosService.actualizarPagosServicio(idServicio, pagos));
     }
 
     @PutMapping("/cuota/{idCuota}")
     public ResponseEntity<CuotaServicioDTO> actualizarCuota(@PathVariable Integer idCuota,
             @RequestBody CuotaServicioDTO cuota) {
+        SesionActual.exigirAdmin();
         return ResponseEntity.ok(serviciosPagosService.actualizarCuota(idCuota, cuota));
     }
 
     @PostMapping
     public ResponseEntity<ServiciosPagos> crearServicioPagos(@RequestBody ServiciosPagos servicioPagos) {
+        SesionActual.exigirAdmin();
         try {
             // Asegurarse de que el servicio y otros objetos relacionados estén
             // correctamente vinculados
@@ -58,12 +80,14 @@ public class ServiciosPagosController {
             ServiciosPagos guardado = serviciosPagosService.guardar(servicioPagos);
             return ResponseEntity.ok(guardado);
         } catch (Exception e) {
+            logger.error("Error al guardar los pagos del servicio", e);
             return ResponseEntity.internalServerError().body(null);
         }
     }
 
     @PostMapping("/generar-plan")
     public ResponseEntity<?> generarPlanPagos(@RequestBody Map<String, Object> params) {
+        SesionActual.exigirAdmin();
         try {
             Integer idPagoPlazos = (Integer) params.get("idPagoPlazos");
             Double importeTotal = Double.valueOf(params.get("importeTotal").toString());
@@ -85,6 +109,9 @@ public class ServiciosPagosController {
 
             if (params.containsKey("fechaInicio")) {
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                // Sin esto, "2026-02-30" no falla: se convierte en el 2 de marzo y todo
+                // el plan de cuotas sale con las fechas corridas sin avisar.
+                formatter.setLenient(false);
                 Date fechaInicio = formatter.parse(params.get("fechaInicio").toString());
                 plantilla.setPrimerPagoFecha(fechaInicio);
             }
@@ -101,6 +128,7 @@ public class ServiciosPagosController {
 
     @DeleteMapping("/servicio/{idServicio}")
     public ResponseEntity<Void> eliminarPagosPorServicio(@PathVariable Integer idServicio) {
+        SesionActual.exigirAdmin();
         serviciosPagosService.eliminarPagosPorServicio(idServicio);
         return ResponseEntity.noContent().build();
     }

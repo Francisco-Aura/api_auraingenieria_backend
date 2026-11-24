@@ -40,7 +40,7 @@ public class TBGestorasService {
                     gestora.setDescripcion(gestoraActualizada.getDescripcion());
                     return gestorasRepository.save(gestora);
                 })
-                .orElseThrow(() -> new RuntimeException("Gestora no encontrada con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Gestora no encontrada con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'gestoras'")

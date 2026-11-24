@@ -39,7 +39,7 @@ public class TBSubtipologiaService {
                     subtipologia.setDescripcion(subtipologiaActualizada.getDescripcion());
                     return subtipologiaRepository.save(subtipologia);
                 })
-                .orElseThrow(() -> new RuntimeException("Subtipología no encontrada con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Subtipología no encontrada con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'subtipologias'")

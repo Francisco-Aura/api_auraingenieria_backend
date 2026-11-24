@@ -1,20 +1,21 @@
 package api.aura.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import api.aura.entity.Usuario;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
-        @Query("SELECT u FROM Usuario u WHERE u.user = :username AND u.pass = :password")
-        Usuario findByUser(@Param("username") String username, @Param("password") String password);
+        /** Usuarios con ese login; la contraseña se comprueba en UsuarioService (cifrada con AES-GCM). */
+        List<Usuario> findAllByUser(String user);
 
         List<Usuario> findByNivelAcceso(Integer nivelAcceso);
+
+        Optional<Usuario> findFirstByNombreIgnoreCase(String nombre);
 
         /** Usuarios de un grupo de trabajo (clave sin tildes, p. ej. "ingenieria"). */
         List<Usuario> findByGrupo(String grupo);

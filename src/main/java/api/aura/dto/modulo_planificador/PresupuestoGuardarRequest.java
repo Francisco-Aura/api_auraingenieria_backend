@@ -19,6 +19,11 @@ public class PresupuestoGuardarRequest {
     @JsonProperty("id")
     private String id;
 
+    /** Solo al crear: el estudio del que nace (mismo cliente y proyecto); vacío si no viene de ninguno. */
+    @Size(max = 64)
+    @JsonProperty("study_id")
+    private String estudioId = "";
+
     @Size(max = 200)
     @JsonProperty("name")
     private String nombre = "";

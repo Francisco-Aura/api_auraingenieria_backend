@@ -41,7 +41,7 @@ public class TBPagoPlazosService {
                     pagoPlazo.setNumeroCuotas(pagoPlazoActualizado.getNumeroCuotas());
                     return pagoPlazosRepository.save(pagoPlazo);
                 })
-                .orElseThrow(() -> new RuntimeException("Pago plazo no encontrado con ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Pago plazo no encontrado con ID: " + id));
     }
 
     @CacheEvict(value = "tablas-maestras", key = "'pago-plazos'")
