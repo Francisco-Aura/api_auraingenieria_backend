@@ -52,4 +52,8 @@ public class pl_Propuesta {
 
     @Column(name = "logo_cliente", columnDefinition = "LONGTEXT", nullable = false)
     private String logoCliente = "";
+
+    /** Encaje de los paneles en el proyecto (data URI): obligatorio para descargar la propuesta; manda sobre el del presupuesto. */
+    @Column(name = "encaje_cliente", columnDefinition = "LONGTEXT DEFAULT ''", nullable = false)
+    private String encajeCliente = "";
 }
