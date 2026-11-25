@@ -38,6 +38,11 @@ public class TareaService {
     private final mt_TareaHistorialRepository historialRepository;
     private final AdjuntoRepository adjuntoRepository;
     private final FileStorageService fileStorageService;
+    private final mt_TareaTramoRepository tramoRepository;
+
+    /** Workmeter (cronómetro de tareas): solo en local. Ver workmeter.activo en application.properties. */
+    @org.springframework.beans.factory.annotation.Value("${workmeter.activo:false}")
+    private boolean workmeterActivo;
 
     public List<TareaDTO> obtenerTodas() {
         return tareaRepository.findAll().stream()
@@ -630,6 +635,13 @@ public class TareaService {
                 ? comentarioService.obtenerPorTarea(tarea.getId())
                 : List.of();
         long duracionActiva = calcularDuracionActiva(tarea, ahora);
+        Long tiempoCronometro = null;
+        Boolean cronometroActivo = null;
+        if (workmeterActivo && tarea.getId() != null) {
+            List<mt_TareaTramo> tramos = tramoRepository.deLaTarea(tarea.getId());
+            tiempoCronometro = TareaTiempoService.segundosTotales(tramos, ahora);
+            cronometroActivo = tramos.stream().anyMatch(t -> t.getFin() == null && !TareaTiempoService.terminado(t, ahora));
+        }
         Long duracionTotal = tarea.getFechaCreacion() == null ? null : calcularDuracionTotal(tarea, ahora);
         long tiempoBloqueado = Optional.ofNullable(tarea.getTiempoBloqueadoSegundos()).orElse(0L);
         if (tarea.getFechaBloqueo() != null && tarea.getEstado() != null
@@ -675,6 +687,8 @@ public class TareaService {
                 .fijada(tarea.getFijada())
                 .comentarios(comentarios)
                 .duracionActivaSegundos(duracionActiva)
+                .tiempoCronometroSegundos(tiempoCronometro)
+                .cronometroActivo(cronometroActivo)
                 .duracionTotalSegundos(duracionTotal)
                 .tiempoBloqueadoSegundos(tiempoBloqueado)
                 .totalBloqueos(tarea.getTotalBloqueos())

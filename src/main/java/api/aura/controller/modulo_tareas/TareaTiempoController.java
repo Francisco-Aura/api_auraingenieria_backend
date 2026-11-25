@@ -11,6 +11,7 @@ import java.time.LocalDate;
 
 /** Control de tiempo por tarea. La identidad es siempre la de la sesión: nadie controla el tiempo de otro. */
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "workmeter.activo", havingValue = "true")
 @RequestMapping("/api/tareas/tiempo")
 @RequiredArgsConstructor
 public class TareaTiempoController {

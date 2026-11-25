@@ -6,6 +6,7 @@ import api.aura.repository.modulo_tareas.AdjuntoRepository;
 import api.aura.repository.modulo_tareas.mt_CategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_SubCategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_TareaEstadoRepository;
+import api.aura.repository.modulo_tareas.mt_TareaTramoRepository;
 import api.aura.repository.modulo_tareas.mt_TareaHistorialRepository;
 import api.aura.repository.modulo_tareas.mt_TareaRepository;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,8 @@ class TareaPorVencerTest {
     private final TareaService servicio = new TareaService(tareas, mock(mt_TareaEstadoRepository.class),
             mock(mt_CategoriaRepository.class), mock(mt_SubCategoriaRepository.class), mock(UsuarioRepository.class),
             mock(ClienteRepository.class), mock(TareaNotificacionService.class), mock(TareaComentarioService.class),
-            mock(mt_TareaHistorialRepository.class), mock(AdjuntoRepository.class), mock(FileStorageService.class));
+            mock(mt_TareaHistorialRepository.class), mock(AdjuntoRepository.class), mock(FileStorageService.class),
+            mock(mt_TareaTramoRepository.class));
 
     private LocalDateTime hastaConsultado() {
         ArgumentCaptor<LocalDateTime> hasta = ArgumentCaptor.forClass(LocalDateTime.class);

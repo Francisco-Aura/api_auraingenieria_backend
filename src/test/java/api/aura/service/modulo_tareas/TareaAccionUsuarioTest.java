@@ -12,6 +12,7 @@ import api.aura.repository.modulo_tareas.AdjuntoRepository;
 import api.aura.repository.modulo_tareas.mt_CategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_SubCategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_TareaEstadoRepository;
+import api.aura.repository.modulo_tareas.mt_TareaTramoRepository;
 import api.aura.repository.modulo_tareas.mt_TareaHistorialRepository;
 import api.aura.repository.modulo_tareas.mt_TareaRepository;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,8 @@ class TareaAccionUsuarioTest {
     private final TareaService servicio = new TareaService(tareas, estados, mock(mt_CategoriaRepository.class),
             mock(mt_SubCategoriaRepository.class), usuarios, mock(ClienteRepository.class), notificaciones,
             mock(TareaComentarioService.class), historial, mock(AdjuntoRepository.class),
-            mock(FileStorageService.class));
+            mock(FileStorageService.class),
+            mock(mt_TareaTramoRepository.class));
 
     private final Usuario creador = Usuario.builder().id(1).nombre("Ana Comercial").nivelAcceso(1).build();
     private final Usuario asignado = Usuario.builder().id(5).nombre("Luis Tecnico").build();

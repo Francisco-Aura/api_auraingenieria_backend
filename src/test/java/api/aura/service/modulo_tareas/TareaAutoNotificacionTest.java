@@ -10,6 +10,7 @@ import api.aura.repository.modulo_tareas.AdjuntoRepository;
 import api.aura.repository.modulo_tareas.mt_CategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_SubCategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_TareaEstadoRepository;
+import api.aura.repository.modulo_tareas.mt_TareaTramoRepository;
 import api.aura.repository.modulo_tareas.mt_TareaHistorialRepository;
 import api.aura.repository.modulo_tareas.mt_TareaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,8 @@ class TareaAutoNotificacionTest {
             tareaRepository, estadoRepository, mock(mt_CategoriaRepository.class),
             mock(mt_SubCategoriaRepository.class), usuarioRepository, mock(ClienteRepository.class),
             notificaciones, mock(TareaComentarioService.class), mock(mt_TareaHistorialRepository.class),
-            mock(AdjuntoRepository.class), mock(FileStorageService.class));
+            mock(AdjuntoRepository.class), mock(FileStorageService.class),
+            mock(mt_TareaTramoRepository.class));
 
     private static final Usuario ANA = Usuario.builder().id(7).nombre("ANA COMERCIAL").nivelAcceso(1).build();
     private static final Usuario LUIS = Usuario.builder().id(9).nombre("LUIS TÉCNICO").nivelAcceso(2).build();

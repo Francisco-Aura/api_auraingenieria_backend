@@ -9,6 +9,7 @@ import api.aura.repository.modulo_tareas.AdjuntoRepository;
 import api.aura.repository.modulo_tareas.mt_CategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_SubCategoriaRepository;
 import api.aura.repository.modulo_tareas.mt_TareaEstadoRepository;
+import api.aura.repository.modulo_tareas.mt_TareaTramoRepository;
 import api.aura.repository.modulo_tareas.mt_TareaHistorialRepository;
 import api.aura.repository.modulo_tareas.mt_TareaRepository;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,8 @@ class TareaVerPermisoTest {
     private final TareaService servicio = new TareaService(tareas, mock(mt_TareaEstadoRepository.class),
             mock(mt_CategoriaRepository.class), mock(mt_SubCategoriaRepository.class), mock(UsuarioRepository.class),
             mock(ClienteRepository.class), notificaciones, mock(TareaComentarioService.class),
-            mock(mt_TareaHistorialRepository.class), mock(AdjuntoRepository.class), mock(FileStorageService.class));
+            mock(mt_TareaHistorialRepository.class), mock(AdjuntoRepository.class), mock(FileStorageService.class),
+            mock(mt_TareaTramoRepository.class));
 
     private final Usuario ana = Usuario.builder().id(7).nombre("Ana").build();
     private final Usuario luis = Usuario.builder().id(9).nombre("Luis").build();

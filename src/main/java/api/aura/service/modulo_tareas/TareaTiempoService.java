@@ -193,8 +193,18 @@ public class TareaTiempoService {
         return fin.isBefore(max) ? fin : max;
     }
 
+    /** Segundos totales de los tramos de una tarea (el abierto cuenta hasta ahora o hasta su límite). */
+    static long segundosTotales(List<mt_TareaTramo> tramos, LocalDateTime ahora) {
+        LocalDateTime desde = LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime hasta = LocalDateTime.of(2999, 12, 31, 0, 0);
+        return tramos.stream()
+                .mapToLong(t -> segundosEn(t, desde, hasta, ahora))
+                .filter(s -> s > 0)
+                .sum();
+    }
+
     /** Un tramo abierto que ya no debería seguir corriendo (olvidado o de una tarea completada). */
-    private static boolean terminado(mt_TareaTramo t, LocalDateTime ahora) {
+    static boolean terminado(mt_TareaTramo t, LocalDateTime ahora) {
         return !limiteCierre(t).isAfter(ahora);
     }
 
@@ -216,7 +226,7 @@ public class TareaTiempoService {
     }
 
     /** Segundos del tramo dentro de [ini, fin). Un tramo abierto cuenta hasta su límite o hasta ahora. */
-    private static long segundosEn(mt_TareaTramo t, LocalDateTime ini, LocalDateTime fin, LocalDateTime ahora) {
+    static long segundosEn(mt_TareaTramo t, LocalDateTime ini, LocalDateTime fin, LocalDateTime ahora) {
         LocalDateTime finTramo = t.getFin() != null ? t.getFin() : min(ahora, limiteCierre(t));
         LocalDateTime a = t.getInicio().isAfter(ini) ? t.getInicio() : ini;
         LocalDateTime b = min(finTramo, fin);

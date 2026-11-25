@@ -47,6 +47,10 @@ public class TareaDTO {
     private Boolean fijada;
     private List<ComentarioDTO> comentarios;
     private Long duracionActivaSegundos;
+    /** Workmeter: segundos trabajados con el cronómetro (suma de sus tramos). Solo con workmeter.activo; si no, null. */
+    private Long tiempoCronometroSegundos;
+    /** Workmeter: hay un cronómetro corriendo en esta tarea. Solo con workmeter.activo; si no, null. */
+    private Boolean cronometroActivo;
     private Long duracionTotalSegundos;
     private Long tiempoBloqueadoSegundos;
     private Integer totalBloqueos;

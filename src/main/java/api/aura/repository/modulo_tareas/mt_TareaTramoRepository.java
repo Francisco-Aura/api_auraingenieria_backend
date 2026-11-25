@@ -26,6 +26,10 @@ public interface mt_TareaTramoRepository extends JpaRepository<mt_TareaTramo, Lo
     @Query("SELECT t FROM mt_TareaTramo t JOIN FETCH t.tarea WHERE t.usuario.id = :usuarioId AND t.fin IS NOT NULL ORDER BY t.fin DESC, t.id DESC")
     List<mt_TareaTramo> ultimosCerrados(@Param("usuarioId") Integer usuarioId, org.springframework.data.domain.Pageable pagina);
 
+    /** Todos los tramos de una tarea (cerrados y abierto), para sumar su tiempo de cronómetro. */
+    @Query("SELECT t FROM mt_TareaTramo t JOIN FETCH t.tarea WHERE t.tarea.id = :tareaId")
+    List<mt_TareaTramo> deLaTarea(@Param("tareaId") Long tareaId);
+
     /** Tramos que se solapan con [desde, hasta) (los abiertos cuentan hasta ahora). */
     @Query("SELECT t FROM mt_TareaTramo t JOIN FETCH t.tarea WHERE t.usuario.id = :usuarioId AND t.inicio < :hasta AND (t.fin IS NULL OR t.fin > :desde) ORDER BY t.inicio")
     List<mt_TareaTramo> solapados(@Param("usuarioId") Integer usuarioId, @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
