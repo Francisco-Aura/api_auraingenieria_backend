@@ -30,7 +30,7 @@ class TareaTiempoPermisosTest {
     @Test
     void sin_sesion_nada_funciona() {
         assertThatThrownBy(() -> controlador.iniciar(1L)).isInstanceOf(ResponseStatusException.class);
-        assertThatThrownBy(controlador::pausar).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> controlador.pausar(0)).isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(controlador::reanudar).isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(controlador::activo).isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> controlador.resumen(null, hoy, hoy)).isInstanceOf(ResponseStatusException.class);
@@ -41,10 +41,10 @@ class TareaTiempoPermisosTest {
         AuraUserHolder.set(new UsuarioSesion(7, "Ana", 2));
 
         controlador.iniciar(10L);
-        controlador.pausar();
+        controlador.pausar(0);
 
         verify(servicio).iniciar(10L, 7);
-        verify(servicio).pausar(7);
+        verify(servicio).pausar(7, 0);
     }
 
     @Test

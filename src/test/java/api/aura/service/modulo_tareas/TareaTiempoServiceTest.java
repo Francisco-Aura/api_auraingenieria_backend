@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -108,7 +110,7 @@ class TareaTiempoServiceTest {
         assertThat(corriendo.getFin()).isNotNull();
         assertThat(corriendo.getCierre()).isEqualTo(mt_TareaTramo.CIERRE_CAMBIO_TAREA);
         verify(tareaService, never()).cambiarEstado(any(), any());
-        verify(tramos).save(any(mt_TareaTramo.class));
+        verify(tramos, times(2)).save(any(mt_TareaTramo.class));
     }
 
     @Test
@@ -136,6 +138,33 @@ class TareaTiempoServiceTest {
 
         assertThat(e.isActivo()).isFalse();
         assertThat(corriendo.getCierre()).isEqualTo(mt_TareaTramo.CIERRE_MANUAL);
+    }
+
+    @Test
+    void pausar_por_inactividad_termina_el_tramo_cuando_dejo_de_haber_actividad() {
+        mt_Tarea t = tarea(10L, 7, enCurso);
+        LocalDateTime inicio = LocalDateTime.now().minusMinutes(30);
+        mt_TareaTramo corriendo = abierto(t, inicio);
+        when(tramos.buscarAbiertoBloqueando(7)).thenReturn(Optional.of(corriendo));
+        when(tramos.buscarAbierto(7)).thenReturn(Optional.empty());
+
+        servicio.pausar(7, 600);
+
+        assertThat(corriendo.getCierre()).isEqualTo(mt_TareaTramo.CIERRE_INACTIVIDAD);
+        assertThat(Duration.between(inicio, corriendo.getFin()).toMinutes()).isBetween(19L, 20L);
+    }
+
+    @Test
+    void pausar_por_inactividad_nunca_deja_el_fin_antes_del_inicio() {
+        mt_Tarea t = tarea(10L, 7, enCurso);
+        LocalDateTime inicio = LocalDateTime.now().minusMinutes(2);
+        mt_TareaTramo corriendo = abierto(t, inicio);
+        when(tramos.buscarAbiertoBloqueando(7)).thenReturn(Optional.of(corriendo));
+        when(tramos.buscarAbierto(7)).thenReturn(Optional.empty());
+
+        servicio.pausar(7, 3600);
+
+        assertThat(corriendo.getFin()).isEqualTo(inicio);
     }
 
     @Test
@@ -185,6 +214,24 @@ class TareaTiempoServiceTest {
         servicio.reanudar(7);
 
         verify(tramos).save(any(mt_TareaTramo.class));
+    }
+
+    @Test
+    void el_resumen_reparte_por_dias_un_tramo_que_cruza_la_medianoche() {
+        mt_Tarea a = tarea(10L, 7, enCurso);
+        LocalDate d1 = LocalDate.now().minusDays(3);
+        LocalDateTime medianoche = d1.plusDays(1).atStartOfDay();
+        mt_TareaTramo t = abierto(a, medianoche.minusHours(1));
+        t.setFin(medianoche.plusHours(2));
+        when(tramos.solapados(eq(7), any(), any())).thenReturn(List.of(t));
+
+        TiempoDTO.Resumen r = servicio.resumen(7, d1, d1.plusDays(2));
+
+        assertThat(r.getSegundosTotales()).isEqualTo(3 * 3600);
+        assertThat(r.getDias()).hasSize(2);
+        assertThat(r.getDias().get(0).getFecha()).isEqualTo(d1);
+        assertThat(r.getDias().get(0).getSegundos()).isEqualTo(3600);
+        assertThat(r.getDias().get(1).getSegundos()).isEqualTo(2 * 3600);
     }
 
     @Test

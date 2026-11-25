@@ -24,8 +24,8 @@ public class TareaTiempoController {
     }
 
     @PostMapping("/pausar")
-    public TiempoDTO.Estado pausar() {
-        return tiempoService.pausar(SesionActual.idRequerido());
+    public TiempoDTO.Estado pausar(@RequestParam(required = false, defaultValue = "0") long inactivoSegundos) {
+        return tiempoService.pausar(SesionActual.idRequerido(), inactivoSegundos);
     }
 
     @PostMapping("/reanudar")

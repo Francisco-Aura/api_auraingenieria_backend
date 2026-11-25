@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 /**
  * Control de tiempo por tarea. Un usuario solo tiene un tramo corriendo a la vez: empezar otra tarea cierra la anterior en la
@@ -90,9 +91,34 @@ public class TareaTiempoService {
     /** Para el cronómetro. Sin nada corriendo no hace nada. */
     @Transactional
     public TiempoDTO.Estado pausar(Integer usuarioId) {
+        return pausar(usuarioId, 0);
+    }
+
+    /**
+     * Para el cronómetro por inactividad: el tramo termina {@code inactivoSegundos} antes de ahora (cuando el usuario dejó
+     * de trabajar), sin pasar de su inicio. Con 0 es una pausa normal.
+     */
+    @Transactional
+    public TiempoDTO.Estado pausar(Integer usuarioId, long inactivoSegundos) {
         LocalDateTime ahora = LocalDateTime.now();
-        tramoRepository.buscarAbiertoBloqueando(usuarioId)
-                .ifPresent(t -> cerrar(t, ahora, mt_TareaTramo.CIERRE_MANUAL));
+        long inactivo = Math.max(0, inactivoSegundos);
+        tramoRepository.buscarAbiertoBloqueando(usuarioId).ifPresent(t -> {
+            if (inactivo == 0) {
+                cerrar(t, ahora, mt_TareaTramo.CIERRE_MANUAL);
+                return;
+            }
+            LocalDateTime fin = ahora.minusSeconds(inactivo);
+            if (fin.isBefore(t.getInicio())) {
+                fin = t.getInicio();
+            }
+            if (terminado(t, fin)) {
+                cerrarPorOlvido(t, ahora);
+            } else {
+                t.setFin(fin);
+                t.setCierre(mt_TareaTramo.CIERRE_INACTIVIDAD);
+                tramoRepository.save(t);
+            }
+        });
         tramoRepository.flush();
         return estado(usuarioId, ahora);
     }
@@ -129,11 +155,21 @@ public class TareaTiempoService {
         LocalDateTime ahora = LocalDateTime.now();
         Map<Long, long[]> porTarea = new LinkedHashMap<>();
         Map<Long, String> titulos = new LinkedHashMap<>();
+        Map<LocalDate, Long> porDia = new TreeMap<>();
         long total = 0;
         for (mt_TareaTramo t : tramoRepository.solapados(usuarioId, ini, fin)) {
             long seg = segundosEn(t, ini, fin, ahora);
             if (seg <= 0) {
                 continue;
+            }
+            for (LocalDate d = t.getInicio().toLocalDate().isAfter(desde) ? t.getInicio().toLocalDate() : desde;
+                 !d.isAfter(hasta); d = d.plusDays(1)) {
+                long segDia = segundosEn(t, d.atStartOfDay(), d.plusDays(1).atStartOfDay(), ahora);
+                if (segDia > 0) {
+                    porDia.merge(d, segDia, Long::sum);
+                } else if (d.atStartOfDay().isAfter(t.getFin() != null ? t.getFin() : ahora)) {
+                    break;
+                }
             }
             total += seg;
             porTarea.computeIfAbsent(t.getTarea().getId(), k -> new long[1])[0] += seg;
@@ -143,7 +179,10 @@ public class TareaTiempoService {
                 .map(e -> new TiempoDTO.PorTarea(e.getKey(), titulos.get(e.getKey()), e.getValue()[0]))
                 .sorted((a, b) -> Long.compare(b.getSegundos(), a.getSegundos()))
                 .toList();
-        return new TiempoDTO.Resumen(usuarioId, ini, fin.minusSeconds(1), total, tareas);
+        List<TiempoDTO.PorDia> dias = porDia.entrySet().stream()
+                .map(e -> new TiempoDTO.PorDia(e.getKey(), e.getValue()))
+                .toList();
+        return new TiempoDTO.Resumen(usuarioId, ini, fin.minusSeconds(1), total, tareas, dias);
     }
 
     // ---------------------------------------------------------------------------------------------------------------

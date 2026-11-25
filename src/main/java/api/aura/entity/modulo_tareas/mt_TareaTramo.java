@@ -21,6 +21,8 @@ public class mt_TareaTramo {
     public static final String CIERRE_CAMBIO_TAREA = "CAMBIO_TAREA";
     public static final String CIERRE_COMPLETADA = "COMPLETADA";
     public static final String CIERRE_CADUCADO = "CADUCADO";
+    /** Pausa automática del Workmeter de escritorio: el fin es el momento en que dejó de haber actividad. */
+    public static final String CIERRE_INACTIVIDAD = "INACTIVIDAD";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

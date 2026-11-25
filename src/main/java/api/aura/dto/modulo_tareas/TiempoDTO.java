@@ -39,11 +39,20 @@ public final class TiempoDTO {
 
     @Getter
     @AllArgsConstructor
+    public static class PorDia {
+        private final java.time.LocalDate fecha;
+        private final long segundos;
+    }
+
+    @Getter
+    @AllArgsConstructor
     public static class Resumen {
         private final Integer usuarioId;
         private final LocalDateTime desde;
         private final LocalDateTime hasta;
         private final long segundosTotales;
         private final List<PorTarea> tareas;
+        /** Segundos por día (solo los días con tiempo), de más antiguo a más reciente. */
+        private final List<PorDia> dias;
     }
 }
