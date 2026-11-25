@@ -9,4 +9,7 @@ public interface mt_TareaEstadoRepository extends JpaRepository<mt_TareaEstado, 
     List<mt_TareaEstado> findByEstadoFinalFalseOrderByOrdenAsc();
 
     List<mt_TareaEstado> findAllByOrderByOrdenAsc();
+
+    /** Estados «en progreso» (cuentan tiempo y no son finales), el primero es el que se pone al empezar a trabajar. */
+    List<mt_TareaEstado> findByCuentaTiempoTrueAndEstadoFinalFalseOrderByOrdenAsc();
 }
